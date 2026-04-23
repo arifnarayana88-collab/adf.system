@@ -536,7 +536,8 @@ $expenseDivisionData = $db->fetchAll(
 // ============================================
 // CHART DATA - Daily Income vs Expense (Monthly View)
 // ============================================
-$selectedMonth = isset($_GET['chart_month']) ? $_GET['chart_month'] : date('Y-m');
+// Use dashboard_month filter for all dashboard data consistency
+$selectedMonth = $selected_dashboard_month;
 
 // Get first and last day of selected month
 $firstDay = $selectedMonth . '-01';
@@ -603,7 +604,7 @@ $topCategories = $db->fetchAll(
     GROUP BY c.id, c.category_name, d.division_name, cb.transaction_type
     ORDER BY total DESC
     LIMIT 10",
-    ['month' => $thisMonth]
+    ['month' => $selected_dashboard_month]
 );
 
 // ============================================
@@ -1227,7 +1228,7 @@ if ($trialStatus) {
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.625rem;">
                 <h3 style="font-size: 0.85rem; color: #111827; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
                     💰 Daily Cash
-                    <span style="font-size: 0.7rem; color: #9ca3af; font-weight: 500;"><?php echo date('M Y'); ?></span>
+                    <span style="font-size: 0.7rem; color: #9ca3af; font-weight: 500;"><?php echo date('M Y', strtotime($selected_dashboard_month . '-01')); ?></span>
                 </h3>
                 <a href="modules/owner/owner-capital-monitor.php" style="padding: 0.4rem 0.75rem; background: linear-gradient(135deg, <?php echo $cAccent; ?> 0%, <?php echo $cAccentDark; ?> 100%); color: white; border-radius: 6px; text-decoration: none; font-size: 0.7rem; font-weight: 600; transition: all 0.2s ease; box-shadow: 0 2px 6px rgba(<?php echo $cAccentRgb; ?>, 0.25);" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">
                     Detail
