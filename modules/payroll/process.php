@@ -1161,6 +1161,28 @@ include '../../includes/header.php';
         color: var(--primary-color) !important;
     }
 
+    .ps-btn-refresh {
+        background: linear-gradient(135deg, #06b6d4, #0891b2);
+        color: #ffffff !important;
+        border: none;
+    }
+
+    .ps-btn-refresh:hover {
+        background: linear-gradient(135deg, #0891b2, #0e7490);
+        transform: translateY(-2px);
+    }
+
+    .ps-btn-reset {
+        background: linear-gradient(135deg, #f87171, #dc2626);
+        color: #ffffff !important;
+        border: none;
+    }
+
+    .ps-btn-reset:hover {
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        transform: translateY(-2px);
+    }
+
     .ps-btn svg {
         stroke: #ffffff !important;
         fill: none !important;
@@ -2147,7 +2169,7 @@ include '../../includes/header.php';
 
                 <form method="POST" style="display: inline;">
                     <input type="hidden" name="refresh_employees" value="1">
-                    <button type="submit" class="ps-btn ps-btn-outline" title="Refresh: Add new employees to this period">
+                    <button type="submit" class="ps-btn ps-btn-refresh" title="Refresh: Add new employees to this period">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="23 4 23 10 17 10"></polyline>
                             <polyline points="1 20 1 14 7 14"></polyline>
@@ -2158,8 +2180,8 @@ include '../../includes/header.php';
                 </form>
                 <form method="POST" style="display: inline;" onsubmit="return confirm('⚠️ RESET period <?php echo $months[$month] . ' ' . $year; ?>?\n\nSemua data gaji, slip, dan catatan cashbook untuk bulan ini akan DIHAPUS.\n\nAnda bisa buat ulang setelah reset.\n\nLanjutkan?');">
                     <input type="hidden" name="reset_period" value="1">
-                    <button type="submit" class="ps-btn ps-btn-outline" style="color:#ef4444;border-color:#ef4444;" title="Reset: Hapus period ini dan mulai ulang">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+                    <button type="submit" class="ps-btn ps-btn-reset" title="Reset: Hapus period ini dan mulai ulang">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="3 6 5 6 21 6"></polyline>
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                         </svg>
