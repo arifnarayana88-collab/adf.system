@@ -1626,7 +1626,7 @@ include '../../includes/header.php';
     }
 
     .att-modal-title {
-        font-size: 1.4rem;
+        font-size: 1.1rem;
         font-weight: 700;
         color: var(--text-primary);
         display: flex;
@@ -1668,14 +1668,14 @@ include '../../includes/header.php';
     }
 
     .att-summary-value {
-        font-size: 1.8rem;
+        font-size: 1.5rem;
         font-weight: 800;
         color: var(--text-primary);
         line-height: 1.2;
     }
 
     .att-summary-label {
-        font-size: 1rem;
+        font-size: 0.85rem;
         text-transform: uppercase;
         letter-spacing: 1px;
         color: var(--text-tertiary);
@@ -1708,7 +1708,7 @@ include '../../includes/header.php';
     }
 
     .att-cal-header {
-        font-size: 0.9rem;
+        font-size: 0.8rem;
         font-weight: 600;
         color: var(--text-tertiary);
         text-transform: uppercase;
@@ -1723,7 +1723,7 @@ include '../../includes/header.php';
         align-items: center;
         justify-content: center;
         border-radius: 8px;
-        font-size: 0.95rem;
+        font-size: 0.85rem;
         background: var(--bg-secondary);
         border: 1px solid var(--border-light);
         position: relative;
@@ -1800,14 +1800,14 @@ include '../../includes/header.php';
     .att-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 1.2rem;
+        font-size: 0.95rem;
         margin-top: 1rem;
     }
 
     .att-table th {
-        padding: 0.85rem 0.8rem;
+        padding: 0.75rem 0.75rem;
         text-align: left;
-        font-size: 1rem;
+        font-size: 0.9rem;
         text-transform: uppercase;
         font-weight: 700;
         letter-spacing: 0.5px;
@@ -1817,7 +1817,7 @@ include '../../includes/header.php';
     }
 
     .att-table td {
-        padding: 0.85rem 0.8rem;
+        padding: 0.75rem 0.75rem;
         border-bottom: 1px solid var(--border-light);
     }
 
