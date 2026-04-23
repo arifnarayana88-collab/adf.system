@@ -949,7 +949,7 @@ try {
         }
 
         .card-title {
-            font-size: 13px;
+            font-size: 15px;
             font-weight: 700;
             color: var(--navy);
             margin-bottom: 10px;
@@ -959,8 +959,8 @@ try {
         .slip-row {
             display: flex;
             justify-content: space-between;
-            padding: 6px 0;
-            font-size: 11px;
+            padding: 8px 0;
+            font-size: 12px;
             border-bottom: 1px dashed #e2e8f0;
         }
 
@@ -983,22 +983,23 @@ try {
         .tbl {
             width: 100%;
             border-collapse: collapse;
-            font-size: 11px;
+            font-size: 13px;
+            line-height: 1.45;
         }
 
         .tbl th {
             background: var(--bg);
-            padding: 8px;
+            padding: 10px 12px;
             text-align: left;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--muted);
-            font-size: 10px;
+            font-size: 12px;
             text-transform: uppercase;
             border-bottom: 1px solid var(--border);
         }
 
         .tbl td {
-            padding: 8px;
+            padding: 10px 12px;
             border-bottom: 1px solid #f1f5f9;
         }
 
@@ -2836,9 +2837,9 @@ try {
 
                 let html;
                 if (IS_CAFE) {
-                    html = '<div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Tanggal</th><th>Masuk</th><th>Pulang</th><th>Jam Kerja</th><th>Status</th></tr></thead><tbody>';
+                    html = '<div style="overflow-x:auto;font-size:13px;line-height:1.5;"><table class="tbl"><thead><tr><th>Tanggal</th><th>Masuk</th><th>Pulang</th><th>Jam Kerja</th><th>Status</th></tr></thead><tbody>';
                 } else {
-                    html = '<div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Tanggal</th><th>Scan 1</th><th>Scan 2</th><th>Scan 3</th><th>Scan 4</th><th>Total</th><th>Status</th></tr></thead><tbody>';
+                    html = '<div style="overflow-x:auto;font-size:13px;line-height:1.5;"><table class="tbl"><thead><tr><th>Tanggal</th><th>Scan 1</th><th>Scan 2</th><th>Scan 3</th><th>Scan 4</th><th>Total</th><th>Status</th></tr></thead><tbody>';
                 }
                 const statusMap = {
                     present: 'Hadir',
