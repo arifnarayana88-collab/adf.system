@@ -155,33 +155,60 @@ try {
     );
     $filteredExpense = $dailyExpenseFiltered['total'] ?? 0;
     
-    // Get Saldo from cash_accounts table (same as dashboard shows)
-    // Cash + Bank balance
+    // Get filtered balances from cash_book for the selected date range
+    // Query all cash/bank accounts (non-owner accounts)
     $stmt = $masterDb->prepare("
-        SELECT COALESCE(SUM(current_balance), 0) as total 
+        SELECT id 
         FROM cash_accounts 
         WHERE business_id = ? AND account_type IN ('cash', 'bank') AND is_active = 1
     ");
     $stmt->execute([$businessId]);
-    $saldoCashBank = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    $cashBankAccountIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
     
-    // Petty Cash balance only
-    $stmt = $masterDb->prepare("
-        SELECT COALESCE(SUM(current_balance), 0) as total 
-        FROM cash_accounts 
-        WHERE business_id = ? AND account_type = 'cash' AND is_active = 1
-    ");
-    $stmt->execute([$businessId]);
-    $saldoPettyCash = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    // Cash + Bank balance (filtered by date range)
+    if (!empty($cashBankAccountIds)) {
+        $placeholders = implode(',', array_fill(0, count($cashBankAccountIds), '?'));
+        $stmt = $db->getConnection()->prepare("
+            SELECT COALESCE(SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE -amount END), 0) as total 
+            FROM cash_book 
+            WHERE transaction_date BETWEEN ? AND ?
+            AND cash_account_id IN ($placeholders)
+        ");
+        $stmt->execute(array_merge([$filterStart, $filterEnd], $cashBankAccountIds));
+        $saldoCashBank = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    } else {
+        $saldoCashBank = 0;
+    }
     
-    // Sisa Owner balance
-    $stmt = $masterDb->prepare("
-        SELECT COALESCE(SUM(current_balance), 0) as total 
-        FROM cash_accounts 
-        WHERE business_id = ? AND account_type = 'owner_capital' AND is_active = 1
-    ");
-    $stmt->execute([$businessId]);
-    $sisaOwner = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    // Petty Cash balance only (account_type = 'cash') (filtered by date range)
+    if (!empty($pettyCashAccounts ?? [])) {
+        $placeholders = implode(',', array_fill(0, count($pettyCashAccounts), '?'));
+        $stmt = $db->getConnection()->prepare("
+            SELECT COALESCE(SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE -amount END), 0) as total 
+            FROM cash_book 
+            WHERE transaction_date BETWEEN ? AND ?
+            AND cash_account_id IN ($placeholders)
+        ");
+        $stmt->execute(array_merge([$filterStart, $filterEnd], $pettyCashAccounts));
+        $saldoPettyCash = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    } else {
+        $saldoPettyCash = 0;
+    }
+    
+    // Sisa Owner balance (account_type = 'owner_capital') (filtered by date range)
+    if (!empty($modalOwnerAccounts ?? [])) {
+        $placeholders = implode(',', array_fill(0, count($modalOwnerAccounts), '?'));
+        $stmt = $db->getConnection()->prepare("
+            SELECT COALESCE(SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE -amount END), 0) as total 
+            FROM cash_book 
+            WHERE transaction_date BETWEEN ? AND ?
+            AND cash_account_id IN ($placeholders)
+        ");
+        $stmt->execute(array_merge([$filterStart, $filterEnd], $modalOwnerAccounts));
+        $sisaOwner = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    } else {
+        $sisaOwner = 0;
+    }
     
 } catch (Exception $e) {
     error_log("Error fetching daily-filtered data: " . $e->getMessage());
