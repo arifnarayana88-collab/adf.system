@@ -76,6 +76,11 @@ $today = date('Y-m-d');
 $thisMonth = date('Y-m');
 $thisYear = date('Y');
 
+// Get selected month from GET parameter for filtering all dashboard data
+$selected_dashboard_month = isset($_GET['dashboard_month']) ? $_GET['dashboard_month'] : date('Y-m');
+$selected_dashboard_year = date('Y', strtotime($selected_dashboard_month . '-01'));
+$monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
 // Initialize CQC account IDs at global scope (will be populated if CQC business)
 $pettyCashAccountId = 0;
 $bankAccountId = 0;
@@ -179,14 +184,14 @@ $todayExpense = ['total' => $todayExpenseResult[0]['total'] ?? 0];
 $monthlyIncomeResult = $db->fetchAll(
     "SELECT COALESCE(SUM(amount), 0) as total FROM cash_book 
      WHERE transaction_type = 'income' AND DATE_FORMAT(transaction_date, '%Y-%m') = :month" . $excludeOwnerCapital,
-    ['month' => $thisMonth]
+    ['month' => $selected_dashboard_month]
 );
 $monthlyIncome = ['total' => $monthlyIncomeResult[0]['total'] ?? 0];
 
 $monthlyExpenseResult = $db->fetchAll(
     "SELECT COALESCE(SUM(amount), 0) as total FROM cash_book 
      WHERE transaction_type = 'expense' AND DATE_FORMAT(transaction_date, '%Y-%m') = :month",
-    ['month' => $thisMonth]
+    ['month' => $selected_dashboard_month]
 );
 $monthlyExpense = ['total' => $monthlyExpenseResult[0]['total'] ?? 0];
 
@@ -267,7 +272,7 @@ try {
             AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
         ";
 
-        $params = array_merge($capitalAccounts, [$thisMonth]);
+        $params = array_merge($capitalAccounts, [$selected_dashboard_month]);
         $result = $db->fetchOne($query, $params);
 
         $capitalStats['received'] = $result['received'] ?? 0;
@@ -290,7 +295,7 @@ try {
             AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
         ";
 
-        $params = array_merge($pettyCashAccounts, [$thisMonth]);
+        $params = array_merge($pettyCashAccounts, [$selected_dashboard_month]);
         $result = $db->fetchOne($query, $params);
 
         $pettyCashStats['received'] = $result['received'] ?? 0;
@@ -345,13 +350,12 @@ try {
 
     // Owner Transfer THIS MONTH only (source_type = 'owner_fund')
     $ownerTransferThisMonth = 0;
-    $thisMonth = date('Y-m');
     if ($hasSourceTypeCol) {
         $qOwner = "SELECT COALESCE(SUM(amount), 0) as total
             FROM cash_book WHERE source_type = 'owner_fund'
             AND transaction_type = 'income'
             AND DATE_FORMAT(transaction_date, '%Y-%m') = ?";
-        $rOwner = $db->fetchOne($qOwner, [$thisMonth]);
+        $rOwner = $db->fetchOne($qOwner, [$selected_dashboard_month]);
         $ownerTransferThisMonth = $rOwner['total'] ?? 0;
     } elseif ($hasCashAccountIdCol && !empty($capitalAccounts)) {
         $placeholders = implode(',', array_fill(0, count($capitalAccounts), '?'));
@@ -359,7 +363,7 @@ try {
             FROM cash_book WHERE cash_account_id IN ($placeholders) 
             AND transaction_type = 'income'
             AND DATE_FORMAT(transaction_date, '%Y-%m') = ?";
-        $pOwner = array_merge($capitalAccounts, [$thisMonth]);
+        $pOwner = array_merge($capitalAccounts, [$selected_dashboard_month]);
         $rOwner = $db->fetchOne($qOwner, $pOwner);
         $ownerTransferThisMonth = $rOwner['total'] ?? 0;
     }
@@ -397,8 +401,6 @@ try {
 // ============================================
 $guestCashIncome = 0;
 try {
-    $thisMonth = date('Y-m');
-
     if ($hasSourceTypeCol) {
         $cashIncomeResult = $db->fetchOne(
             "SELECT COALESCE(SUM(amount), 0) as total 
@@ -407,7 +409,7 @@ try {
              AND payment_method = 'cash'
              AND (source_type IS NULL OR source_type NOT IN ('owner_fund','owner_project'))
              AND DATE_FORMAT(transaction_date, '%Y-%m') = ?",
-            [$thisMonth]
+            [$selected_dashboard_month]
         );
     } else {
         // Fallback: cash payments excluding owner_capital accounts
@@ -421,7 +423,7 @@ try {
                  AND payment_method = 'cash'
                  AND (cash_account_id IS NULL OR cash_account_id NOT IN ($excludePlaceholders))
                  AND DATE_FORMAT(transaction_date, '%Y-%m') = ?",
-                array_merge($excludeAccountIds, [$thisMonth])
+                array_merge($excludeAccountIds, [$selected_dashboard_month])
             );
         } else {
             $cashIncomeResult = $db->fetchOne(
@@ -430,7 +432,7 @@ try {
                  WHERE transaction_type = 'income' 
                  AND payment_method = 'cash'
                  AND DATE_FORMAT(transaction_date, '%Y-%m') = ?",
-                [$thisMonth]
+                [$selected_dashboard_month]
             );
         }
     }
@@ -1127,9 +1129,98 @@ if ($trialStatus) {
     div[style*="grid-template-columns: repeat(4"]>div:hover .card-top-bar {
         opacity: 1 !important;
     }
+
+    /* Dashboard Month Selector */
+    .dashboard-month-selector {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding: 1rem 1.25rem;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .dashboard-month-selector label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #374151;
+        margin: 0;
+    }
+
+    .dashboard-month-selector select {
+        background: #fff;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+        color: #1f2937;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .dashboard-month-selector select:hover {
+        border-color: var(--primary-color);
+        box-shadow: 0 2px 6px rgba(<?php echo $cAccentRgb; ?>, 0.1);
+    }
+
+    .dashboard-month-selector select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(<?php echo $cAccentRgb; ?>, 0.1);
+    }
+
+    .dashboard-month-selector button {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 6px rgba(<?php echo $cAccentRgb; ?>, 0.25);
+    }
+
+    .dashboard-month-selector button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(<?php echo $cAccentRgb; ?>, 0.35);
+    }
 </style>
 
 <?php if (!$isCQC): ?>
+    <!-- DASHBOARD MONTH SELECTOR -->
+    <div class="dashboard-month-selector">
+        <form method="GET" style="display: flex; align-items: center; gap: 0.75rem; margin: 0;">
+            <label for="dashboardMonthSelect">Filter Period:</label>
+            <select name="dashboard_month" id="dashboardMonthSelect" onchange="this.form.submit();">
+                <?php 
+                $currentMonth = $selected_dashboard_month;
+                for ($m = 1; $m <= 12; $m++) {
+                    $monthVal = sprintf('%04d-%02d', $selected_dashboard_year, $m);
+                    $selected = ($monthVal == $selected_dashboard_month) ? 'selected' : '';
+                    echo "<option value=\"$monthVal\" $selected>" . $monthNames[$m-1] . " " . $selected_dashboard_year . "</option>";
+                }
+                ?>
+            </select>
+            <select name="dashboard_year" id="dashboardYearSelect" onchange="updateDashboardYear(this.value);">
+                <?php 
+                $currentYear = date('Y');
+                for ($y = $currentYear; $y >= $currentYear - 5; $y--) {
+                    $selected = ($y == $selected_dashboard_year) ? 'selected' : '';
+                    echo "<option value=\"$y\" $selected>$y</option>";
+                }
+                ?>
+            </select>
+        </form>
+        <span style="font-size: 0.75rem; color: #9ca3af; margin-left: 0.5rem;">
+            Showing data for: <strong><?php echo $monthNames[(int)date('m', strtotime($selected_dashboard_month . '-01')) - 1] . ' ' . $selected_dashboard_year; ?></strong>
+        </span>
+    </div>
+
     <!-- DAILY CASH Widget -->
     <div class="card fade-in" style="margin-bottom: 1rem; background: #fff; border: 1px solid #e5e7eb;">
         <div style="padding: 0.875rem 1rem;">
@@ -2888,6 +2979,15 @@ if ($trialStatus) {
                         }
                     })
                     .catch(error => console.error('Error updating chart:', error));
+            }
+
+            // Update dashboard month from year selector
+            function updateDashboardYear(year) {
+                const monthSelect = document.getElementById('dashboardMonthSelect');
+                const currentMonth = monthSelect.value.split('-')[1];
+                const newMonth = year + '-' + currentMonth;
+                monthSelect.value = newMonth;
+                monthSelect.form.submit();
             }
         <?php endif; ?>
         // ============================================
