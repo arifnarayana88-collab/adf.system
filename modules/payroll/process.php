@@ -1608,7 +1608,7 @@ include '../../includes/header.php';
         background: var(--bg-primary);
         border-radius: 16px;
         width: 100%;
-        max-width: 900px;
+        max-width: min(95vw, 1600px);
         max-height: 90vh;
         overflow: hidden;
         box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
@@ -1639,7 +1639,7 @@ include '../../includes/header.php';
     }
 
     .att-modal-body {
-        padding: 1rem 1.25rem;
+        padding: 1.25rem 1.5rem;
         overflow-y: auto;
         flex: 1;
     }
@@ -1647,31 +1647,40 @@ include '../../includes/header.php';
     /* Summary Cards */
     .att-summary {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 0.75rem;
         margin-bottom: 1rem;
     }
 
     .att-summary-card {
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-color);
-        border-radius: 10px;
-        padding: 0.75rem;
+        background: linear-gradient(135deg, var(--bg-secondary), rgba(255, 255, 255, 0.5));
+        border: 1.5px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1rem 0.75rem;
         text-align: center;
+        transition: all 0.2s;
+    }
+
+    .att-summary-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        border-color: rgba(59, 130, 246, 0.3);
     }
 
     .att-summary-value {
-        font-size: 1.25rem;
-        font-weight: 700;
+        font-size: 1.4rem;
+        font-weight: 800;
         color: var(--text-primary);
+        line-height: 1.2;
     }
 
     .att-summary-label {
-        font-size: 0.65rem;
+        font-size: 0.7rem;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 1px;
         color: var(--text-tertiary);
-        margin-top: 0.15rem;
+        margin-top: 0.3rem;
+        font-weight: 600;
     }
 
     .att-summary-card.primary .att-summary-value {
@@ -1791,22 +1800,24 @@ include '../../includes/header.php';
     .att-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 0.78rem;
+        font-size: 0.85rem;
         margin-top: 1rem;
     }
 
     .att-table th {
-        padding: 0.5rem;
+        padding: 0.65rem 0.6rem;
         text-align: left;
-        font-size: 0.68rem;
+        font-size: 0.75rem;
         text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: 0.5px;
         color: var(--text-tertiary);
         border-bottom: 2px solid var(--border-color);
-        background: var(--bg-secondary);
+        background: linear-gradient(135deg, var(--bg-secondary), rgba(255, 255, 255, 0.3));
     }
 
     .att-table td {
-        padding: 0.45rem 0.5rem;
+        padding: 0.55rem 0.6rem;
         border-bottom: 1px solid var(--border-light);
     }
 
@@ -1850,59 +1861,73 @@ include '../../includes/header.php';
 
     /* Progress Bar */
     .att-progress {
-        margin-top: 0.75rem;
-        background: var(--bg-secondary);
-        border-radius: 8px;
-        padding: 0.75rem;
+        margin-top: 1rem;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(147, 197, 253, 0.03));
+        border: 1px solid rgba(59, 130, 246, 0.15);
+        border-radius: 10px;
+        padding: 1rem;
     }
 
     .att-progress-label {
         display: flex;
         justify-content: space-between;
-        font-size: 0.72rem;
-        margin-bottom: 0.35rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
     }
 
     .att-progress-bar {
-        height: 8px;
+        height: 10px;
         background: var(--border-color);
-        border-radius: 4px;
+        border-radius: 5px;
         overflow: hidden;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .att-progress-fill {
         height: 100%;
         background: linear-gradient(90deg, #3b82f6, #22c55e);
-        border-radius: 4px;
+        border-radius: 5px;
         transition: width 0.5s ease;
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
     }
 
     /* View Toggle */
     .att-view-toggle {
         display: flex;
-        gap: 0.25rem;
-        margin-bottom: 0.75rem;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
     }
 
     .att-view-btn {
-        padding: 0.4rem 0.75rem;
-        border: 1px solid var(--border-color);
+        padding: 0.5rem 1rem;
+        border: 1.5px solid var(--border-color);
         background: var(--bg-secondary);
-        border-radius: 6px;
-        font-size: 0.72rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 500;
         cursor: pointer;
         transition: all 0.2s;
     }
 
     .att-view-btn.active {
-        background: #3b82f6;
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
         color: #fff;
         border-color: #3b82f6;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
 
     .att-view-btn:hover:not(.active) {
         border-color: #3b82f6;
         color: #3b82f6;
+        background: rgba(59, 130, 246, 0.05);
+    }
+
+    @media (max-width: 1200px) {
+        .att-modal {
+            max-width: 90vw;
+        }
     }
 
     @media (max-width: 768px) {
@@ -1912,6 +1937,11 @@ include '../../includes/header.php';
 
         .att-modal {
             max-height: 95vh;
+            max-width: 95vw;
+        }
+
+        .att-modal-body {
+            padding: 0.75rem 1rem;
         }
     }
 
