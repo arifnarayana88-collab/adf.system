@@ -873,6 +873,16 @@ echo getPrintCSS();
             border: none !important;
             color: #fff !important;
             text-decoration: none !important;
+            position: relative !important;
+            isolation: isolate !important;
+            overflow: hidden !important;
+            opacity: 1 !important;
+        }
+
+        .cashbook-action-btn::before,
+        .cashbook-action-btn::after {
+            z-index: 1 !important;
+            pointer-events: none !important;
         }
 
         a.cashbook-action-btn,
@@ -895,6 +905,16 @@ echo getPrintCSS();
         .cashbook-action-btn span {
             color: #fff !important;
             stroke: #fff !important;
+            position: relative !important;
+            z-index: 9 !important;
+            opacity: 1 !important;
+            mix-blend-mode: normal !important;
+        }
+
+        .cashbook-action-btn span {
+            -webkit-text-fill-color: #fff !important;
+            text-fill-color: #fff !important;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.24) !important;
         }
 
         .cashbook-action-btn svg,
@@ -902,6 +922,9 @@ echo getPrintCSS();
             color: #fff !important;
             stroke: #fff !important;
             fill: none !important;
+            position: relative !important;
+            z-index: 9 !important;
+            opacity: 1 !important;
         }
 
         /* Cashbook action button color variants */
