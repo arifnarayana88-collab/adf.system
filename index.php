@@ -778,7 +778,8 @@ if ($trialStatus) {
                 <div style="width: 3px; height: 22px; border-radius: 4px; background: var(--primary-color);"></div>
                 <div>
                     <div style="font-size: 0.58rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; line-height: 1;"><?php echo strtoupper(BUSINESS_NAME); ?></div>
-                    <div style="font-size: 0.92rem; font-weight: 700; color: var(--text-primary); margin-top: 0.1rem;">Financial Overview</div>
+                    <div style="font-size: 0.92rem; font-weight: 700; color: var(--text-primary); margin-top: 0.1rem;">Financial Flow Overview</div>
+                    <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 0.2rem;">Income, expense, and net profit in one clean view</div>
                 </div>
                 <div id="liveIndicator" class="chart-live-pill">
                     <span class="chart-live-dot"></span>
@@ -849,7 +850,7 @@ if ($trialStatus) {
 
     <!-- Chart Canvas Area -->
     <div class="chart-canvas-wrap">
-        <div style="position: relative; height: 260px; padding: 0.5rem 0.75rem;">
+        <div style="position: relative; height: 280px; padding: 0.4rem 0.75rem 0.2rem;">
             <canvas id="tradingChart"></canvas>
         </div>
     </div>
@@ -857,10 +858,10 @@ if ($trialStatus) {
     <!-- Footer Bar -->
     <div class="chart-footer-bar">
         <span id="periodDisplay" style="font-size: 0.65rem; color: var(--text-muted); font-weight: 500;">1 - <?php echo date('t', strtotime($firstDay)); ?> <?php echo date('M Y', strtotime($firstDay)); ?></span>
-        <div style="display: flex; gap: 0.85rem;">
-            <div class="chart-legend-item"><span class="chart-legend-line" style="background: #10b981;"></span>Pemasukan</div>
-            <div class="chart-legend-item"><span class="chart-legend-line" style="background: #f97316;"></span>Pengeluaran</div>
-            <div class="chart-legend-item"><span class="chart-legend-line chart-legend-line-dash" style="background: rgb(<?php echo $cPrimaryRgb; ?>);"></span>Net</div>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end;">
+            <div class="chart-legend-item"><span class="chart-legend-dot" style="background: #10b981;"></span>Pemasukan</div>
+            <div class="chart-legend-item"><span class="chart-legend-dot" style="background: #f97316;"></span>Pengeluaran</div>
+            <div class="chart-legend-item"><span class="chart-legend-dot" style="background: rgb(<?php echo $cPrimaryRgb; ?>);"></span>Net Harian</div>
         </div>
     </div>
 </div>
@@ -922,11 +923,20 @@ if ($trialStatus) {
     #tradingChartCard {
         background: var(--chart-card-bg);
         transition: box-shadow 0.3s, transform 0.3s;
+        position: relative;
     }
 
     #tradingChartCard:hover {
         box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.1);
         transform: translateY(-1px);
+    }
+
+    #tradingChartCard::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0));
+        pointer-events: none;
     }
 
     /* Live indicator */
@@ -1088,32 +1098,36 @@ if ($trialStatus) {
 
     /* Footer bar */
     .chart-footer-bar {
-        padding: 0.6rem 1.25rem;
+        padding: 0.75rem 1.25rem 0.95rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        border-top: 1px solid var(--chart-wrap-border);
+        background: rgba(148, 163, 184, 0.02);
     }
 
     .chart-legend-item {
         display: flex;
         align-items: center;
-        gap: 0.3rem;
-        font-size: 0.6rem;
+        gap: 0.4rem;
+        font-size: 0.65rem;
         color: var(--text-muted);
-        font-weight: 500;
+        font-weight: 600;
+        padding: 0.3rem 0.55rem;
+        border-radius: 999px;
+        background: rgba(148, 163, 184, 0.06);
     }
 
-    .chart-legend-line {
-        width: 12px;
-        height: 2.5px;
-        border-radius: 2px;
+    .chart-legend-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
         flex-shrink: 0;
     }
 
-    .chart-legend-line-dash {
-        opacity: 0.5;
-        background-image: repeating-linear-gradient(90deg, currentColor 0 3px, transparent 3px 5px) !important;
-        background-color: transparent !important;
+    .chart-canvas-wrap {
+        padding: 0.2rem 0 0;
+        background: linear-gradient(180deg, rgba(148, 163, 184, 0.02), rgba(148, 163, 184, 0));
     }
 
     /* Card hover effects for operational section */
@@ -2423,39 +2437,40 @@ if ($trialStatus) {
         ?>
 
         // ============================================
-        // PREMIUM TRADING LINE CHART
+        // CLEAN FINANCIAL FLOW CHART
         // ============================================
         <?php if (!empty($dailyData)): ?>
             const tradingCtx = document.getElementById('tradingChart').getContext('2d');
 
-            // Calculate cumulative balance for net line
-            let cumulativeBalance = [];
-            let runningBalance = 0;
-            <?php foreach ($dailyData as $data): ?>
-                runningBalance += <?php echo $data['income'] - $data['expense']; ?>;
-                cumulativeBalance.push(runningBalance);
-            <?php endforeach; ?>
+            const buildNetSeries = (incomeSeries, expenseSeries) => incomeSeries.map((value, index) => value - (expenseSeries[index] || 0));
 
-            // Area gradient for income (green glow)
-            const incomeGradient = tradingCtx.createLinearGradient(0, 0, 0, 260);
-            incomeGradient.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
-            incomeGradient.addColorStop(0.5, 'rgba(16, 185, 129, 0.06)');
-            incomeGradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
+            // Soft gradients for a lighter, more elegant chart
+            const incomeGradient = tradingCtx.createLinearGradient(0, 0, 0, 280);
+            incomeGradient.addColorStop(0, 'rgba(16, 185, 129, 0.32)');
+            incomeGradient.addColorStop(1, 'rgba(16, 185, 129, 0.12)');
 
-            // Area gradient for expense (orange glow)
-            const expenseGradient = tradingCtx.createLinearGradient(0, 0, 0, 260);
-            expenseGradient.addColorStop(0, 'rgba(249, 115, 22, 0.22)');
-            expenseGradient.addColorStop(0.5, 'rgba(249, 115, 22, 0.05)');
-            expenseGradient.addColorStop(1, 'rgba(249, 115, 22, 0)');
+            const expenseGradient = tradingCtx.createLinearGradient(0, 0, 0, 280);
+            expenseGradient.addColorStop(0, 'rgba(249, 115, 22, 0.28)');
+            expenseGradient.addColorStop(1, 'rgba(249, 115, 22, 0.10)');
 
-            // Area gradient for net balance
-            const netGradient = tradingCtx.createLinearGradient(0, 0, 0, 260);
-            netGradient.addColorStop(0, 'rgba(<?php echo $cPrimaryRgb; ?>, 0.10)');
-            netGradient.addColorStop(0.5, 'rgba(<?php echo $cPrimaryRgb; ?>, 0.02)');
-            netGradient.addColorStop(1, 'rgba(<?php echo $cPrimaryRgb; ?>, 0)');
+            const netGradient = tradingCtx.createLinearGradient(0, 0, 0, 280);
+            netGradient.addColorStop(0, 'rgba(<?php echo $cPrimaryRgb; ?>, 0.22)');
+            netGradient.addColorStop(1, 'rgba(<?php echo $cPrimaryRgb; ?>, 0.03)');
+
+            const dailyIncomeSeries = [
+                <?php foreach ($dailyData as $data): ?>
+                    <?php echo $data['income']; ?>,
+                <?php endforeach; ?>
+            ];
+            const dailyExpenseSeries = [
+                <?php foreach ($dailyData as $data): ?>
+                    <?php echo $data['expense']; ?>,
+                <?php endforeach; ?>
+            ];
+            const dailyNetSeries = buildNetSeries(dailyIncomeSeries, dailyExpenseSeries);
 
             let tradingChart = new Chart(tradingCtx, {
-                type: 'line',
+                type: 'bar',
                 data: {
                     labels: [
                         <?php foreach ($dailyData as $data): ?>
@@ -2464,56 +2479,45 @@ if ($trialStatus) {
                     ],
                     datasets: [{
                             label: 'Pemasukan',
-                            data: [
-                                <?php foreach ($dailyData as $data): ?>
-                                    <?php echo $data['income']; ?>,
-                                <?php endforeach; ?>
-                            ],
-                            borderColor: '#10b981',
+                            data: dailyIncomeSeries,
                             backgroundColor: incomeGradient,
-                            borderWidth: 2.5,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 0,
-                            pointHoverRadius: 5,
-                            pointHoverBackgroundColor: '#10b981',
-                            pointHoverBorderColor: 'rgba(255,255,255,0.9)',
-                            pointHoverBorderWidth: 2,
+                            borderColor: '#10b981',
+                            borderWidth: 1.2,
+                            borderRadius: 10,
+                            barPercentage: 0.58,
+                            categoryPercentage: 0.64,
+                            maxBarThickness: 18,
                             order: 2
                         },
                         {
                             label: 'Pengeluaran',
-                            data: [
-                                <?php foreach ($dailyData as $data): ?>
-                                    <?php echo $data['expense']; ?>,
-                                <?php endforeach; ?>
-                            ],
-                            borderColor: '#f97316',
+                            data: dailyExpenseSeries,
                             backgroundColor: expenseGradient,
-                            borderWidth: 2.5,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 0,
-                            pointHoverRadius: 5,
-                            pointHoverBackgroundColor: '#f97316',
-                            pointHoverBorderColor: 'rgba(255,255,255,0.9)',
-                            pointHoverBorderWidth: 2,
+                            borderColor: '#f97316',
+                            borderWidth: 1.2,
+                            borderRadius: 10,
+                            barPercentage: 0.58,
+                            categoryPercentage: 0.64,
+                            maxBarThickness: 18,
                             order: 3
                         },
                         {
-                            label: 'Net Balance',
-                            data: cumulativeBalance,
-                            borderColor: 'rgba(<?php echo $cPrimaryRgb; ?>, 0.5)',
+                            type: 'line',
+                            label: 'Net Harian',
+                            data: dailyNetSeries,
+                            borderColor: 'rgb(<?php echo $cPrimaryRgb; ?>)',
                             backgroundColor: netGradient,
-                            borderWidth: 1.5,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 0,
-                            pointHoverRadius: 4,
-                            pointHoverBackgroundColor: 'rgb(<?php echo $cPrimaryRgb; ?>)',
+                            borderWidth: 2.5,
+                            fill: false,
+                            tension: 0.35,
+                            pointRadius: 2.5,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: 'rgb(<?php echo $cPrimaryRgb; ?>)',
                             pointHoverBorderColor: 'rgba(255,255,255,0.9)',
                             pointHoverBorderWidth: 2,
-                            borderDash: [4, 3],
+                            pointBorderWidth: 2,
+                            pointStyle: 'circle',
+                            borderCapStyle: 'round',
                             order: 1
                         }
                     ]
@@ -2535,10 +2539,10 @@ if ($trialStatus) {
                         },
                         tooltip: {
                             enabled: true,
-                            backgroundColor: 'rgba(15, 23, 42, 0.88)',
-                            titleColor: 'rgba(255, 255, 255, 0.6)',
-                            bodyColor: 'rgba(255, 255, 255, 0.92)',
-                            borderColor: 'rgba(148, 163, 184, 0.12)',
+                            backgroundColor: 'rgba(15, 23, 42, 0.96)',
+                            titleColor: 'rgba(255, 255, 255, 0.76)',
+                            bodyColor: 'rgba(255, 255, 255, 0.96)',
+                            borderColor: 'rgba(148, 163, 184, 0.16)',
                             borderWidth: 1,
                             padding: {
                                 top: 8,
@@ -2579,7 +2583,7 @@ if ($trialStatus) {
                                     });
                                     let net = income - expense;
                                     let sign = net >= 0 ? '+' : '';
-                                    return '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nNet: ' + sign + 'Rp ' + net.toLocaleString('id-ID');
+                                    return 'Net harian: ' + sign + 'Rp ' + net.toLocaleString('id-ID');
                                 }
                             },
                             footerFont: {
@@ -2595,7 +2599,8 @@ if ($trialStatus) {
                             grid: {
                                 color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid-color').trim() || 'rgba(148,163,184,0.07)',
                                 drawBorder: false,
-                                lineWidth: 1
+                                lineWidth: 1,
+                                borderDash: [3, 6]
                             },
                             border: {
                                 display: false
@@ -2610,9 +2615,9 @@ if ($trialStatus) {
                                 color: getComputedStyle(document.documentElement).getPropertyValue('--chart-tick-color').trim() || 'rgba(148,163,184,0.45)',
                                 maxTicksLimit: 5,
                                 callback: function(value) {
-                                    if (value >= 1000000) return 'Rp ' + (value / 1000000).toFixed(1) + 'jt';
-                                    if (value >= 1000) return 'Rp ' + (value / 1000).toFixed(0) + 'rb';
-                                    return 'Rp ' + value;
+                                        if (value >= 1000000) return 'Rp ' + (value / 1000000).toFixed(1) + ' jt';
+                                        if (value >= 1000) return 'Rp ' + (value / 1000).toFixed(0) + ' rb';
+                                        return 'Rp ' + value;
                                 }
                             }
                         },
@@ -2626,7 +2631,7 @@ if ($trialStatus) {
                             ticks: {
                                 padding: 6,
                                 font: {
-                                    size: 9.5,
+                                        size: 10,
                                     weight: '500',
                                     family: "'Inter', sans-serif"
                                 },
@@ -2649,19 +2654,14 @@ if ($trialStatus) {
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            // Calculate cumulative balance
-                            let cumulativeBalance = [];
-                            let runningBalance = 0;
-                            for (let i = 0; i < data.income.length; i++) {
-                                runningBalance += (data.income[i] - data.expense[i]);
-                                cumulativeBalance.push(runningBalance);
-                            }
+                            // Calculate daily net series
+                            const netSeries = buildNetSeries(data.income, data.expense);
 
                             // Update chart data
                             tradingChart.data.labels = data.labels;
                             tradingChart.data.datasets[0].data = data.income;
                             tradingChart.data.datasets[1].data = data.expense;
-                            tradingChart.data.datasets[2].data = cumulativeBalance;
+                            tradingChart.data.datasets[2].data = netSeries;
                             tradingChart.update('none'); // Update without animation
 
                             // Update summary cards
@@ -2716,19 +2716,14 @@ if ($trialStatus) {
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            // Calculate cumulative balance
-                            let cumulativeBalance = [];
-                            let runningBalance = 0;
-                            for (let i = 0; i < data.income.length; i++) {
-                                runningBalance += (data.income[i] - data.expense[i]);
-                                cumulativeBalance.push(runningBalance);
-                            }
+                            // Calculate daily net series
+                            const netSeries = buildNetSeries(data.income, data.expense);
 
                             // Update chart with animation
                             tradingChart.data.labels = data.labels;
                             tradingChart.data.datasets[0].data = data.income;
                             tradingChart.data.datasets[1].data = data.expense;
-                            tradingChart.data.datasets[2].data = cumulativeBalance;
+                            tradingChart.data.datasets[2].data = netSeries;
                             tradingChart.update();
 
                             // Update summary cards
@@ -2873,19 +2868,14 @@ if ($trialStatus) {
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            // Calculate cumulative balance
-                            let cumulativeBalance = [];
-                            let runningBalance = 0;
-                            for (let i = 0; i < data.income.length; i++) {
-                                runningBalance += (data.income[i] - data.expense[i]);
-                                cumulativeBalance.push(runningBalance);
-                            }
+                            // Calculate daily net series
+                            const netSeries = buildNetSeries(data.income, data.expense);
 
                             // Update chart with animation
                             tradingChart.data.labels = data.labels;
                             tradingChart.data.datasets[0].data = data.income;
                             tradingChart.data.datasets[1].data = data.expense;
-                            tradingChart.data.datasets[2].data = cumulativeBalance;
+                            tradingChart.data.datasets[2].data = netSeries;
                             tradingChart.update();
 
                             // Update summary cards
@@ -2913,19 +2903,14 @@ if ($trialStatus) {
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            // Calculate cumulative balance
-                            let cumulativeBalance = [];
-                            let runningBalance = 0;
-                            for (let i = 0; i < data.income.length; i++) {
-                                runningBalance += (data.income[i] - data.expense[i]);
-                                cumulativeBalance.push(runningBalance);
-                            }
+                            // Calculate daily net series
+                            const netSeries = buildNetSeries(data.income, data.expense);
 
                             // Update chart with animation
                             tradingChart.data.labels = data.labels;
                             tradingChart.data.datasets[0].data = data.income;
                             tradingChart.data.datasets[1].data = data.expense;
-                            tradingChart.data.datasets[2].data = cumulativeBalance;
+                            tradingChart.data.datasets[2].data = netSeries;
                             tradingChart.update();
 
                             // Update summary cards
@@ -2953,19 +2938,14 @@ if ($trialStatus) {
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            // Calculate cumulative balance
-                            let cumulativeBalance = [];
-                            let runningBalance = 0;
-                            for (let i = 0; i < data.income.length; i++) {
-                                runningBalance += (data.income[i] - data.expense[i]);
-                                cumulativeBalance.push(runningBalance);
-                            }
+                            // Calculate daily net series
+                            const netSeries = buildNetSeries(data.income, data.expense);
 
                             // Update chart with animation
                             tradingChart.data.labels = data.labels;
                             tradingChart.data.datasets[0].data = data.income;
                             tradingChart.data.datasets[1].data = data.expense;
-                            tradingChart.data.datasets[2].data = cumulativeBalance;
+                            tradingChart.data.datasets[2].data = netSeries;
                             tradingChart.update();
 
                             // Update summary cards
