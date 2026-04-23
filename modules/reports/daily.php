@@ -249,14 +249,8 @@ if ($division_id > 0) {
     $openingParams['division_id'] = $division_id;
 }
 
-$openingBalanceResult = $db->fetchOne("
-    SELECT COALESCE(SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE -amount END), 0) as balance
-    FROM cash_book
-    WHERE $openingWhere
-", $openingParams);
-
-$openingBalance = $openingBalanceResult['balance'] ?? 0;
-$runningBalance = $openingBalance;
+// Profit for the selected period starts at zero and accumulates net income minus expense
+$runningBalance = 0;
 
 // Build exclusion condition for CASE statement
 $ownerCapitalExcludeCondition = '';
@@ -279,20 +273,20 @@ $dailySummary = $db->fetchAll("
     ORDER BY date ASC
 ", $params);
 
-// Calculate totals and running balances
+// Calculate totals and running profit
 $grandIncome = 0;
 $grandExpense = 0;
 $grandNet = 0;
 $grandTransactions = 0;
 
-// Re-index to sort by date ASC properly for running balance
+// Re-index to sort by date ASC properly for running profit
 foreach ($dailySummary as &$day) {
     $grandIncome += $day['total_income'];
     $grandExpense += $day['total_expense'];
     $grandNet += $day['net_balance'];
     $grandTransactions += $day['transaction_count'];
     
-    // Add running balance to row
+    // Add cumulative profit to row
     $runningBalance += $day['net_balance'];
     $day['closing_balance'] = $runningBalance;
 }
@@ -659,11 +653,10 @@ function closePDFPreview() {
     </div>
     
     <div class="card" style="padding: 1rem;">
-        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Saldo Akhir</div>
-        <div style="font-size: 1.5rem; font-weight: 800; color: <?php echo $runningBalance >= 0 ? 'var(--success)' : 'var(--danger)'; ?>;">
-            <?php echo formatCurrency($runningBalance); ?>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Profit / Laba Bersih</div>
+        <div style="font-size: 1.5rem; font-weight: 800; color: <?php echo $grandNet >= 0 ? 'var(--success)' : 'var(--danger)'; ?>;">
+            <?php echo formatCurrency($grandNet); ?>
         </div>
-        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px;">(Termasuk Saldo Awal: <?php echo formatCurrency($openingBalance); ?>)</div>
     </div>
     
     <!-- Saldo Petty Cash (Kas Besar) -->
@@ -734,7 +727,7 @@ function closePDFPreview() {
                         <th>Hari</th>
                         <th class="text-right">Pemasukan</th>
                         <th class="text-right">Pengeluaran</th>
-                        <th class="text-right">Saldo Akhir</th>
+                        <th class="text-right">Profit</th>
                         <th class="text-center">Transaksi</th>
                     </tr>
                 </thead>
@@ -776,8 +769,8 @@ function closePDFPreview() {
                         <td class="text-right" style="color: var(--danger);">
                             <?php echo formatCurrency($grandExpense); ?>
                         </td>
-                        <td class="text-right" style="font-size: 1rem; color: <?php echo $runningBalance >= 0 ? 'var(--success)' : 'var(--danger)'; ?>;">
-                            <?php echo formatCurrency($runningBalance); ?>
+                        <td class="text-right" style="font-size: 1rem; color: <?php echo $grandNet >= 0 ? 'var(--success)' : 'var(--danger)'; ?>;">
+                            <?php echo formatCurrency($grandNet); ?>
                         </td>
                         <td class="text-center">
                             <?php echo number_format($grandTransactions); ?>
@@ -1155,7 +1148,7 @@ function closePDFPreview() {
             <?php
             echo generateSummaryCard('💰 TOTAL PEMASUKAN', formatCurrency($grandIncome), '#10b981', '');
             echo generateSummaryCard('💸 TOTAL PENGELUARAN', formatCurrency($grandExpense), '#ef4444', '');
-            echo generateSummaryCard('📊 SALDO AKHIR', formatCurrency($runningBalance), $runningBalance >= 0 ? '#3b82f6' : '#ef4444', '');
+            echo generateSummaryCard('📊 PROFIT / LABA BERSIH', formatCurrency($grandNet), $grandNet >= 0 ? '#3b82f6' : '#ef4444', '');
             echo generateSummaryCard('📈 TOTAL TRANSAKSI', number_format($grandTransactions), '#8b5cf6', '');
             ?>
         </div>
@@ -1172,7 +1165,7 @@ function closePDFPreview() {
                     <th style="padding: 4px 5px; text-align: left; border-bottom: 1px solid #d1d5db;">Hari</th>
                     <th style="padding: 4px 5px; text-align: right; border-bottom: 1px solid #d1d5db;">Pemasukan</th>
                     <th style="padding: 4px 5px; text-align: right; border-bottom: 1px solid #d1d5db;">Pengeluaran</th>
-                    <th style="padding: 4px 5px; text-align: right; border-bottom: 1px solid #d1d5db;">Saldo Akhir</th>
+                    <th style="padding: 4px 5px; text-align: right; border-bottom: 1px solid #d1d5db;">Profit</th>
                     <th style="padding: 4px 5px; text-align: center; border-bottom: 1px solid #d1d5db;">Transaksi</th>
                 </tr>
             </thead>
