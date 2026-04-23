@@ -1500,17 +1500,17 @@
                         .tbl {
                             width: 100%;
                             border-collapse: collapse;
-                            font-size: 13px;
-                            line-height: 1.45;
+                            font-size: 18px;
+                            line-height: 1.5;
                         }
 
                         .tbl th {
                             background: #f8fafc;
                             color: #475569;
-                            padding: 12px 14px;
+                            padding: 14px 16px;
                             text-align: left;
                             font-weight: 700;
-                            font-size: 12px;
+                            font-size: 16px;
                             text-transform: uppercase;
                             letter-spacing: .5px;
                             border-bottom: 2px solid var(--gold);
@@ -1518,9 +1518,9 @@
                         }
 
                         .tbl td {
-                            padding: 12px 14px;
+                            padding: 14px 16px;
                             border-bottom: 1px solid #f1f5f9;
-                            font-size: 13px;
+                            font-size: 18px;
                             color: #1e293b;
                             vertical-align: middle;
                         }
@@ -1897,12 +1897,12 @@
                                     <thead>
                                         <tr>
                                             <th>Karyawan</th>
-                                            <th style="text-align:center;">Scan 1<br><span style="font-weight:400;font-size:10px;text-transform:none;">Masuk</span></th>
-                                            <th style="text-align:center;">Scan 2<br><span style="font-weight:400;font-size:10px;text-transform:none;">Pulang</span></th>
-                                            <th style="text-align:center;">Scan 3<br><span style="font-weight:400;font-size:10px;text-transform:none;">Masuk Shift 2</span></th>
-                                            <th style="text-align:center;">Scan 4<br><span style="font-weight:400;font-size:10px;text-transform:none;">Pulang Shift 2</span></th>
-                                            <th style="text-align:center;">Total<br><span style="font-weight:400;font-size:10px;text-transform:none;">Jam</span></th>
-                                            <th style="text-align:center;">Lembur<br><span style="font-weight:400;font-size:10px;text-transform:none;">>45 menit</span></th>
+                                            <th style="text-align:center;">Scan 1<br><span style="font-weight:400;font-size:14px;text-transform:none;">Masuk</span></th>
+                                            <th style="text-align:center;">Scan 2<br><span style="font-weight:400;font-size:14px;text-transform:none;">Pulang</span></th>
+                                            <th style="text-align:center;">Scan 3<br><span style="font-weight:400;font-size:14px;text-transform:none;">Masuk Shift 2</span></th>
+                                            <th style="text-align:center;">Scan 4<br><span style="font-weight:400;font-size:14px;text-transform:none;">Pulang Shift 2</span></th>
+                                            <th style="text-align:center;">Total<br><span style="font-weight:400;font-size:14px;text-transform:none;">Jam</span></th>
+                                            <th style="text-align:center;">Lembur<br><span style="font-weight:400;font-size:14px;text-transform:none;">>45 menit</span></th>
                                             <th>Status</th>
                                             <th>Aksi</th>
                                         </tr>
