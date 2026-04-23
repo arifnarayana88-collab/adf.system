@@ -75,13 +75,14 @@ include '../../includes/header.php';
 }
 
 .payroll-hero {
-    background: var(--pr-gradient-1);
+    background: #fff;
     border-radius: var(--pr-radius);
     padding: 1.5rem;
     margin-bottom: 1.2rem;
     position: relative;
     overflow: hidden;
-    box-shadow: var(--pr-shadow-glow);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .payroll-hero::before {
@@ -117,7 +118,7 @@ include '../../includes/header.php';
 }
 
 .payroll-hero h1 {
-    color: #fff;
+    color: #1a1a2e;
     font-size: 1.5rem;
     font-weight: 700;
     margin: 0 0 0.2rem;
@@ -125,16 +126,16 @@ include '../../includes/header.php';
 }
 
 .payroll-hero p {
-    color: rgba(255,255,255,0.95) !important;
+    color: #6c757d !important;
     margin: 0 !important;
     font-size: 0.9rem !important;
     font-weight: 500 !important;
 }
 
 .payroll-hero .btn-hero {
-    background: rgba(255,255,255,0.2);
+    background: var(--pr-gradient-1);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.3);
+    border: 1px solid rgba(102,126,234,0.3);
     color: #fff;
     padding: 0.75rem 1.5rem;
     border-radius: 50px;
@@ -162,7 +163,7 @@ include '../../includes/header.php';
 .pr-stat-card {
     background: var(--bg-primary);
     border-radius: var(--pr-radius);
-    padding: 1.2rem;
+    padding: 0.9rem;
     position: relative;
     overflow: hidden;
     border: 1px solid var(--border-color);
@@ -190,13 +191,13 @@ include '../../includes/header.php';
 .pr-stat-card.blue::before { background: var(--pr-gradient-4); }
 
 .pr-stat-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 0.8rem;
+    margin-bottom: 0.6rem;
 }
 
 .pr-stat-card.purple .pr-stat-icon { background: linear-gradient(135deg, rgba(102,126,234,0.15), rgba(118,75,162,0.15)); color: #667eea; }
@@ -205,16 +206,16 @@ include '../../includes/header.php';
 .pr-stat-card.blue .pr-stat-icon { background: linear-gradient(135deg, rgba(79,172,254,0.15), rgba(0,242,254,0.15)); color: #4facfe; }
 
 .pr-stat-label {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.3px;
     color: var(--text-tertiary);
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.15rem;
     font-weight: 500;
 }
 
 .pr-stat-value {
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
@@ -222,9 +223,9 @@ include '../../includes/header.php';
 }
 
 .pr-stat-sub {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: var(--text-tertiary);
-    margin-top: 0.15rem;
+    margin-top: 0.1rem;
 }
 
 /* Quick Actions - Luxe Cards */
