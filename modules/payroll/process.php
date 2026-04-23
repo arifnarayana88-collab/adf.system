@@ -1195,12 +1195,12 @@ include '../../includes/header.php';
     }
 
     .ps-table th {
-        padding: 0.5rem 0.4rem;
+        padding: 0.6rem 0.5rem;
         text-align: center;
-        font-size: 0.78rem;
-        font-weight: 700;
+        font-size: 0.82rem;
+        font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 0;
+        letter-spacing: 0.5px;
         color: var(--text-tertiary);
         background: var(--bg-secondary);
         border-bottom: 2px solid var(--border-color);
@@ -1221,11 +1221,11 @@ include '../../includes/header.php';
     }
 
     .ps-table td {
-        padding: 0.45rem 0.35rem;
+        padding: 0.5rem 0.35rem;
         border-bottom: 1px solid var(--border-light);
         vertical-align: middle;
         text-align: center;
-        font-size: 0.88rem;
+        font-size: 0.95rem;
     }
 
     .ps-table td.col-employee {
@@ -1265,11 +1265,12 @@ include '../../includes/header.php';
     /* Input Styling */
     .ps-input {
         width: 100%;
-        padding: 0.35rem 0.3rem;
+        padding: 0.4rem 0.35rem;
         border: 1px solid transparent;
         border-radius: 4px;
         background: transparent;
-        font-size: 0.88rem;
+        font-size: 0.95rem;
+        font-weight: 500;
         text-align: right;
         transition: all 0.2s;
         color: var(--text-primary);
@@ -1295,7 +1296,8 @@ include '../../includes/header.php';
         background: rgba(245, 158, 11, 0.15);
         border-color: rgba(245, 158, 11, 0.3);
         text-align: center;
-        font-weight: 600;
+        font-weight: 700;
+        font-size: 1.05rem;
     }
 
     .ps-input.negative {
@@ -1304,7 +1306,8 @@ include '../../includes/header.php';
 
     .ps-cell-calc {
         font-family: 'SF Mono', Monaco, monospace;
-        font-size: 0.85rem;
+        font-size: 1rem;
+        font-weight: 600;
         color: var(--text-secondary);
     }
 
@@ -2152,9 +2155,9 @@ include '../../includes/header.php';
                             <th class="col-employee">Employee</th>
                             <th style="width: 100px;">Base<div class="ps-info">Full</div>
                             </th>
-                            <th style="width: 65px; background: rgba(245,158,11,0.1);">Hours<div class="ps-info">200</div>
+                            <th style="width: 110px; background: rgba(245,158,11,0.1);">Hours<div class="ps-info">200</div>
                             </th>
-                            <th style="width: 90px;">Actual<div class="ps-info">Calc</div>
+                            <th style="width: 130px;">Actual<div class="ps-info">Calc</div>
                             </th>
                             <th style="width: 55px; background: rgba(59,130,246,0.1);">OT</th>
                             <th style="width: 85px;">OT Rp</th>
