@@ -17,6 +17,98 @@ $db = Database::getInstance();
 $pdo = $db->getConnection();
 $today = date('Y-m-d');
 
+// WhatsApp outreach settings (daily breakfast broadcast template)
+$waInfoText = '';
+$waMediaPath = '';
+$waMediaUrl = '';
+
+$upsertSetting = function ($key, $value) use ($db) {
+    $exists = $db->fetchOne("SELECT setting_key FROM settings WHERE setting_key = ? LIMIT 1", [$key]);
+    if ($exists) {
+        $db->query("UPDATE settings SET setting_value = ? WHERE setting_key = ?", [$value, $key]);
+    } else {
+        $db->query("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)", [$key, $value]);
+    }
+};
+
+try {
+    $row = $db->fetchOne("SELECT setting_value FROM settings WHERE setting_key = 'breakfast_wa_info_text'");
+    $waInfoText = $row['setting_value'] ?? '';
+    $row = $db->fetchOne("SELECT setting_value FROM settings WHERE setting_key = 'breakfast_wa_media_path'");
+    $waMediaPath = $row['setting_value'] ?? '';
+    if ($waMediaPath) {
+        $waMediaUrl = (strpos($waMediaPath, 'http') === 0)
+            ? $waMediaPath
+            : BASE_URL . '/' . ltrim($waMediaPath, '/');
+    }
+} catch (Exception $e) {
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['wa_action'] ?? '') === 'save_wa_info') {
+    try {
+        $newInfoText = trim($_POST['wa_info_text'] ?? '');
+        $removeMedia = !empty($_POST['wa_remove_media']);
+        $newMediaPath = $waMediaPath;
+
+        if ($removeMedia) {
+            if ($newMediaPath && strpos($newMediaPath, 'http') !== 0) {
+                $oldAbsPath = BASE_PATH . '/' . ltrim($newMediaPath, '/');
+                if (is_file($oldAbsPath)) {
+                    @unlink($oldAbsPath);
+                }
+            }
+            $newMediaPath = '';
+        }
+
+        if (!empty($_FILES['wa_media_file']) && ($_FILES['wa_media_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            if (($_FILES['wa_media_file']['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+                throw new Exception('Upload media gagal. Coba ulangi.');
+            }
+
+            $allowedExt = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
+            $origName = $_FILES['wa_media_file']['name'] ?? 'media';
+            $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+            if (!in_array($ext, $allowedExt, true)) {
+                throw new Exception('Format media harus JPG, PNG, WEBP, atau PDF.');
+            }
+
+            $maxSize = 5 * 1024 * 1024;
+            if (($_FILES['wa_media_file']['size'] ?? 0) > $maxSize) {
+                throw new Exception('Ukuran media maksimal 5MB.');
+            }
+
+            $uploadDir = BASE_PATH . '/uploads/breakfast-wa';
+            if (!is_dir($uploadDir)) {
+                @mkdir($uploadDir, 0755, true);
+            }
+
+            $bizTag = defined('ACTIVE_BUSINESS_ID') ? preg_replace('/[^a-zA-Z0-9_-]/', '', (string)ACTIVE_BUSINESS_ID) : 'biz';
+            $newName = 'wa_info_' . $bizTag . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+            $targetAbs = $uploadDir . '/' . $newName;
+            if (!move_uploaded_file($_FILES['wa_media_file']['tmp_name'], $targetAbs)) {
+                throw new Exception('Tidak bisa menyimpan file upload.');
+            }
+
+            if ($newMediaPath && strpos($newMediaPath, 'http') !== 0) {
+                $oldAbsPath = BASE_PATH . '/' . ltrim($newMediaPath, '/');
+                if (is_file($oldAbsPath)) {
+                    @unlink($oldAbsPath);
+                }
+            }
+
+            $newMediaPath = 'uploads/breakfast-wa/' . $newName;
+        }
+
+        $upsertSetting('breakfast_wa_info_text', $newInfoText);
+        $upsertSetting('breakfast_wa_media_path', $newMediaPath);
+        header('Location: breakfast.php?success=' . urlencode('Template WhatsApp berhasil disimpan'));
+        exit;
+    } catch (Exception $e) {
+        header('Location: breakfast.php?success=' . urlencode('Gagal simpan template WA: ' . $e->getMessage()));
+        exit;
+    }
+}
+
 // Ensure table exists
 try {
     $pdo->exec("CREATE TABLE IF NOT EXISTS breakfast_menus (
@@ -52,7 +144,7 @@ try {
 $inHouseGuests = [];
 try {
     $stmt = $pdo->prepare("
-        SELECT g.id as guest_id, g.guest_name, 
+        SELECT g.id as guest_id, g.guest_name, COALESCE(g.phone,'') as guest_phone,
                GROUP_CONCAT(DISTINCT r.room_number ORDER BY r.room_number SEPARATOR ',') as rooms,
                GROUP_CONCAT(DISTINCT b.id ORDER BY b.id SEPARATOR ',') as booking_ids
         FROM bookings b
@@ -192,6 +284,18 @@ include '../../includes/header.php';
 .bf-guest-item .guest-name{font-size:.8rem;font-weight:600;color:var(--text-primary)}
 .bf-guest-item .guest-room{font-size:.68rem;color:var(--text-muted)}
 .bf-guest-count{font-size:.72rem;color:var(--primary-color);font-weight:600;margin-top:.4rem}
+.bf-guest-tools{display:flex;align-items:center;gap:.4rem}
+.bf-wa-guest-btn{padding:.25rem .5rem;border:none;border-radius:6px;font-size:.66rem;font-weight:700;cursor:pointer;background:rgba(16,185,129,.15);color:#10b981}
+.bf-wa-phone{font-size:.62rem;color:#64748b;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bf-wa-panel{margin-top:.6rem;padding:.65rem;border:1px solid var(--bg-tertiary);border-radius:8px;background:var(--bg-primary)}
+.bf-wa-panel-title{font-size:.72rem;font-weight:800;color:var(--text-primary);margin-bottom:.45rem}
+.bf-wa-textarea{width:100%;min-height:66px;padding:.5rem .55rem;border-radius:6px;background:var(--bg-secondary);border:1px solid var(--bg-tertiary);color:var(--text-primary);font-size:.72rem;resize:vertical;font-family:inherit}
+.bf-wa-row{display:flex;gap:.45rem;align-items:center;flex-wrap:wrap;margin-top:.45rem}
+.bf-wa-file{font-size:.67rem;color:var(--text-muted)}
+.bf-wa-save{padding:.35rem .65rem;border:none;border-radius:6px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;font-size:.68rem;font-weight:700;cursor:pointer}
+.bf-wa-send{padding:.35rem .65rem;border:none;border-radius:6px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:.68rem;font-weight:700;cursor:pointer}
+.bf-wa-check{display:flex;align-items:center;gap:.3rem;font-size:.66rem;color:var(--text-muted)}
+.bf-wa-media-link{display:inline-flex;align-items:center;gap:.25rem;font-size:.66rem;color:#0ea5e9;text-decoration:none}
 /* Notes in sidebar */
 .bf-order-note{font-size:.62rem;color:#f59e0b;font-style:italic;margin-left:.2rem}
 .bf-order-special{font-size:.68rem;color:var(--text-muted);background:rgba(245,158,11,.08);padding:.3rem .5rem;border-radius:4px;margin-top:.35rem;font-style:italic;border-left:2px solid #f59e0b}
@@ -251,15 +355,43 @@ include '../../includes/header.php';
                                 <input type="checkbox" name="guest_checks[]" value="<?php echo $g['guest_id']; ?>"
                                        data-name="<?php echo htmlspecialchars($g['guest_name']); ?>"
                                        data-rooms="<?php echo htmlspecialchars($roomList); ?>"
-                                       data-booking="<?php echo $bookingIdFirst; ?>">
+                                       data-booking="<?php echo $bookingIdFirst; ?>"
+                                       data-phone="<?php echo htmlspecialchars($g['guest_phone'] ?? ''); ?>">
                                 <div class="guest-info">
                                     <div class="guest-name"><?php echo htmlspecialchars($g['guest_name']); ?></div>
                                     <div class="guest-room">🛏️ Room <?php echo $roomList; ?></div>
+                                </div>
+                                <div class="bf-guest-tools">
+                                    <?php if (!empty($g['guest_phone'])): ?>
+                                        <span class="bf-wa-phone" title="<?php echo htmlspecialchars($g['guest_phone']); ?>"><?php echo htmlspecialchars($g['guest_phone']); ?></span>
+                                    <?php else: ?>
+                                        <span class="bf-wa-phone">No phone</span>
+                                    <?php endif; ?>
+                                    <button type="button" class="bf-wa-guest-btn" onclick="sendSingleGuestWa(event,this)">WA</button>
                                 </div>
                             </label>
                             <?php endforeach; ?>
                         </div>
                         <div class="bf-guest-count" id="guestCount">0 tamu dipilih</div>
+
+                        <div class="bf-wa-panel">
+                            <div class="bf-wa-panel-title">💬 Template WhatsApp Harian</div>
+                            <form method="POST" enctype="multipart/form-data" autocomplete="off">
+                                <input type="hidden" name="wa_action" value="save_wa_info">
+                                <textarea name="wa_info_text" id="waInfoText" class="bf-wa-textarea" placeholder="Contoh: Promo breakfast hari ini, jam layanan, atau info khusus."><?php echo htmlspecialchars($waInfoText); ?></textarea>
+                                <div class="bf-wa-row">
+                                    <input type="file" name="wa_media_file" class="bf-wa-file" accept=".jpg,.jpeg,.png,.webp,.pdf">
+                                    <button type="submit" class="bf-wa-save">💾 Simpan Template</button>
+                                    <?php if (!empty($waMediaUrl)): ?>
+                                        <a href="<?php echo htmlspecialchars($waMediaUrl); ?>" target="_blank" class="bf-wa-media-link">🖼️ Lihat media</a>
+                                        <label class="bf-wa-check"><input type="checkbox" name="wa_remove_media" value="1">Hapus media</label>
+                                    <?php endif; ?>
+                                </div>
+                            </form>
+                            <div class="bf-wa-row" style="margin-top:.55rem">
+                                <button type="button" class="bf-wa-send" onclick="sendSelectedGuestsWa()">📲 Kirim WA ke tamu terpilih</button>
+                            </div>
+                        </div>
                         <?php endif; ?>
                     </div>
                     <?php else: ?>
@@ -724,6 +856,104 @@ function addCustomExtra() {
         '<input type="text" class="bf-note-input custom-extra-note" placeholder="Catatan (opsional)" style="margin-top:.35rem;width:100%">';
     container.appendChild(div);
     div.querySelector('.custom-extra-name').focus();
+}
+
+var waContext = {
+    infoText: <?php echo json_encode($waInfoText, JSON_UNESCAPED_UNICODE); ?>,
+    mediaUrl: <?php echo json_encode($waMediaUrl, JSON_UNESCAPED_UNICODE); ?>,
+    freeMenus: <?php echo json_encode(array_map(function ($m) { return $m['menu_name']; }, $freeMenus), JSON_UNESCAPED_UNICODE); ?>,
+    paidMenus: <?php echo json_encode(array_map(function ($m) {
+        return ['name' => $m['menu_name'], 'price' => (float)$m['price']];
+    }, $paidMenus), JSON_UNESCAPED_UNICODE); ?>,
+    todayLabel: <?php echo json_encode(date('d/m/Y', strtotime($today)), JSON_UNESCAPED_UNICODE); ?>
+};
+
+function normalizeWaPhone(rawPhone) {
+    var p = String(rawPhone || '').replace(/[^0-9]/g, '');
+    if (!p) return '';
+    if (p.indexOf('00') === 0) p = p.substring(2);
+    if (p.indexOf('62') === 0) return p;
+    if (p.charAt(0) === '0') return '62' + p.substring(1);
+    if (p.charAt(0) === '8') return '62' + p;
+    return p;
+}
+
+function buildBreakfastWaMessage(guestName, roomLabel) {
+    var lines = [];
+    lines.push('Selamat pagi Bapak/Ibu ' + (guestName || 'Tamu') + ' 🙏');
+    lines.push('Kami dari Front Office ingin konfirmasi pilihan sarapan untuk hari ini (' + waContext.todayLabel + ').');
+    if (roomLabel) lines.push('Kamar: ' + roomLabel);
+    lines.push('');
+    if (waContext.freeMenus && waContext.freeMenus.length) {
+        lines.push('*Menu Free Breakfast:*');
+        waContext.freeMenus.forEach(function(name) { lines.push('- ' + name); });
+        lines.push('');
+    }
+    if (waContext.paidMenus && waContext.paidMenus.length) {
+        lines.push('*Menu Extra (Berbayar):*');
+        waContext.paidMenus.forEach(function(item) {
+            lines.push('- ' + item.name + ' (Rp ' + numberFmt(item.price || 0) + ')');
+        });
+        lines.push('');
+    }
+    var customInfo = (document.getElementById('waInfoText') || {value: waContext.infoText || ''}).value.trim();
+    if (customInfo) {
+        lines.push('*Info Tambahan:*');
+        lines.push(customInfo);
+        lines.push('');
+    }
+    if (waContext.mediaUrl) {
+        lines.push('Media/Info: ' + waContext.mediaUrl);
+        lines.push('');
+    }
+    lines.push('Silakan balas pesan ini dengan menu pilihan Anda. Terima kasih.');
+    return lines.join('\n');
+}
+
+function openWaLinkByCheckbox(cb) {
+    if (!cb) return false;
+    var phone = normalizeWaPhone(cb.dataset.phone || '');
+    if (!phone) return false;
+    var guestName = cb.dataset.name || 'Tamu';
+    var roomLabel = cb.dataset.rooms || '-';
+    var msg = buildBreakfastWaMessage(guestName, roomLabel);
+    var waUrl = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+    window.open(waUrl, '_blank');
+    return true;
+}
+
+function sendSingleGuestWa(evt, btn) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    var row = btn.closest('.bf-guest-item');
+    var cb = row ? row.querySelector('input[name="guest_checks[]"]') : null;
+    if (!cb) return;
+    if (!openWaLinkByCheckbox(cb)) {
+        alert('Nomor WhatsApp tamu belum tersedia. Isi nomor di data guest terlebih dulu.');
+    }
+}
+
+function sendSelectedGuestsWa() {
+    var selected = Array.from(document.querySelectorAll('input[name="guest_checks[]"]:checked'));
+    if (!selected.length) {
+        alert('Pilih minimal 1 tamu untuk kirim WhatsApp.');
+        return;
+    }
+
+    var valid = selected.filter(function(cb) { return normalizeWaPhone(cb.dataset.phone || ''); });
+    if (!valid.length) {
+        alert('Tamu terpilih tidak memiliki nomor WhatsApp yang valid.');
+        return;
+    }
+
+    valid.forEach(function(cb, idx) {
+        setTimeout(function() { openWaLinkByCheckbox(cb); }, idx * 350);
+    });
+
+    var invalidCount = selected.length - valid.length;
+    if (invalidCount > 0) {
+        alert('WA dibuka untuk ' + valid.length + ' tamu. ' + invalidCount + ' tamu dilewati karena nomor belum valid.');
+    }
 }
 </script>
 
