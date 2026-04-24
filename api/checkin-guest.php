@@ -90,9 +90,15 @@ try {
         throw new Exception('Booking not found');
     }
 
-    // Check if already checked in
+    // Idempotent behavior: if already checked-in, return success and stop.
     if ($booking['status'] === 'checked_in') {
-        throw new Exception('Guest sudah check-in sebelumnya');
+        echo json_encode([
+            'success' => true,
+            'message' => 'Guest sudah berstatus check-in.',
+            'already_checked_in' => true,
+            'booking_id' => (int)$bookingId
+        ]);
+        exit;
     }
 
     // Check if booking is confirmed or pending
@@ -273,70 +279,6 @@ try {
             updated_at = NOW()
         WHERE id = ?
     ", [$booking['guest_id'], $booking['room_id']]);
-
-    // Ensure breakfast quota baseline is created during check-in.
-    try {
-        $pdo = $db->getConnection();
-        $pdo->exec("CREATE TABLE IF NOT EXISTS breakfast_guest_quota (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            booking_id INT NOT NULL,
-            guest_id INT NULL,
-            guest_name VARCHAR(255) NULL,
-            breakfast_date DATE NULL,
-            max_main INT NOT NULL DEFAULT 1,
-            max_child INT NOT NULL DEFAULT 0,
-            child_menu_ids TEXT,
-            extra_main_price DECIMAL(10,2) NOT NULL DEFAULT 55000.00,
-            extra_child_price DECIMAL(10,2) NOT NULL DEFAULT 30000.00,
-            created_by INT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY uk_booking_id (booking_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-        $defaultMain = max(1, (int)($booking['guest_count'] ?? 1));
-        $defaultChild = max(0, (int)($_POST['breakfast_child_quota'] ?? 0));
-
-        $extraMainPrice = 55000.00;
-        $extraChildPrice = 30000.00;
-        try {
-            $row = $db->fetchOne("SELECT setting_value FROM settings WHERE setting_key = 'breakfast_extra_main_price'");
-            if ($row && $row['setting_value'] !== null && $row['setting_value'] !== '') {
-                $extraMainPrice = (float)$row['setting_value'];
-            }
-            $row = $db->fetchOne("SELECT setting_value FROM settings WHERE setting_key = 'breakfast_extra_child_price'");
-            if ($row && $row['setting_value'] !== null && $row['setting_value'] !== '') {
-                $extraChildPrice = (float)$row['setting_value'];
-            }
-        } catch (Exception $e) {
-        }
-
-        $db->query("INSERT INTO breakfast_guest_quota
-            (booking_id, guest_id, guest_name, breakfast_date, max_main, max_child, child_menu_ids, extra_main_price, extra_child_price, created_by)
-            VALUES (?, ?, ?, DATE(NOW()), ?, ?, NULL, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-                guest_id = VALUES(guest_id),
-                guest_name = VALUES(guest_name),
-                breakfast_date = VALUES(breakfast_date),
-                max_main = VALUES(max_main),
-                max_child = VALUES(max_child),
-                extra_main_price = VALUES(extra_main_price),
-                extra_child_price = VALUES(extra_child_price),
-                updated_at = NOW()",
-            [
-                $bookingId,
-                $booking['guest_id'] ?? null,
-                $booking['guest_name'] ?? null,
-                $defaultMain,
-                $defaultChild,
-                $extraMainPrice,
-                $extraChildPrice,
-                $validUserId
-            ]
-        );
-    } catch (Exception $e) {
-        error_log('Check-in breakfast quota init failed: ' . $e->getMessage());
-    }
 
     // Log activity
     if ($validUserId) {

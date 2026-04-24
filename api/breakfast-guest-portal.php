@@ -190,23 +190,6 @@ if ($action === 'create_link') {
     $extraMainPrice = to_float($body['extra_main_price'] ?? '', to_float(get_setting($db, 'breakfast_extra_main_price'), 55000));
     $extraChildPrice = to_float($body['extra_child_price'] ?? '', to_float(get_setting($db, 'breakfast_extra_child_price'), 30000));
 
-    if ($bookingId) {
-        $quota = $db->fetchOne("SELECT max_main, max_child, child_menu_ids, extra_main_price, extra_child_price
-            FROM breakfast_guest_quota WHERE booking_id = ? LIMIT 1", [$bookingId]);
-        if ($quota) {
-            $maxMain = max(0, (int)$quota['max_main']);
-            $maxChild = max(0, (int)$quota['max_child']);
-            if ($quota['child_menu_ids'] !== null && $quota['child_menu_ids'] !== '') {
-                $bodyChild = json_decode($quota['child_menu_ids'], true);
-                if (is_array($bodyChild)) {
-                    $body['child_menu_ids'] = $bodyChild;
-                }
-            }
-            $extraMainPrice = to_float($quota['extra_main_price'], $extraMainPrice);
-            $extraChildPrice = to_float($quota['extra_child_price'], $extraChildPrice);
-        }
-    }
-
     $childMenuIds = $body['child_menu_ids'] ?? [];
     if (!is_array($childMenuIds)) $childMenuIds = [];
     $childMenuIds = array_values(array_unique(array_map('intval', $childMenuIds)));
@@ -234,6 +217,34 @@ if ($action === 'create_link') {
             SET link_status = 'expired'
             WHERE breakfast_date = ? AND LOWER(TRIM(guest_name)) = LOWER(TRIM(?)) AND link_status = 'open'")
             ->execute([$breakfastDate, $guestName]);
+
+        if ($bookingId) {
+            $pdo->prepare("INSERT INTO breakfast_guest_quota
+                (booking_id, guest_id, guest_name, breakfast_date, max_main, max_child, child_menu_ids, extra_main_price, extra_child_price, created_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    guest_id = VALUES(guest_id),
+                    guest_name = VALUES(guest_name),
+                    breakfast_date = VALUES(breakfast_date),
+                    max_main = VALUES(max_main),
+                    max_child = VALUES(max_child),
+                    child_menu_ids = VALUES(child_menu_ids),
+                    extra_main_price = VALUES(extra_main_price),
+                    extra_child_price = VALUES(extra_child_price),
+                    updated_at = NOW()")
+                ->execute([
+                    $bookingId,
+                    $guestId,
+                    $guestName,
+                    $breakfastDate,
+                    $maxMain,
+                    $maxChild,
+                    $childJson,
+                    $extraMainPrice,
+                    $extraChildPrice,
+                    $userId
+                ]);
+        }
 
         $shortCode = null;
         $inserted = false;
