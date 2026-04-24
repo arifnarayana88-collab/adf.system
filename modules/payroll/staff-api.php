@@ -422,16 +422,19 @@ if ($action === 'breakfast_today') {
 
 // ── ALL TODAY'S BREAKFAST ORDERS (Staff Monitor) ──
 if ($action === 'breakfast_orders') {
-    $today = getHotelDate();
+    // Keep this aligned with frontdesk breakfast page and export-daily-report PDF.
+    $today = date('Y-m-d');
     try {
         $orders = $db->fetchAll("
             SELECT bo.id, bo.guest_name, bo.room_number, bo.total_pax, bo.breakfast_time,
                    bo.breakfast_date, bo.location, bo.menu_items, bo.special_requests,
-                   bo.total_price, bo.order_status, bo.created_at
+                   bo.total_price, bo.order_status, bo.menu_name, bo.created_at
             FROM breakfast_orders bo
             WHERE bo.breakfast_date = ?
             AND bo.id = (SELECT MAX(bo2.id) FROM breakfast_orders bo2 
-                WHERE bo2.guest_name = bo.guest_name AND bo2.breakfast_date = bo.breakfast_date)
+                WHERE bo2.guest_name = bo.guest_name
+                  AND bo2.breakfast_date = bo.breakfast_date
+                  AND bo2.room_number = bo.room_number)
             ORDER BY bo.breakfast_time ASC, bo.id ASC
         ", [$today]) ?: [];
 
