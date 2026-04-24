@@ -376,18 +376,15 @@ include '../../includes/header.php';
 
                         <div class="bf-wa-panel">
                             <div class="bf-wa-panel-title">💬 Template WhatsApp Harian</div>
-                            <form method="POST" enctype="multipart/form-data" autocomplete="off">
-                                <input type="hidden" name="wa_action" value="save_wa_info">
-                                <textarea name="wa_info_text" id="waInfoText" class="bf-wa-textarea" placeholder="Contoh: Promo breakfast hari ini, jam layanan, atau info khusus."><?php echo htmlspecialchars($waInfoText); ?></textarea>
-                                <div class="bf-wa-row">
-                                    <input type="file" name="wa_media_file" class="bf-wa-file" accept=".jpg,.jpeg,.png,.webp,.pdf">
-                                    <button type="submit" class="bf-wa-save">💾 Simpan Template</button>
-                                    <?php if (!empty($waMediaUrl)): ?>
-                                        <a href="<?php echo htmlspecialchars($waMediaUrl); ?>" target="_blank" class="bf-wa-media-link">🖼️ Lihat media</a>
-                                        <label class="bf-wa-check"><input type="checkbox" name="wa_remove_media" value="1">Hapus media</label>
-                                    <?php endif; ?>
-                                </div>
-                            </form>
+                            <textarea name="wa_info_text" id="waInfoText" class="bf-wa-textarea" placeholder="Contoh: Promo breakfast hari ini, jam layanan, atau info khusus." form="waTemplateForm"><?php echo htmlspecialchars($waInfoText); ?></textarea>
+                            <div class="bf-wa-row">
+                                <input type="file" name="wa_media_file" class="bf-wa-file" accept=".jpg,.jpeg,.png,.webp,.pdf" form="waTemplateForm">
+                                <button type="submit" class="bf-wa-save" form="waTemplateForm">💾 Simpan Template</button>
+                                <?php if (!empty($waMediaUrl)): ?>
+                                    <a href="<?php echo htmlspecialchars($waMediaUrl); ?>" target="_blank" class="bf-wa-media-link">🖼️ Lihat media</a>
+                                    <label class="bf-wa-check"><input type="checkbox" name="wa_remove_media" value="1" form="waTemplateForm">Hapus media</label>
+                                <?php endif; ?>
+                            </div>
                             <div class="bf-wa-row" style="margin-top:.55rem">
                                 <button type="button" class="bf-wa-send" onclick="sendSelectedGuestsWa()">📲 Kirim WA ke tamu terpilih</button>
                             </div>
@@ -578,6 +575,10 @@ include '../../includes/header.php';
         </div>
     </div>
 </div>
+
+<form id="waTemplateForm" method="POST" enctype="multipart/form-data" autocomplete="off" style="display:none;">
+    <input type="hidden" name="wa_action" value="save_wa_info">
+</form>
 
 <script>
 // Guest checkbox counter
