@@ -114,6 +114,12 @@ $token = trim((string)($_GET['t'] ?? ''));
         <div class="menu-grid" id="mainGrid"></div>
     </div>
 
+    <div class="card hidden" id="drinksCard">
+        <div class="section-title">Minuman</div>
+        <div class="quota-line">Jatah: <span class="counter" id="drinksQuotaText">0</span> menu, terpilih <span class="counter" id="drinksSelected">0</span>. <span class="warn" id="drinksExtraInfo"></span></div>
+        <div class="menu-grid" id="drinksGrid"></div>
+    </div>
+
     <div class="card hidden" id="childCard">
         <div class="section-title">Menu Anak</div>
         <div class="quota-line">Jatah: <span class="counter" id="childQuotaText">0</span> menu, terpilih <span class="counter" id="childSelected">0</span>. <span class="warn" id="childExtraInfo"></span></div>
@@ -137,6 +143,7 @@ $token = trim((string)($_GET['t'] ?? ''));
     var payload = null;
 
     var mainGrid = document.getElementById('mainGrid');
+    var drinksGrid = document.getElementById('drinksGrid');
     var childGrid = document.getElementById('childGrid');
 
     function setState(text, isErr) {
@@ -148,6 +155,9 @@ $token = trim((string)($_GET['t'] ?? ''));
     function openCards() {
         document.getElementById('metaBox').classList.remove('hidden');
         document.getElementById('mainCard').classList.remove('hidden');
+        if ((payload.drinks_menus || []).length > 0 && (payload.max_drinks || 0) > 0) {
+            document.getElementById('drinksCard').classList.remove('hidden');
+        }
         document.getElementById('submitCard').classList.remove('hidden');
         if ((payload.child_menus || []).length > 0 && (payload.max_child || 0) > 0) {
             document.getElementById('childCard').classList.remove('hidden');
@@ -182,6 +192,7 @@ $token = trim((string)($_GET['t'] ?? ''));
         }).join('');
 
         document.getElementById('mainQuotaText').textContent = String(payload.max_main || 0);
+        document.getElementById('drinksQuotaText').textContent = String(payload.max_drinks || 0);
         document.getElementById('childQuotaText').textContent = String(payload.max_child || 0);
 
         var infoText = (payload.wa_info_text || '').trim();
@@ -230,6 +241,8 @@ $token = trim((string)($_GET['t'] ?? ''));
             var group = el.dataset.group;
             if (group === 'main') {
                 refreshQuotaInfo('main', parseInt(payload.max_main || 0, 10), document.getElementById('mainSelected'), 'mainExtraInfo', parseFloat(payload.extra_main_price || 0));
+            } else if (group === 'drinks') {
+                refreshQuotaInfo('drinks', parseInt(payload.max_drinks || 0, 10), document.getElementById('drinksSelected'), 'drinksExtraInfo', parseFloat(payload.extra_main_price || 0));
             } else {
                 refreshQuotaInfo('child', parseInt(payload.max_child || 0, 10), document.getElementById('childSelected'), 'childExtraInfo', parseFloat(payload.extra_child_price || 0));
             }
@@ -261,8 +274,10 @@ $token = trim((string)($_GET['t'] ?? ''));
             openCards();
 
             mainGrid.innerHTML = (payload.main_menus || []).map(function (m) { return menuCard(m, 'main'); }).join('');
+            drinksGrid.innerHTML = (payload.drinks_menus || []).map(function (m) { return menuCard(m, 'drinks'); }).join('');
             childGrid.innerHTML = (payload.child_menus || []).map(function (m) { return menuCard(m, 'child'); }).join('');
             refreshQuotaInfo('main', parseInt(payload.max_main || 0, 10), document.getElementById('mainSelected'), 'mainExtraInfo', parseFloat(payload.extra_main_price || 0));
+            refreshQuotaInfo('drinks', parseInt(payload.max_drinks || 0, 10), document.getElementById('drinksSelected'), 'drinksExtraInfo', parseFloat(payload.extra_main_price || 0));
             refreshQuotaInfo('child', parseInt(payload.max_child || 0, 10), document.getElementById('childSelected'), 'childExtraInfo', parseFloat(payload.extra_child_price || 0));
         } catch (err) {
             setState('Gagal memuat link: ' + err.message, true);
@@ -275,8 +290,9 @@ $token = trim((string)($_GET['t'] ?? ''));
         msgEl.className = 'msg';
 
         var selectedMain = selectedIds('main');
+        var selectedDrinks = selectedIds('drinks');
         var selectedChild = selectedIds('child');
-        if (selectedMain.length + selectedChild.length === 0) {
+        if (selectedMain.length + selectedDrinks.length + selectedChild.length === 0) {
             msgEl.textContent = 'Pilih minimal 1 menu.';
             msgEl.classList.add('err');
             return;
@@ -286,6 +302,7 @@ $token = trim((string)($_GET['t'] ?? ''));
             action: 'submit_link',
             token: token,
             selected_main: selectedMain,
+            selected_drinks: selectedDrinks,
             selected_child: selectedChild,
             special_requests: (document.getElementById('notes').value || '').trim(),
             location: 'restaurant'

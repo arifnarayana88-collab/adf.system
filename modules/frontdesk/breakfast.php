@@ -414,15 +414,15 @@ include '../../includes/header.php';
                                         <input type="number" id="linkQuotaMain" min="0" max="10" value="2">
                                     </div>
                                     <div class="bf-link-group">
-                                        <label>Kuota Menu Anak</label>
-                                        <input type="number" id="linkQuotaChild" min="0" max="10" value="2">
+                                        <label>Kuota Minum</label>
+                                        <input type="number" id="linkQuotaDrinks" min="0" max="10" value="2">
                                     </div>
                                     <div class="bf-link-group">
                                         <label>Kadaluarsa (jam)</label>
                                         <input type="number" id="linkExpireHours" min="1" max="72" value="24">
                                     </div>
                                 </div>
-                                <div style="font-size:.66rem;color:var(--text-muted);margin-top:.45rem">Menu anak yang boleh dipilih:</div>
+                                <div style="font-size:.66rem;color:var(--text-muted);margin-top:.45rem">Menu anak yang boleh dipilih (maks 2):</div>
                                 <div class="bf-child-menu-list" id="childMenuIdsWrap"></div>
                                 <div class="bf-wa-row" style="margin-top:.55rem">
                                     <button type="button" class="bf-link-send" onclick="sendSelectedGuestsPortalLinks()">🔗+📲 Buat Link & Kirim WA (terpilih)</button>
@@ -939,10 +939,10 @@ function getSelectedChildMenuIds() {
 
 async function createGuestPortalLinkFromCheckbox(cb) {
     var quotaMain = parseInt((document.getElementById('linkQuotaMain') || {value:'2'}).value, 10);
-    var quotaChild = parseInt((document.getElementById('linkQuotaChild') || {value:'2'}).value, 10);
+    var quotaDrinks = parseInt((document.getElementById('linkQuotaDrinks') || {value:'2'}).value, 10);
     var expireHours = parseInt((document.getElementById('linkExpireHours') || {value:'24'}).value, 10);
     if (!Number.isFinite(quotaMain) || quotaMain < 0) quotaMain = 0;
-    if (!Number.isFinite(quotaChild) || quotaChild < 0) quotaChild = 0;
+    if (!Number.isFinite(quotaDrinks) || quotaDrinks < 0) quotaDrinks = 0;
     if (!Number.isFinite(expireHours) || expireHours < 1) expireHours = 24;
 
     var body = {
@@ -954,7 +954,7 @@ async function createGuestPortalLinkFromCheckbox(cb) {
         room_number: (cb.dataset.rooms || '').split(',').map(function(r){ return r.trim(); }).filter(Boolean),
         breakfast_date: <?php echo json_encode($today); ?>,
         max_main: quotaMain,
-        max_child: quotaChild,
+        max_drinks: quotaDrinks,
         child_menu_ids: getSelectedChildMenuIds(),
         expire_hours: expireHours
     };
