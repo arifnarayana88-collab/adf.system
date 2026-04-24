@@ -139,6 +139,15 @@ try {
     $paidMenus = $pdo->query("SELECT * FROM breakfast_menus WHERE is_available=1 AND is_free=0 ORDER BY category,menu_name")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {}
 
+// Default child menu IDs for guest portal quota (example: pancake + waffle)
+$defaultChildMenuIds = [];
+foreach (array_merge($freeMenus, $paidMenus) as $mx) {
+    $nameLower = strtolower(trim($mx['menu_name'] ?? ''));
+    if (in_array($nameLower, ['pancake', 'waffle'], true)) {
+        $defaultChildMenuIds[] = (int)$mx['id'];
+    }
+}
+
 // Get in-house guests WHO HAVE NOT ORDERED TODAY
 // Group by guest_id: one guest may have multiple bookings/rooms
 $inHouseGuests = [];
@@ -286,6 +295,7 @@ include '../../includes/header.php';
 .bf-guest-count{font-size:.72rem;color:var(--primary-color);font-weight:600;margin-top:.4rem}
 .bf-guest-tools{display:flex;align-items:center;gap:.4rem}
 .bf-wa-guest-btn{padding:.25rem .5rem;border:none;border-radius:6px;font-size:.66rem;font-weight:700;cursor:pointer;background:rgba(16,185,129,.15);color:#10b981}
+.bf-link-guest-btn{padding:.25rem .5rem;border:none;border-radius:6px;font-size:.66rem;font-weight:700;cursor:pointer;background:rgba(14,165,233,.14);color:#0284c7}
 .bf-wa-phone{font-size:.62rem;color:#64748b;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bf-wa-panel{margin-top:.6rem;padding:.65rem;border:1px solid var(--bg-tertiary);border-radius:8px;background:var(--bg-primary)}
 .bf-wa-panel-title{font-size:.72rem;font-weight:800;color:var(--text-primary);margin-bottom:.45rem}
@@ -294,8 +304,15 @@ include '../../includes/header.php';
 .bf-wa-file{font-size:.67rem;color:var(--text-muted)}
 .bf-wa-save{padding:.35rem .65rem;border:none;border-radius:6px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;font-size:.68rem;font-weight:700;cursor:pointer}
 .bf-wa-send{padding:.35rem .65rem;border:none;border-radius:6px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:.68rem;font-weight:700;cursor:pointer}
+.bf-link-send{padding:.35rem .65rem;border:none;border-radius:6px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;font-size:.68rem;font-weight:700;cursor:pointer}
 .bf-wa-check{display:flex;align-items:center;gap:.3rem;font-size:.66rem;color:var(--text-muted)}
 .bf-wa-media-link{display:inline-flex;align-items:center;gap:.25rem;font-size:.66rem;color:#0ea5e9;text-decoration:none}
+.bf-link-grid{display:grid;grid-template-columns:repeat(3,minmax(120px,1fr));gap:.45rem}
+.bf-link-group{display:flex;flex-direction:column;gap:.25rem}
+.bf-link-group label{font-size:.64rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.25px}
+.bf-link-group input{padding:.35rem .45rem;border-radius:6px;border:1px solid var(--bg-tertiary);background:var(--bg-secondary);color:var(--text-primary);font-size:.72rem}
+.bf-child-menu-list{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.4rem}
+.bf-child-menu-item{font-size:.66rem;padding:.2rem .4rem;border-radius:999px;background:rgba(99,102,241,.12);color:#4f46e5;display:flex;align-items:center;gap:.25rem}
 /* Notes in sidebar */
 .bf-order-note{font-size:.62rem;color:#f59e0b;font-style:italic;margin-left:.2rem}
 .bf-order-special{font-size:.68rem;color:var(--text-muted);background:rgba(245,158,11,.08);padding:.3rem .5rem;border-radius:4px;margin-top:.35rem;font-style:italic;border-left:2px solid #f59e0b}
@@ -367,6 +384,7 @@ include '../../includes/header.php';
                                     <?php else: ?>
                                         <span class="bf-wa-phone">No phone</span>
                                     <?php endif; ?>
+                                    <button type="button" class="bf-link-guest-btn" onclick="sendGuestSelectionLink(event,this)">Link</button>
                                     <button type="button" class="bf-wa-guest-btn" onclick="sendSingleGuestWa(event,this)">WA</button>
                                 </div>
                             </label>
@@ -387,6 +405,28 @@ include '../../includes/header.php';
                             </div>
                             <div class="bf-wa-row" style="margin-top:.55rem">
                                 <button type="button" class="bf-wa-send" onclick="sendSelectedGuestsWa()">📲 Kirim WA ke tamu terpilih</button>
+                            </div>
+                            <div style="margin-top:.7rem;padding-top:.55rem;border-top:1px dashed var(--bg-tertiary)">
+                                <div class="bf-wa-panel-title" style="margin-bottom:.35rem">🔗 Link Pilih Menu Sendiri (Guest Portal)</div>
+                                <div class="bf-link-grid">
+                                    <div class="bf-link-group">
+                                        <label>Kuota Main Course</label>
+                                        <input type="number" id="linkQuotaMain" min="0" max="10" value="2">
+                                    </div>
+                                    <div class="bf-link-group">
+                                        <label>Kuota Menu Anak</label>
+                                        <input type="number" id="linkQuotaChild" min="0" max="10" value="2">
+                                    </div>
+                                    <div class="bf-link-group">
+                                        <label>Kadaluarsa (jam)</label>
+                                        <input type="number" id="linkExpireHours" min="1" max="72" value="24">
+                                    </div>
+                                </div>
+                                <div style="font-size:.66rem;color:var(--text-muted);margin-top:.45rem">Menu anak yang boleh dipilih:</div>
+                                <div class="bf-child-menu-list" id="childMenuIdsWrap"></div>
+                                <div class="bf-wa-row" style="margin-top:.55rem">
+                                    <button type="button" class="bf-link-send" onclick="sendSelectedGuestsPortalLinks()">🔗+📲 Buat Link & Kirim WA (terpilih)</button>
+                                </div>
                             </div>
                         </div>
                         <?php endif; ?>
@@ -869,6 +909,132 @@ var waContext = {
     todayLabel: <?php echo json_encode(date('d/m/Y', strtotime($today)), JSON_UNESCAPED_UNICODE); ?>
 };
 
+var linkContext = {
+    createApi: <?php echo json_encode(BASE_URL . '/api/breakfast-guest-portal.php', JSON_UNESCAPED_UNICODE); ?>,
+    childMenuCandidates: <?php echo json_encode(array_map(function($m){
+        return ['id' => (int)$m['id'], 'name' => $m['menu_name']];
+    }, array_merge($freeMenus, $paidMenus)), JSON_UNESCAPED_UNICODE); ?>,
+    childMenuDefaults: <?php echo json_encode($defaultChildMenuIds, JSON_UNESCAPED_UNICODE); ?>
+};
+
+function renderChildMenuOptions() {
+    var wrap = document.getElementById('childMenuIdsWrap');
+    if (!wrap) return;
+    var html = '';
+    (linkContext.childMenuCandidates || []).forEach(function(m) {
+        var checked = (linkContext.childMenuDefaults || []).indexOf(parseInt(m.id, 10)) >= 0;
+        html += '<label class="bf-child-menu-item">' +
+            '<input type="checkbox" class="child-menu-id" value="' + m.id + '" ' + (checked ? 'checked' : '') + '> ' +
+            escHtml(m.name) +
+            '</label>';
+    });
+    wrap.innerHTML = html;
+}
+
+function getSelectedChildMenuIds() {
+    return Array.from(document.querySelectorAll('.child-menu-id:checked')).map(function(el) {
+        return parseInt(el.value, 10);
+    }).filter(function(v) { return Number.isFinite(v) && v > 0; });
+}
+
+async function createGuestPortalLinkFromCheckbox(cb) {
+    var quotaMain = parseInt((document.getElementById('linkQuotaMain') || {value:'2'}).value, 10);
+    var quotaChild = parseInt((document.getElementById('linkQuotaChild') || {value:'2'}).value, 10);
+    var expireHours = parseInt((document.getElementById('linkExpireHours') || {value:'24'}).value, 10);
+    if (!Number.isFinite(quotaMain) || quotaMain < 0) quotaMain = 0;
+    if (!Number.isFinite(quotaChild) || quotaChild < 0) quotaChild = 0;
+    if (!Number.isFinite(expireHours) || expireHours < 1) expireHours = 24;
+
+    var body = {
+        action: 'create_link',
+        guest_id: parseInt(cb.value, 10) || null,
+        guest_name: cb.dataset.name || '',
+        guest_phone: cb.dataset.phone || '',
+        booking_id: parseInt(cb.dataset.booking, 10) || null,
+        room_number: (cb.dataset.rooms || '').split(',').map(function(r){ return r.trim(); }).filter(Boolean),
+        breakfast_date: <?php echo json_encode($today); ?>,
+        max_main: quotaMain,
+        max_child: quotaChild,
+        child_menu_ids: getSelectedChildMenuIds(),
+        expire_hours: expireHours
+    };
+
+    var res = await fetch(linkContext.createApi, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+    });
+    var data = await res.json();
+    if (!data.success) {
+        throw new Error(data.message || 'Gagal membuat link tamu');
+    }
+    return data.data || {};
+}
+
+function buildPortalLinkWaMessage(guestName, roomLabel, portalLink) {
+    var lines = [];
+    lines.push('Selamat pagi Bapak/Ibu ' + (guestName || 'Tamu') + ' 🙏');
+    lines.push('Silakan pilih menu sarapan melalui link berikut:');
+    lines.push(portalLink);
+    if (roomLabel) lines.push('Kamar: ' + roomLabel);
+    lines.push('Sistem akan membatasi pilihan sesuai jatah menu Anda.');
+    lines.push('Terima kasih.');
+    return lines.join('\n');
+}
+
+async function sendGuestSelectionLink(evt, btn) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    var row = btn.closest('.bf-guest-item');
+    var cb = row ? row.querySelector('input[name="guest_checks[]"]') : null;
+    if (!cb) return;
+
+    try {
+        var linkData = await createGuestPortalLinkFromCheckbox(cb);
+        var phone = normalizeWaPhone(cb.dataset.phone || '');
+        if (!phone) {
+            prompt('Link portal berhasil dibuat. Salin link berikut untuk dikirim manual:', linkData.link_url || '');
+            return;
+        }
+        var msg = buildPortalLinkWaMessage(cb.dataset.name || 'Tamu', cb.dataset.rooms || '-', linkData.link_url || '');
+        window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
+    } catch (err) {
+        alert('❌ ' + err.message);
+    }
+}
+
+async function sendSelectedGuestsPortalLinks() {
+    var selected = Array.from(document.querySelectorAll('input[name="guest_checks[]"]:checked'));
+    if (!selected.length) {
+        alert('Pilih minimal 1 tamu.');
+        return;
+    }
+
+    var success = 0;
+    var manualLinks = [];
+    for (var i = 0; i < selected.length; i++) {
+        var cb = selected[i];
+        try {
+            var linkData = await createGuestPortalLinkFromCheckbox(cb);
+            var phone = normalizeWaPhone(cb.dataset.phone || '');
+            if (phone) {
+                var msg = buildPortalLinkWaMessage(cb.dataset.name || 'Tamu', cb.dataset.rooms || '-', linkData.link_url || '');
+                window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
+                success++;
+            } else {
+                manualLinks.push((cb.dataset.name || 'Tamu') + ': ' + (linkData.link_url || ''));
+            }
+        } catch (err) {
+            manualLinks.push((cb.dataset.name || 'Tamu') + ': ERROR - ' + err.message);
+        }
+    }
+
+    if (manualLinks.length) {
+        prompt('Sebagian link perlu kirim manual (copy text di bawah):', manualLinks.join('\n'));
+    }
+    alert('Selesai. Link WA otomatis dibuka untuk ' + success + ' tamu.');
+}
+
 function normalizeWaPhone(rawPhone) {
     var p = String(rawPhone || '').replace(/[^0-9]/g, '');
     if (!p) return '';
@@ -956,6 +1122,8 @@ function sendSelectedGuestsWa() {
         alert('WA dibuka untuk ' + valid.length + ' tamu. ' + invalidCount + ' tamu dilewati karena nomor belum valid.');
     }
 }
+
+renderChildMenuOptions();
 </script>
 
 <?php include '../../includes/footer.php'; ?>
