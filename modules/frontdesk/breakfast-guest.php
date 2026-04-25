@@ -169,52 +169,6 @@ $token = trim((string)($_GET['t'] ?? ''));
         }
     </style>
 </head>
-        .menu-cat { font-size: 0.7rem; color: #475569; margin-top: 3px; text-transform: uppercase; }
-        .menu-price { margin-top: 4px; font-size: 0.76rem; color: #059669; font-weight: 700; }
-        .quota-line { margin-bottom: 10px; color: #334155; font-size: 0.86rem; }
-        .counter { font-weight: 800; color: #0ea5e9; }
-        .warn { color: #b45309; font-weight: 700; }
-        textarea {
-            width: 100%;
-            min-height: 80px;
-            border: 1px solid #cbd5e1;
-            border-radius: 10px;
-            padding: 10px;
-            font-family: inherit;
-            font-size: 0.92rem;
-        }
-        .actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
-        .btn {
-            border: none;
-            border-radius: 10px;
-            padding: 11px 15px;
-            font-size: 0.92rem;
-            font-weight: 800;
-            cursor: pointer;
-        }
-        .btn-primary { background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; }
-        .msg { margin-top: 10px; font-size: 0.88rem; font-weight: 700; }
-        .ok { color: #059669; }
-        .err { color: #dc2626; }
-        .hidden { display: none; }
-        .info-box {
-            border: 1px dashed #93c5fd;
-            border-radius: 10px;
-            background: #eff6ff;
-            padding: 10px;
-            font-size: 0.85rem;
-            color: #1e3a8a;
-            white-space: pre-wrap;
-        }
-        .media-link {
-            display: inline-block;
-            margin-top: 8px;
-            color: #0369a1;
-            font-weight: 700;
-            text-decoration: none;
-        }
-    </style>
-</head>
 <body>
 <div class="wrap">
     <div class="card" id="headerCard">
