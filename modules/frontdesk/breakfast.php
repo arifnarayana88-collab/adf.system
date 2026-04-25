@@ -17,6 +17,12 @@ $db = Database::getInstance();
 $pdo = $db->getConnection();
 $today = date('Y-m-d');
 
+$guestLinkMessageTemplate = '';
+try {
+    $row = $db->fetchOne("SELECT setting_value FROM settings WHERE setting_key = 'breakfast_guest_link_template' LIMIT 1");
+    $guestLinkMessageTemplate = trim((string)($row['setting_value'] ?? ''));
+} catch (Exception $e) {}
+
 // Ensure table exists
 try {
     $pdo->exec("CREATE TABLE IF NOT EXISTS breakfast_menus (
@@ -803,7 +809,8 @@ var linkContext = {
     childMenuCandidates: <?php echo json_encode(array_map(function($m){
         return ['id' => (int)$m['id'], 'name' => $m['menu_name']];
     }, array_merge($freeMenus, $paidMenus)), JSON_UNESCAPED_UNICODE); ?>,
-    childMenuDefaults: <?php echo json_encode($defaultChildMenuIds, JSON_UNESCAPED_UNICODE); ?>
+    childMenuDefaults: <?php echo json_encode($defaultChildMenuIds, JSON_UNESCAPED_UNICODE); ?>,
+    portalLinkTemplate: <?php echo json_encode($guestLinkMessageTemplate, JSON_UNESCAPED_UNICODE); ?>
 };
 
 function renderChildMenuOptions() {
@@ -889,14 +896,32 @@ function updateQuotaDisplay() {
 }
 
 function buildPortalLinkWaMessage(guestName, roomLabel, portalLink) {
-    var lines = [];
-    lines.push('Selamat pagi Bapak/Ibu ' + (guestName || 'Tamu') + ' 🙏');
-    lines.push('Silakan pilih menu sarapan melalui link berikut:');
-    lines.push(portalLink);
-    if (roomLabel) lines.push('Kamar: ' + roomLabel);
-    lines.push('Sistem akan membatasi pilihan sesuai jatah menu Anda.');
-    lines.push('Terima kasih.');
-    return lines.join('\n');
+    var template = (linkContext.portalLinkTemplate || '').trim();
+    if (!template) {
+        template = [
+            'Hello {guest_name},',
+            'Please select your breakfast menu using the link below:',
+            '{portal_link}',
+            '{room_line}',
+            'The system will limit the selection based on your breakfast allowance.',
+            'Thank you.'
+        ].join('\n');
+    }
+
+    var message = template
+        .replace(/\{guest_name\}/g, guestName || 'Guest')
+        .replace(/\{room_label\}/g, roomLabel || '')
+        .replace(/\{room_line\}/g, roomLabel ? 'Room: ' + roomLabel : '')
+        .replace(/\{portal_link\}/g, portalLink || '');
+
+    return message
+        .split('\n')
+        .map(function (line) { return line.trimEnd(); })
+        .filter(function (line, index, arr) {
+            return line.trim() !== '' || (index > 0 && arr[index - 1].trim() !== '');
+        })
+        .join('\n')
+        .trim();
 }
 
 async function sendGuestSelectionLink(evt, btn) {
