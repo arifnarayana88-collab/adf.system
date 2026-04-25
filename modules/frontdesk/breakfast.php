@@ -65,7 +65,13 @@ foreach (array_merge($freeMenus, $paidMenus) as $mx) {
 // Get in-house guests WHO HAVE NOT ORDERED TODAY
 // Group by guest_id: one guest may have multiple bookings/rooms
 $inHouseGuests = [];
+$guestQuotaMap = [];
 try {
+    $quotaRows = $pdo->query("SELECT booking_id, adult_count, child_young_count, child_old_count, total_pax, max_main, max_drink, max_child, child_menu_ids, breakfast_date FROM breakfast_guest_quota")->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($quotaRows as $qr) {
+        $guestQuotaMap[(int)$qr['booking_id']] = $qr;
+    }
+
     $stmt = $pdo->prepare("
         SELECT g.id as guest_id, g.guest_name, COALESCE(g.phone,'') as guest_phone,
                GROUP_CONCAT(DISTINCT r.room_number ORDER BY r.room_number SEPARATOR ',') as rooms,
@@ -274,13 +280,25 @@ include '../../includes/header.php';
                             <?php foreach ($inHouseGuests as $g): 
                                 $roomList = $g['rooms'];
                                 $bookingIdFirst = explode(',', $g['booking_ids'])[0];
+                                $savedQuota = $guestQuotaMap[(int)$bookingIdFirst] ?? [];
+                                $savedChildIds = json_decode($savedQuota['child_menu_ids'] ?? '[]', true);
+                                if (!is_array($savedChildIds)) $savedChildIds = [];
+                                $savedChildIds = array_values(array_unique(array_map('intval', $savedChildIds)));
                             ?>
                             <label class="bf-guest-item">
                                 <input type="checkbox" name="guest_checks[]" value="<?php echo $g['guest_id']; ?>"
                                        data-name="<?php echo htmlspecialchars($g['guest_name']); ?>"
                                        data-rooms="<?php echo htmlspecialchars($roomList); ?>"
                                        data-booking="<?php echo $bookingIdFirst; ?>"
-                                       data-phone="<?php echo htmlspecialchars($g['guest_phone'] ?? ''); ?>">
+                                       data-phone="<?php echo htmlspecialchars($g['guest_phone'] ?? ''); ?>"
+                                       data-adults="<?php echo (int)($savedQuota['adult_count'] ?? 1); ?>"
+                                       data-child-young="<?php echo (int)($savedQuota['child_young_count'] ?? 0); ?>"
+                                       data-child-old="<?php echo (int)($savedQuota['child_old_count'] ?? 0); ?>"
+                                       data-total-pax="<?php echo (int)($savedQuota['total_pax'] ?? 0); ?>"
+                                       data-max-main="<?php echo (int)($savedQuota['max_main'] ?? 2); ?>"
+                                       data-max-drink="<?php echo (int)($savedQuota['max_drink'] ?? 2); ?>"
+                                       data-max-child="<?php echo (int)($savedQuota['max_child'] ?? 2); ?>"
+                                       data-child-menu-ids="<?php echo htmlspecialchars(json_encode($savedChildIds)); ?>">
                                 <div class="guest-info">
                                     <div class="guest-name"><?php echo htmlspecialchars($g['guest_name']); ?></div>
                                     <div class="guest-room">🛏️ Room <?php echo $roomList; ?></div>
@@ -532,10 +550,49 @@ var guestCountEl = document.getElementById('guestCount');
 if (guestChecks.length > 0) {
     guestChecks.forEach(function(cb) {
         cb.addEventListener('change', function() {
-            var count = document.querySelectorAll('input[name="guest_checks[]"]:checked').length;
+            var checked = document.querySelectorAll('input[name="guest_checks[]"]:checked');
+            var count = checked.length;
             guestCountEl.textContent = count + ' tamu dipilih';
+            if (count === 1) {
+                applyGuestSettingsFromCheckbox(checked[0]);
+            }
         });
     });
+}
+
+function applyGuestSettingsFromCheckbox(cb) {
+    if (!cb) return;
+    var adults = parseInt(cb.dataset.adults || '1', 10) || 1;
+    var childYoung = parseInt(cb.dataset.childYoung || '0', 10) || 0;
+    var childOld = parseInt(cb.dataset.childOld || '0', 10) || 0;
+    var maxMain = parseInt(cb.dataset.maxMain || '2', 10) || 2;
+    var maxDrink = parseInt(cb.dataset.maxDrink || '2', 10) || 2;
+    var maxChild = parseInt(cb.dataset.maxChild || '2', 10) || 2;
+    var childMenuIds = [];
+    try {
+        childMenuIds = JSON.parse(cb.dataset.childMenuIds || '[]');
+    } catch (e) {
+        childMenuIds = [];
+    }
+
+    var adultInput = document.getElementById('linkAdultCount');
+    var childYoungInput = document.getElementById('linkChildYoung');
+    var childOldInput = document.getElementById('linkChildOld');
+    var mainInput = document.getElementById('linkQuotaMain');
+    var drinkInput = document.getElementById('linkQuotaDrink');
+    var childMenuChecks = document.querySelectorAll('.child-menu-id');
+
+    if (adultInput) adultInput.value = adults;
+    if (childYoungInput) childYoungInput.value = childYoung;
+    if (childOldInput) childOldInput.value = childOld;
+    if (mainInput) mainInput.value = maxMain;
+    if (drinkInput) drinkInput.value = maxDrink;
+
+    childMenuChecks.forEach(function(chk) {
+        chk.checked = childMenuIds.indexOf(parseInt(chk.value, 10)) >= 0;
+    });
+
+    updateQuotaDisplay();
 }
 
 // Collect common form data (menu, time, pax, etc)
@@ -860,6 +917,7 @@ async function createGuestPortalLinkFromCheckbox(cb) {
         adult_count: adultCount,
         child_young_count: childYoung,  // < 7 years old
         child_old_count: childOld,      // >= 7 years old
+        total_pax: adultCount + childYoung + childOld,
         max_main: quotaMain,
         max_drink: quotaDrink,
         max_child: childYoung, // young children get child menu quota
@@ -889,8 +947,9 @@ function updateQuotaDisplay() {
     var totalMain = (adultCount * quotaMain) + (childOld * quotaMain);
     var totalDrink = (adultCount * quotaDrink) + (childOld * quotaDrink);
     var totalChild = childYoung; // young children only get child menu
+    var totalPax = adultCount + childYoung + childOld;
     
-    var summary = 'Main Course: ' + totalMain + ' | Minum: ' + totalDrink + ' | Menu Anak: ' + totalChild;
+    var summary = 'Total Pax: ' + totalPax + ' | Main Course: ' + totalMain + ' | Minum: ' + totalDrink + ' | Menu Anak: ' + totalChild;
     var el = document.getElementById('quotaSummary');
     if (el) el.textContent = summary;
 }

@@ -68,7 +68,7 @@ $token = trim((string)($_GET['t'] ?? ''));
         
         .menu-img-wrap {
             width: 100%;
-            height: 112px;
+            height: 80px;
             background: linear-gradient(135deg, rgba(191, 219, 254, 0.45), rgba(147, 197, 253, 0.35));
             display: flex;
             align-items: center;
@@ -170,10 +170,42 @@ $token = trim((string)($_GET['t'] ?? ''));
         
         .drink-section { margin-top: 20px; }
 
-        .meta-stack { grid-template-columns: 1fr; }
+        .meta-stack { 
+            grid-template-columns: 1fr; 
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            font-size: 0.95rem;
+        }
+        .meta-item-light { 
+            background: transparent; 
+            border: none; 
+            padding: 0 !important; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 2px;
+        }
+        .meta-lbl-dark { 
+            font-size: 0.7rem; 
+            text-transform: capitalize !important; 
+            letter-spacing: 0;
+            font-weight: 600;
+        }
+        .meta-val { 
+            margin-top: 0 !important; 
+            font-weight: 700 !important; 
+            font-size: 1rem !important; 
+        }
+        .drink-section { 
+            margin-top: 24px; 
+            padding-top: 20px; 
+            border-top: 2px solid rgba(59, 130, 246, 0.25);
+        }
         
         @media (max-width: 600px) {
-            .menu-grid { grid-template-columns: 1fr; }
+            .menu-grid { grid-template-columns: repeat(2, 1fr); }
             .quota-box { flex-direction: column; text-align: center; }
         }
     </style>
@@ -210,7 +242,7 @@ $token = trim((string)($_GET['t'] ?? ''));
         <div class="menu-grid" id="mainGrid"></div>
     </div>
 
-    <div class="card hidden" id="drinkCard">
+    <div class="card hidden drink-section" id="drinkCard">
         <div class="section-title"><span class="section-icon">🥤</span> Minuman</div>
         <div class="quota-box">
             <div>

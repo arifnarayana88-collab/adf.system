@@ -103,6 +103,10 @@ function ensure_breakfast_quota_table($pdo)
         guest_id INT NULL,
         guest_name VARCHAR(255) NULL,
         breakfast_date DATE NULL,
+        adult_count INT NOT NULL DEFAULT 1,
+        child_young_count INT NOT NULL DEFAULT 0,
+        child_old_count INT NOT NULL DEFAULT 0,
+        total_pax INT NOT NULL DEFAULT 1,
         max_main INT NOT NULL DEFAULT 2,
         max_drink INT NOT NULL DEFAULT 2,
         max_child INT NOT NULL DEFAULT 2,
@@ -196,6 +200,10 @@ try {
     ensure_booking_extras_table($pdo);
     
     // Add new columns if not exist
+    try { $pdo->exec("ALTER TABLE breakfast_guest_quota ADD COLUMN adult_count INT NOT NULL DEFAULT 1 AFTER breakfast_date"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE breakfast_guest_quota ADD COLUMN child_young_count INT NOT NULL DEFAULT 0 AFTER adult_count"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE breakfast_guest_quota ADD COLUMN child_old_count INT NOT NULL DEFAULT 0 AFTER child_young_count"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE breakfast_guest_quota ADD COLUMN total_pax INT NOT NULL DEFAULT 1 AFTER child_old_count"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE breakfast_guest_quota ADD COLUMN max_drink INT NOT NULL DEFAULT 2 AFTER max_main"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE breakfast_guest_quota ADD COLUMN extra_drink_price DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER extra_main_price"); } catch (Exception $e) {}
 } catch (Exception $e) {
@@ -234,6 +242,7 @@ if ($action === 'create_link') {
     $expireHours = max(1, min(72, (int)($body['expire_hours'] ?? 24)));
 
     // Calculate total quotas based on guest composition
+    $totalPax = max(1, (int)($body['total_pax'] ?? ($adultCount + $childYoung + $childOld)));
     $totalMainQuota = ($adultCount * $maxMain) + ($childOld * $maxMain);
     $totalDrinkQuota = ($adultCount * $maxDrink) + ($childOld * $maxDrink);
     $totalChildQuota = $childYoung; // young children only get child menu quota
@@ -265,10 +274,12 @@ if ($action === 'create_link') {
     $expiresAt = date('Y-m-d H:i:s', strtotime('+' . $expireHours . ' hours'));
 
     // Store guest composition for quota calculation
+    $totalPax = $adultCount + $childYoung + $childOld;
     $guestCompositionJson = json_encode([
         'adults' => $adultCount,
         'children_young' => $childYoung,  // < 7 years
-        'children_old' => $childOld       // >= 7 years
+        'children_old' => $childOld,      // >= 7 years
+        'total_pax' => $totalPax
     ]);
 
     try {
@@ -279,12 +290,16 @@ if ($action === 'create_link') {
 
         if ($bookingId) {
             $pdo->prepare("INSERT INTO breakfast_guest_quota
-                (booking_id, guest_id, guest_name, breakfast_date, max_main, max_drink, max_child, child_menu_ids, extra_main_price, extra_drink_price, extra_child_price, created_by)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (booking_id, guest_id, guest_name, breakfast_date, adult_count, child_young_count, child_old_count, total_pax, max_main, max_drink, max_child, child_menu_ids, extra_main_price, extra_drink_price, extra_child_price, created_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     guest_id = VALUES(guest_id),
                     guest_name = VALUES(guest_name),
                     breakfast_date = VALUES(breakfast_date),
+                    adult_count = VALUES(adult_count),
+                    child_young_count = VALUES(child_young_count),
+                    child_old_count = VALUES(child_old_count),
+                    total_pax = VALUES(total_pax),
                     max_main = VALUES(max_main),
                     max_drink = VALUES(max_drink),
                     max_child = VALUES(max_child),
@@ -298,6 +313,10 @@ if ($action === 'create_link') {
                     $guestId,
                     $guestName,
                     $breakfastDate,
+                    $adultCount,
+                    $childYoung,
+                    $childOld,
+                    $totalPax,
                     $maxMain,
                     $maxDrink,
                     $maxChild,
@@ -441,6 +460,10 @@ if ($action === 'get_link') {
         $rooms = !empty($link['room_number']) ? [$link['room_number']] : [];
     }
 
+    $guestComposition = json_decode($link['guest_composition'] ?? '{}', true);
+    if (!is_array($guestComposition)) $guestComposition = [];
+    $totalPax = max(1, (int)($guestComposition['total_pax'] ?? (($guestComposition['adults'] ?? 1) + ($guestComposition['children_young'] ?? 0) + ($guestComposition['children_old'] ?? 0))));
+
     $waInfo = get_setting($db, 'breakfast_wa_info_text');
     if ($waInfo === '' || looks_like_old_indonesian_portal_text($waInfo)) {
         $waInfo = default_portal_info_text();
@@ -472,6 +495,7 @@ if ($action === 'get_link') {
             'guest_name' => $link['guest_name'],
             'room_number' => $rooms,
             'breakfast_date' => $link['breakfast_date'],
+            'total_pax' => $totalPax,
             'max_main' => (int)$link['max_main'],
             'max_drink' => (int)($link['max_drink'] ?? 2),
             'max_child' => (int)$link['max_child'],
@@ -681,7 +705,9 @@ if ($action === 'submit_link') {
         $bookingId = !empty($link['booking_id']) ? (int)$link['booking_id'] : null;
         $roomJson = $link['room_number'] ?: json_encode([]);
         $menuJson = json_encode($menuItems);
-        $totalPax = count($menuItems);
+        $guestComposition = json_decode($link['guest_composition'] ?? '{}', true);
+        if (!is_array($guestComposition)) $guestComposition = [];
+        $totalPax = max(1, (int)($guestComposition['total_pax'] ?? (($guestComposition['adults'] ?? 1) + ($guestComposition['children_young'] ?? 0) + ($guestComposition['children_old'] ?? 0))));
         $breakfastTime = '07:00:00';
 
         $portalNote = '[Guest Portal]';
