@@ -38,20 +38,21 @@ $token = trim((string)($_GET['t'] ?? ''));
             color: white;
             border: none;
         }
+        .header-card .muted-white { color: #eff6ff; }
         h1 { margin: 0 0 4px; font-size: 1.5rem; font-weight: 800; }
-        .muted { color: #9ca3af; font-size: 0.9rem; }
-        .muted-white { color: rgba(255,255,255,0.9); font-size: 0.85rem; }
-        .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
+        .muted { color: #475569; font-size: 0.9rem; }
+        .muted-white { color: #dbeafe; font-size: 0.92rem; }
+        .meta { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
         .meta-item { background: rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; }
-        .meta-item-light { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; }
+        .meta-item-light { background: rgba(255,255,255,0.88); border: 1px solid rgba(96, 165, 250, 0.22); border-radius: 12px; padding: 10px 12px; }
         .meta-lbl { font-size: 0.65rem; color: rgba(255,255,255,0.8); text-transform: uppercase; font-weight: 700; letter-spacing: .5px; }
-        .meta-lbl-dark { font-size: 0.65rem; color: #6b7280; text-transform: uppercase; font-weight: 700; letter-spacing: .5px; }
-        .meta-val { margin-top: 4px; font-weight: 700; font-size: 0.95rem; }
+        .meta-lbl-dark { font-size: 0.65rem; color: #1d4ed8; text-transform: uppercase; font-weight: 700; letter-spacing: .5px; }
+        .meta-val { margin-top: 4px; font-weight: 700; font-size: 0.98rem; color: #0f172a; }
         .section-title { font-size: 1.1rem; font-weight: 800; margin: 0 0 12px; color: #1f2937; display: flex; align-items: center; gap: 8px; }
         .section-icon { font-size: 1.3rem; }
         
         /* Moka-style menu cards */
-        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+        .menu-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
         .menu-item {
             border: 1px solid rgba(96, 165, 250, 0.18);
             border-radius: 14px;
@@ -67,7 +68,7 @@ $token = trim((string)($_GET['t'] ?? ''));
         
         .menu-img-wrap {
             width: 100%;
-            height: 140px;
+            height: 112px;
             background: linear-gradient(135deg, rgba(191, 219, 254, 0.45), rgba(147, 197, 253, 0.35));
             display: flex;
             align-items: center;
@@ -75,11 +76,11 @@ $token = trim((string)($_GET['t'] ?? ''));
             overflow: hidden;
         }
         .menu-img { width: 100%; height: 100%; object-fit: cover; }
-        .menu-img-placeholder { font-size: 3rem; }
+        .menu-img-placeholder { font-size: 2.2rem; }
         
-        .menu-content { padding: 12px; }
-        .menu-name { font-weight: 700; font-size: 1rem; color: #1f2937; margin-bottom: 4px; }
-        .menu-desc { font-size: 0.8rem; color: #6b7280; line-height: 1.4; margin-bottom: 8px; min-height: 36px; }
+        .menu-content { padding: 10px 11px 11px; }
+        .menu-name { font-weight: 700; font-size: 0.96rem; color: #1f2937; margin-bottom: 4px; }
+        .menu-desc { font-size: 0.76rem; color: #64748b; line-height: 1.35; margin-bottom: 8px; min-height: 30px; }
         .menu-footer { display: flex; justify-content: space-between; align-items: center; }
         .menu-cat { 
             font-size: 0.65rem; 
@@ -168,6 +169,8 @@ $token = trim((string)($_GET['t'] ?? ''));
         }
         
         .drink-section { margin-top: 20px; }
+
+        .meta-stack { grid-template-columns: 1fr; }
         
         @media (max-width: 600px) {
             .menu-grid { grid-template-columns: 1fr; }
@@ -253,6 +256,7 @@ $token = trim((string)($_GET['t'] ?? ''));
 (function () {
     var token = <?php echo json_encode($token); ?>;
     var API = <?php echo json_encode(rtrim(BASE_URL, '/') . '/api/breakfast-guest-portal.php'); ?>;
+    var BASE_URL = <?php echo json_encode(rtrim(BASE_URL, '/')); ?>;
     var payload = null;
 
     var mainGrid = document.getElementById('mainGrid');
@@ -294,6 +298,9 @@ $token = trim((string)($_GET['t'] ?? ''));
             var msg = document.getElementById('submitMsg');
             msg.textContent = 'This link is read-only. Menu changes can only be made by Front Office.';
             msg.className = 'msg ok';
+
+            var submitBtn = document.getElementById('btnSubmit');
+            if (submitBtn) submitBtn.style.display = 'none';
         }
     }
 
@@ -312,11 +319,12 @@ $token = trim((string)($_GET['t'] ?? ''));
 
     function renderMeta() {
         var meta = document.getElementById('metaBox');
+        meta.className = 'meta meta-stack';
         meta.innerHTML = [
-            ['Tamu', payload.guest_name || '-'],
-            ['Kamar', Array.isArray(payload.room_number) ? payload.room_number.join(', ') : '-'],
-            ['Tanggal', formatDate(payload.breakfast_date)],
-            ['Batas Link', payload.expires_at || '-']
+            ['Guest', payload.guest_name || '-'],
+            ['Room', Array.isArray(payload.room_number) ? payload.room_number.join(', ') : '-'],
+            ['Date', formatDate(payload.breakfast_date)],
+            ['Link Expires', payload.expires_at || '-']
         ].map(function (it) {
             return '<div class="meta-item-light"><div class="meta-lbl-dark">' + esc(it[0]) + '</div><div class="meta-val">' + esc(it[1]) + '</div></div>';
         }).join('');
@@ -343,10 +351,11 @@ $token = trim((string)($_GET['t'] ?? ''));
         var desc = item.description || '';
         var hasImg = imgUrl && imgUrl.trim() !== '';
         var checked = item.pre_selected ? 'checked' : '';
+        var resolvedImg = imgUrl ? (/^https?:\/\//i.test(imgUrl) ? imgUrl : BASE_URL + '/' + imgUrl.replace(/^\/+/, '')) : '';
         
         var imgHtml = '';
         if (hasImg) {
-            imgHtml = '<div class="menu-img-wrap"><img class="menu-img" src="' + esc(imgUrl) + '" alt="' + esc(item.menu_name) + '" onerror="this.parentElement.innerHTML=\'<span class=\'menu-img-placeholder\'>🍽️</span>\'"></div>';
+            imgHtml = '<div class="menu-img-wrap"><img class="menu-img" src="' + esc(resolvedImg) + '" alt="' + esc(item.menu_name) + '" onerror="this.parentElement.innerHTML=\'<span class=\'menu-img-placeholder\'>🍽️</span>\'"></div>';
         } else {
             imgHtml = '<div class="menu-img-wrap"><span class="menu-img-placeholder">🍽️</span></div>';
         }

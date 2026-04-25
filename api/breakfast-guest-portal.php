@@ -147,6 +147,25 @@ function get_setting($db, $key)
     return $row['setting_value'] ?? '';
 }
 
+function default_portal_info_text()
+{
+    return implode("\n\n", [
+        'Hello, here is your breakfast menu selection portal.',
+        'Each room has a fixed breakfast allowance.',
+        'Please confirm your selection through this link only. If you need to make changes, please contact Front Office.'
+    ]);
+}
+
+function looks_like_old_indonesian_portal_text($text)
+{
+    $text = strtolower(trim((string)$text));
+    if ($text === '') return false;
+    return strpos($text, 'hai kak') !== false
+        || strpos($text, 'pilihan menu breakfast') !== false
+        || strpos($text, 'mohon konfirmasi menu') !== false
+        || strpos($text, 'front office') !== false;
+}
+
 function to_float($value, $default = 0)
 {
     if ($value === null || $value === '') return (float)$default;
@@ -423,6 +442,9 @@ if ($action === 'get_link') {
     }
 
     $waInfo = get_setting($db, 'breakfast_wa_info_text');
+    if ($waInfo === '' || looks_like_old_indonesian_portal_text($waInfo)) {
+        $waInfo = default_portal_info_text();
+    }
     $waMediaPath = get_setting($db, 'breakfast_wa_media_path');
     $extraMainPrice = to_float(get_setting($db, 'breakfast_extra_main_price'), 55000);
     $extraDrinkPrice = to_float(get_setting($db, 'breakfast_extra_drink_price'), 25000);

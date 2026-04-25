@@ -221,7 +221,13 @@ elseif ($activeTab === 'breakfast_menu') {
         return 'uploads/breakfast-menu/' . $newName;
     };
 
-    $defaultPortalTemplate = implode("\n", [
+    $defaultPortalInfoText = implode("\n\n", [
+        'Hello, here is your breakfast menu selection portal.',
+        'Each room has a fixed breakfast allowance.',
+        'Please confirm your selection through this link only. If you need to make changes, please contact Front Office.'
+    ]);
+
+    $defaultPortalLinkTemplate = implode("\n", [
         'Hello {guest_name},',
         'Please select your breakfast menu using the link below:',
         '{portal_link}',
@@ -230,10 +236,16 @@ elseif ($activeTab === 'breakfast_menu') {
         'Thank you.'
     ]);
 
+    $portalInfoRow = $db->fetchOne("SELECT setting_value FROM settings WHERE setting_key = 'breakfast_wa_info_text' LIMIT 1");
+    $portalInfoText = trim((string)($portalInfoRow['setting_value'] ?? ''));
+    if ($portalInfoText === '') {
+        $portalInfoText = $defaultPortalInfoText;
+    }
+
     $portalTemplateRow = $db->fetchOne("SELECT setting_value FROM settings WHERE setting_key = 'breakfast_guest_link_template' LIMIT 1");
     $portalLinkTemplate = trim((string)($portalTemplateRow['setting_value'] ?? ''));
     if ($portalLinkTemplate === '') {
-        $portalLinkTemplate = $defaultPortalTemplate;
+        $portalLinkTemplate = $defaultPortalLinkTemplate;
     }
 
     // Create table if not exists
@@ -257,15 +269,21 @@ elseif ($activeTab === 'breakfast_menu') {
     
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         try {
-            if ($_POST['action'] === 'save_portal_template') {
-                $template = trim((string)($_POST['portal_link_template'] ?? ''));
-                if ($template === '') {
-                    $template = $defaultPortalTemplate;
+            if ($_POST['action'] === 'save_portal_templates') {
+                $infoText = trim((string)($_POST['portal_info_text'] ?? ''));
+                if ($infoText === '') {
+                    $infoText = $defaultPortalInfoText;
                 }
 
-                $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value, setting_type) VALUES ('breakfast_guest_link_template', ?, 'text') ON DUPLICATE KEY UPDATE setting_value = ?");
-                $stmt->execute([$template, $template]);
-                $message = "✓ Guest portal template berhasil disimpan!";
+                $template = trim((string)($_POST['portal_link_template'] ?? ''));
+                if ($template === '') {
+                    $template = $defaultPortalLinkTemplate;
+                }
+
+                $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value, setting_type) VALUES (?, ?, 'text') ON DUPLICATE KEY UPDATE setting_value = ?");
+                $stmt->execute(['breakfast_wa_info_text', $infoText, $infoText]);
+                $stmt->execute(['breakfast_guest_link_template', $template, $template]);
+                $message = "✓ Guest portal text berhasil disimpan!";
                 header("Location: " . $_SERVER['PHP_SELF'] . "?tab=breakfast_menu");
                 exit;
 
@@ -1237,17 +1255,21 @@ include '../../includes/header.php';
     <?php if ($activeTab === 'breakfast_menu'): ?>
 
     <div class="form-card">
-        <h2 style="margin-top: 0; color: var(--primary);">💬 Guest Portal WhatsApp Template</h2>
+        <h2 style="margin-top: 0; color: var(--primary);">💬 Guest Portal Text</h2>
         <p style="color: var(--text-secondary); margin-top: 0.5rem;">
-            This template is used when Front Desk sends the breakfast portal link to guests. Use placeholders: <strong>{guest_name}</strong>, <strong>{room_label}</strong>, <strong>{room_line}</strong>, <strong>{portal_link}</strong>.
+            Use this section to edit the text shown on the portal and the WhatsApp message sent from Front Desk. Placeholders: <strong>{guest_name}</strong>, <strong>{room_label}</strong>, <strong>{room_line}</strong>, <strong>{portal_link}</strong>.
         </p>
         <form method="POST" style="margin-top: 1rem;">
-            <input type="hidden" name="action" value="save_portal_template">
+            <input type="hidden" name="action" value="save_portal_templates">
             <div class="form-group">
-                <label class="form-label">Message Template</label>
+                <label class="form-label">Portal Info Text</label>
+                <textarea name="portal_info_text" class="form-textarea" rows="6" style="white-space: pre-wrap; font-family: inherit;"><?php echo htmlspecialchars($portalInfoText); ?></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">WhatsApp Link Template</label>
                 <textarea name="portal_link_template" class="form-textarea" rows="8" style="white-space: pre-wrap; font-family: inherit;"><?php echo htmlspecialchars($portalLinkTemplate); ?></textarea>
             </div>
-            <button type="submit" class="btn btn-success">💾 Save Template</button>
+            <button type="submit" class="btn btn-success">💾 Save Templates</button>
         </form>
     </div>
     
