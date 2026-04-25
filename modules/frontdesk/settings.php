@@ -171,6 +171,56 @@ elseif ($activeTab === 'room_types') {
 
 // ==================== BREAKFAST MENU MANAGEMENT ====================
 elseif ($activeTab === 'breakfast_menu') {
+    $deleteLocalImage = function ($path) {
+        $path = trim((string)$path);
+        if ($path === '' || strpos($path, 'http') === 0) {
+            return;
+        }
+        $abs = BASE_PATH . '/' . ltrim($path, '/');
+        if (is_file($abs)) {
+            @unlink($abs);
+        }
+    };
+
+    $storeMenuImage = function ($fileKey, $oldPath = '') use ($deleteLocalImage) {
+        if (empty($_FILES[$fileKey]) || (int)($_FILES[$fileKey]['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return $oldPath;
+        }
+
+        if ((int)($_FILES[$fileKey]['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+            throw new Exception('Upload gambar menu gagal.');
+        }
+
+        $allowedExt = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        $origName = $_FILES[$fileKey]['name'] ?? 'menu-image';
+        $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+        if (!in_array($ext, $allowedExt, true)) {
+            throw new Exception('Format gambar harus JPG, JPEG, PNG, WEBP, atau GIF.');
+        }
+
+        $maxSize = 5 * 1024 * 1024;
+        if ((int)($_FILES[$fileKey]['size'] ?? 0) > $maxSize) {
+            throw new Exception('Ukuran gambar maksimal 5MB.');
+        }
+
+        $uploadDir = BASE_PATH . '/uploads/breakfast-menu';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0755, true);
+        }
+
+        $newName = 'menu_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $target = $uploadDir . '/' . $newName;
+        if (!move_uploaded_file($_FILES[$fileKey]['tmp_name'], $target)) {
+            throw new Exception('Tidak bisa menyimpan gambar menu.');
+        }
+
+        if (!empty($oldPath)) {
+            $deleteLocalImage($oldPath);
+        }
+
+        return 'uploads/breakfast-menu/' . $newName;
+    };
+
     // Create table if not exists
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS breakfast_menus (
@@ -210,6 +260,7 @@ elseif ($activeTab === 'breakfast_menu') {
                 error_log("AVAILABLE COLUMNS: " . implode(', ', $columns));
                 
                 $hasIsFree = in_array('is_free', $columns);
+                $hasImageUrl = in_array('image_url', $columns);
                 
                 if (!$hasIsFree) {
                     // Try to add the column
@@ -223,32 +274,70 @@ elseif ($activeTab === 'breakfast_menu') {
                         // Will try INSERT without is_free column
                     }
                 }
+
+                if (!$hasImageUrl) {
+                    try {
+                        $pdo->exec("ALTER TABLE breakfast_menus ADD COLUMN image_url VARCHAR(255) NULL AFTER is_available");
+                        $hasImageUrl = true;
+                    } catch (Exception $e) {
+                        error_log("Gagal menambahkan kolom image_url: " . $e->getMessage());
+                    }
+                }
+
+                $menuImagePath = $storeMenuImage('menu_image', '');
                 
                 // Try INSERT
                 try {
                     if ($hasIsFree) {
-                        $stmt = $pdo->prepare("INSERT INTO breakfast_menus (menu_name, description, category, price, is_free, is_available) 
-                                             VALUES (?, ?, ?, ?, ?, ?)");
-                        $result = $stmt->execute([
-                            $_POST['menu_name'],
-                            $_POST['description'] ?? null,
-                            $_POST['category'],
-                            $_POST['price'] ?? 0,
-                            isset($_POST['is_free']) ? 1 : 0,
-                            isset($_POST['is_available']) ? 1 : 0
-                        ]);
+                        if ($hasImageUrl) {
+                            $stmt = $pdo->prepare("INSERT INTO breakfast_menus (menu_name, description, category, price, is_free, is_available, image_url) 
+                                                 VALUES (?, ?, ?, ?, ?, ?, ?)");
+                            $result = $stmt->execute([
+                                $_POST['menu_name'],
+                                $_POST['description'] ?? null,
+                                $_POST['category'],
+                                $_POST['price'] ?? 0,
+                                isset($_POST['is_free']) ? 1 : 0,
+                                isset($_POST['is_available']) ? 1 : 0,
+                                $menuImagePath ?: null
+                            ]);
+                        } else {
+                            $stmt = $pdo->prepare("INSERT INTO breakfast_menus (menu_name, description, category, price, is_free, is_available) 
+                                                 VALUES (?, ?, ?, ?, ?, ?)");
+                            $result = $stmt->execute([
+                                $_POST['menu_name'],
+                                $_POST['description'] ?? null,
+                                $_POST['category'],
+                                $_POST['price'] ?? 0,
+                                isset($_POST['is_free']) ? 1 : 0,
+                                isset($_POST['is_available']) ? 1 : 0
+                            ]);
+                        }
                     } else {
                         // Fallback: INSERT without is_free
                         error_log("FALLBACK: INSERT tanpa kolom is_free");
-                        $stmt = $pdo->prepare("INSERT INTO breakfast_menus (menu_name, description, category, price, is_available) 
-                                             VALUES (?, ?, ?, ?, ?)");
-                        $result = $stmt->execute([
-                            $_POST['menu_name'],
-                            $_POST['description'] ?? null,
-                            $_POST['category'],
-                            $_POST['price'] ?? 0,
-                            isset($_POST['is_available']) ? 1 : 0
-                        ]);
+                        if ($hasImageUrl) {
+                            $stmt = $pdo->prepare("INSERT INTO breakfast_menus (menu_name, description, category, price, is_available, image_url) 
+                                                 VALUES (?, ?, ?, ?, ?, ?)");
+                            $result = $stmt->execute([
+                                $_POST['menu_name'],
+                                $_POST['description'] ?? null,
+                                $_POST['category'],
+                                $_POST['price'] ?? 0,
+                                isset($_POST['is_available']) ? 1 : 0,
+                                $menuImagePath ?: null
+                            ]);
+                        } else {
+                            $stmt = $pdo->prepare("INSERT INTO breakfast_menus (menu_name, description, category, price, is_available) 
+                                                 VALUES (?, ?, ?, ?, ?)");
+                            $result = $stmt->execute([
+                                $_POST['menu_name'],
+                                $_POST['description'] ?? null,
+                                $_POST['category'],
+                                $_POST['price'] ?? 0,
+                                isset($_POST['is_available']) ? 1 : 0
+                            ]);
+                        }
                     }
                 } catch (Exception $e) {
                     error_log("INSERT FAILED: " . $e->getMessage());
@@ -265,21 +354,53 @@ elseif ($activeTab === 'breakfast_menu') {
                 exit;
                 
             } elseif ($_POST['action'] === 'edit_menu') {
-                $stmt = $pdo->prepare("UPDATE breakfast_menus SET menu_name=?, description=?, category=?, price=?, is_free=?, is_available=? WHERE id=?");
-                $stmt->execute([
-                    $_POST['menu_name'],
-                    $_POST['description'],
-                    $_POST['category'],
-                    $_POST['price'],
-                    isset($_POST['is_free']) ? 1 : 0,
-                    isset($_POST['is_available']) ? 1 : 0,
-                    $_POST['menu_id']
-                ]);
+                $menuId = (int)($_POST['menu_id'] ?? 0);
+                $existingMenu = $db->fetchOne("SELECT image_url FROM breakfast_menus WHERE id = ? LIMIT 1", [$menuId]);
+                $existingImage = $existingMenu['image_url'] ?? '';
+
+                $newImagePath = $storeMenuImage('menu_image_edit', $existingImage);
+                if (!empty($_POST['remove_image'])) {
+                    $deleteLocalImage($newImagePath);
+                    $newImagePath = '';
+                }
+
+                $editColumns = $pdo->query("SHOW COLUMNS FROM breakfast_menus")->fetchAll(PDO::FETCH_COLUMN);
+                $hasImageUrlEdit = in_array('image_url', $editColumns);
+
+                if ($hasImageUrlEdit) {
+                    $stmt = $pdo->prepare("UPDATE breakfast_menus SET menu_name=?, description=?, category=?, price=?, is_free=?, is_available=?, image_url=? WHERE id=?");
+                    $stmt->execute([
+                        $_POST['menu_name'],
+                        $_POST['description'],
+                        $_POST['category'],
+                        $_POST['price'],
+                        isset($_POST['is_free']) ? 1 : 0,
+                        isset($_POST['is_available']) ? 1 : 0,
+                        $newImagePath ?: null,
+                        $menuId
+                    ]);
+                } else {
+                    $stmt = $pdo->prepare("UPDATE breakfast_menus SET menu_name=?, description=?, category=?, price=?, is_free=?, is_available=? WHERE id=?");
+                    $stmt->execute([
+                        $_POST['menu_name'],
+                        $_POST['description'],
+                        $_POST['category'],
+                        $_POST['price'],
+                        isset($_POST['is_free']) ? 1 : 0,
+                        isset($_POST['is_available']) ? 1 : 0,
+                        $menuId
+                    ]);
+                }
                 $message = "✓ Menu breakfast berhasil diupdate!";
                 
             } elseif ($_POST['action'] === 'delete_menu') {
+                $menuId = (int)($_POST['menu_id'] ?? 0);
+                $existingMenu = $db->fetchOne("SELECT image_url FROM breakfast_menus WHERE id = ? LIMIT 1", [$menuId]);
+                if (!empty($existingMenu['image_url'])) {
+                    $deleteLocalImage($existingMenu['image_url']);
+                }
                 $stmt = $pdo->prepare("DELETE FROM breakfast_menus WHERE id=?");
-                $stmt->execute([$_POST['menu_id']]);
+                $stmt->execute([$menuId]);
                 $message = "✓ Menu breakfast berhasil dihapus!";
                 
             } elseif ($_POST['action'] === 'toggle_availability') {
@@ -1090,7 +1211,7 @@ include '../../includes/header.php';
     
     <div class="form-card">
         <h2 style="margin-top: 0; color: var(--primary);">➕ Add New Breakfast Menu</h2>
-        <form method="POST">
+        <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="action" value="add_menu">
             
             <div class="form-row">
@@ -1119,6 +1240,12 @@ include '../../includes/header.php';
             <div class="form-group">
                 <label class="form-label">Description</label>
                 <textarea name="description" class="form-textarea" placeholder="e.g., Eggs, bacon, sausage, toast, hash browns"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Gambar Menu (opsional)</label>
+                <input type="file" name="menu_image" class="form-input" accept=".jpg,.jpeg,.png,.webp,.gif">
+                <small style="color: var(--text-secondary); display:block; margin-top:.35rem;">Format: JPG/JPEG/PNG/WEBP/GIF, max 5MB</small>
             </div>
             
             <div class="form-group">
@@ -1164,6 +1291,7 @@ include '../../includes/header.php';
             <table class="table">
                 <thead>
                     <tr>
+                        <th>Image</th>
                         <th>Menu Name</th>
                         <th>Description</th>
                         <th>Type</th>
@@ -1177,8 +1305,17 @@ include '../../includes/header.php';
                     <?php 
                         // Ensure is_free has a value (default based on price)
                         $isFree = isset($menu['is_free']) ? (bool)$menu['is_free'] : ($menu['price'] == 0);
+                        $imageUrl = trim((string)($menu['image_url'] ?? ''));
+                        $imageSrc = $imageUrl !== '' ? ((strpos($imageUrl, 'http') === 0) ? $imageUrl : BASE_URL . '/' . ltrim($imageUrl, '/')) : '';
                     ?>
                     <tr style="<?php echo $menu['is_available'] ? '' : 'opacity: 0.5;'; ?>">
+                        <td>
+                            <?php if ($imageSrc !== ''): ?>
+                                <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo htmlspecialchars($menu['menu_name']); ?>" style="width:54px;height:54px;object-fit:cover;border-radius:8px;border:1px solid var(--border-color);">
+                            <?php else: ?>
+                                <span style="font-size:.75rem;color:var(--text-secondary);">-</span>
+                            <?php endif; ?>
+                        </td>
                         <td><strong><?php echo htmlspecialchars($menu['menu_name']); ?></strong></td>
                         <td style="font-size: 0.85rem; color: var(--text-secondary);">
                             <?php echo htmlspecialchars($menu['description'] ?? '-'); ?>
@@ -1534,9 +1671,10 @@ include '../../includes/header.php';
 <div id="editBreakfastModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
     <div style="background: var(--card-bg); padding: 2rem; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
         <h2 style="margin-top: 0; color: var(--primary);">✏️ Edit Breakfast Menu</h2>
-        <form method="POST" id="editBreakfastForm">
+        <form method="POST" id="editBreakfastForm" enctype="multipart/form-data">
             <input type="hidden" name="action" value="edit_menu">
             <input type="hidden" name="menu_id" id="edit_menu_id">
+            <input type="hidden" id="edit_image_url" value="">
             
             <div class="form-row">
                 <div class="form-group">
@@ -1564,6 +1702,16 @@ include '../../includes/header.php';
             <div class="form-group">
                 <label class="form-label">Description</label>
                 <textarea name="description" id="edit_description" class="form-textarea"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Gambar Menu (opsional)</label>
+                <div id="edit_image_preview" style="margin-bottom:.5rem;color:var(--text-secondary);font-size:.85rem;">Belum ada gambar</div>
+                <input type="file" name="menu_image_edit" id="edit_menu_image" class="form-input" accept=".jpg,.jpeg,.png,.webp,.gif">
+                <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;margin-top:.45rem;">
+                    <input type="checkbox" name="remove_image" id="edit_remove_image" style="width:16px;height:16px;">
+                    <span>Hapus gambar saat ini</span>
+                </label>
             </div>
             
             <div class="form-group">
@@ -1632,6 +1780,18 @@ function editBreakfastMenu(menu) {
     document.getElementById('edit_description').value = menu.description || '';
     document.getElementById('edit_is_free').checked = menu.is_free == 1;
     document.getElementById('edit_is_available').checked = menu.is_available == 1;
+    document.getElementById('edit_remove_image').checked = false;
+    document.getElementById('edit_menu_image').value = '';
+
+    var imageUrl = (menu.image_url || '').trim();
+    document.getElementById('edit_image_url').value = imageUrl;
+    var preview = document.getElementById('edit_image_preview');
+    if (imageUrl) {
+        var src = imageUrl.indexOf('http') === 0 ? imageUrl : '<?php echo rtrim(BASE_URL, '/'); ?>/' + imageUrl.replace(/^\/+/, '');
+        preview.innerHTML = '<img src="' + src + '" alt="Menu image" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border-color);">';
+    } else {
+        preview.textContent = 'Belum ada gambar';
+    }
     
     const modal = document.getElementById('editBreakfastModal');
     modal.style.display = 'flex';
