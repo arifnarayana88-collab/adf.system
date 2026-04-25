@@ -36,7 +36,8 @@ function ensure_breakfast_orders_table($pdo)
         order_status VARCHAR(20) DEFAULT 'pending',
         created_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_booking_date (booking_id, breakfast_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
@@ -198,6 +199,9 @@ try {
     ensure_portal_links_table($pdo);
     ensure_breakfast_quota_table($pdo);
     ensure_booking_extras_table($pdo);
+    
+    // Ensure unique key on breakfast_orders
+    try { $pdo->exec("ALTER TABLE breakfast_orders ADD UNIQUE KEY uk_booking_date (booking_id, breakfast_date)"); } catch (Exception $e) {}
     
     // Add new columns if not exist
     try { $pdo->exec("ALTER TABLE breakfast_guest_quota ADD COLUMN adult_count INT NOT NULL DEFAULT 1 AFTER breakfast_date"); } catch (Exception $e) {}
@@ -364,6 +368,48 @@ if ($action === 'create_link') {
         }
         if (!$inserted) {
             throw new Exception('Tidak dapat membuat short link');
+        }
+
+        // Create pending order record so guest is tracked and not shown in "not yet ordered" list
+        $breakfastTime = '07:00:00'; // default breakfast time
+        $roomJson = json_encode($rooms);
+        $pendingOrderBody = [
+            'booking_id' => $bookingId,
+            'guest_name' => $guestName,
+            'room_number' => $roomJson,
+            'total_pax' => $totalPax,
+            'breakfast_time' => $breakfastTime,
+            'breakfast_date' => $breakfastDate,
+            'location' => 'restaurant',
+            'menu_items' => json_encode([]),  // empty, will be filled when guest submits
+            'special_requests' => '',
+            'order_status' => 'link_sent',  // pending status to show link was sent but not yet filled
+            'created_by' => $userId
+        ];
+        
+        try {
+            $pdo->prepare("INSERT INTO breakfast_orders
+                (booking_id, guest_name, room_number, total_pax, breakfast_time, breakfast_date, location, menu_items, special_requests, order_status, created_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    order_status = 'link_sent',
+                    updated_at = NOW()")
+                ->execute([
+                    $bookingId,
+                    $guestName,
+                    $pendingOrderBody['room_number'],
+                    $totalPax,
+                    $breakfastTime,
+                    $breakfastDate,
+                    'restaurant',
+                    json_encode([]),
+                    '',
+                    'link_sent',
+                    $userId
+                ]);
+        } catch (Exception $orderEx) {
+            // Log but don't fail the link creation if order creation fails
+            error_log('Breakfast order pending creation failed: ' . $orderEx->getMessage());
         }
 
         $linkUrl = rtrim(BASE_URL, '/') . '/modules/frontdesk/breakfast-guest.php?t=' . urlencode($token);
@@ -727,7 +773,7 @@ if ($action === 'submit_link') {
             $pdo->prepare("UPDATE breakfast_orders SET
                 booking_id = ?, guest_name = ?, room_number = ?, total_pax = ?, breakfast_time = ?,
                 breakfast_date = ?, location = ?, menu_items = ?, special_requests = ?, total_price = ?,
-                order_status = 'pending'
+                order_status = 'submitted'
                 WHERE id = ?")
                 ->execute([
                     $bookingId,
@@ -747,7 +793,7 @@ if ($action === 'submit_link') {
             $pdo->prepare("INSERT INTO breakfast_orders
                 (booking_id, guest_name, room_number, total_pax, breakfast_time, breakfast_date,
                  location, menu_items, special_requests, total_price, order_status, created_by)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL)")
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'submitted', NULL)")
                 ->execute([
                     $bookingId,
                     $guestName,
