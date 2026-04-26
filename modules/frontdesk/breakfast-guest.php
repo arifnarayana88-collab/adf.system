@@ -100,15 +100,22 @@ $token = trim((string)($_GET['t'] ?? ''));
         
         .menu-img-wrap {
             width: 100%;
-            height: 118px;
+            min-height: 160px;
             background: linear-gradient(135deg, rgba(191, 219, 254, 0.28), rgba(147, 197, 253, 0.2));
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
-            padding: 4px;
+            overflow: visible;
+            padding: 8px;
         }
-        .menu-img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
+        .menu-img {
+            width: auto;
+            height: auto;
+            max-width: 100%;
+            max-height: 220px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
         .menu-img-placeholder { font-size: 2.2rem; }
         
         .menu-content { padding: 10px 11px 11px; }
@@ -341,7 +348,8 @@ $token = trim((string)($_GET['t'] ?? ''));
             .header-logo { height: 40px; max-width: 130px; }
             .header-top { align-items: flex-start; }
             .field-grid { grid-template-columns: 1fr; }
-            .menu-img-wrap { height: 104px; }
+            .menu-img-wrap { min-height: 138px; }
+            .menu-img { max-height: 180px; }
         }
     </style>
 </head>
