@@ -290,9 +290,9 @@ if ($action === 'create_link') {
     $totalDrinkQuota = $maxDrink;
     $totalChildQuota = $maxChild;
 
-    $extraMainPrice = 75000.0;
-    $extraDrinkPrice = 75000.0;
-    $extraChildPrice = 75000.0;
+    $extraMainPrice = max(0, to_float($body['extra_main_price'] ?? 75000, 75000));
+    $extraDrinkPrice = max(0, to_float($body['extra_drink_price'] ?? 75000, 75000));
+    $extraChildPrice = max(0, to_float($body['extra_child_price'] ?? 75000, 75000));
 
     $childMenuIds = $body['child_menu_ids'] ?? [];
     if (!is_array($childMenuIds)) $childMenuIds = [];
@@ -542,6 +542,26 @@ if ($action === 'get_link') {
     $extraMainPrice = 75000.0;
     $extraDrinkPrice = 75000.0;
     $extraChildPrice = 75000.0;
+
+    $quotaRow = null;
+    if (!empty($link['booking_id'])) {
+        $quotaRow = $db->fetchOne("SELECT extra_main_price, extra_drink_price, extra_child_price FROM breakfast_guest_quota WHERE booking_id = ? LIMIT 1", [(int)$link['booking_id']]);
+    }
+    if (!$quotaRow) {
+        $quotaRow = $db->fetchOne(
+            "SELECT extra_main_price, extra_drink_price, extra_child_price
+             FROM breakfast_guest_quota
+             WHERE breakfast_date = ? AND LOWER(TRIM(guest_name)) = LOWER(TRIM(?))
+             ORDER BY updated_at DESC, id DESC
+             LIMIT 1",
+            [$link['breakfast_date'], $link['guest_name']]
+        );
+    }
+    if ($quotaRow) {
+        $extraMainPrice = max(0, to_float($quotaRow['extra_main_price'] ?? 75000, 75000));
+        $extraDrinkPrice = max(0, to_float($quotaRow['extra_drink_price'] ?? 75000, 75000));
+        $extraChildPrice = max(0, to_float($quotaRow['extra_child_price'] ?? 75000, 75000));
+    }
     $waMediaUrl = '';
     if ($waMediaPath) {
         $waMediaUrl = (strpos($waMediaPath, 'http') === 0)
@@ -705,6 +725,26 @@ if ($action === 'submit_link') {
         $extraDrinkPrice = 75000.0;
         $extraChildPrice = 75000.0;
 
+        $quotaRow = null;
+        if (!empty($link['booking_id'])) {
+            $quotaRow = $db->fetchOne("SELECT extra_main_price, extra_drink_price, extra_child_price FROM breakfast_guest_quota WHERE booking_id = ? LIMIT 1", [(int)$link['booking_id']]);
+        }
+        if (!$quotaRow) {
+            $quotaRow = $db->fetchOne(
+                "SELECT extra_main_price, extra_drink_price, extra_child_price
+                 FROM breakfast_guest_quota
+                 WHERE breakfast_date = ? AND LOWER(TRIM(guest_name)) = LOWER(TRIM(?))
+                 ORDER BY updated_at DESC, id DESC
+                 LIMIT 1",
+                [$link['breakfast_date'], $link['guest_name']]
+            );
+        }
+        if ($quotaRow) {
+            $extraMainPrice = max(0, to_float($quotaRow['extra_main_price'] ?? 75000, 75000));
+            $extraDrinkPrice = max(0, to_float($quotaRow['extra_drink_price'] ?? 75000, 75000));
+            $extraChildPrice = max(0, to_float($quotaRow['extra_child_price'] ?? 75000, 75000));
+        }
+
         $menuItems = [];
         $totalPrice = 0;
         $extraChargeTotal = 0;
@@ -848,8 +888,8 @@ if ($action === 'submit_link') {
         if ($onTheSpot) {
             $portalNote .= ' ON THE SPOT';
         }
-        if ($extraMainCount > 0 || $extraChildCount > 0) {
-            $portalNote .= ' Extra: main=' . $extraMainCount . ', child=' . $extraChildCount;
+        if ($extraMainCount > 0 || $extraDrinkCount > 0 || $extraChildCount > 0) {
+            $portalNote .= ' Extra: main=' . $extraMainCount . ', drink=' . $extraDrinkCount . ', child=' . $extraChildCount;
         }
         if ($specialRequests !== '') {
             $portalNote .= ' ' . $specialRequests;
