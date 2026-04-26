@@ -246,6 +246,14 @@ $token = trim((string)($_GET['t'] ?? ''));
             cursor: not-allowed;
         }
         .menu-note-readonly { margin-top: 8px; font-size: 0.72rem; color: #475569; background: rgba(241, 245, 249, 0.8); border-radius: 8px; padding: 6px 8px; }
+        .menu-qty-wrap {
+            margin-top: 8px;
+            display: none;
+            align-items: center;
+            gap: 6px;
+        }
+        .menu-item.selected .menu-qty-wrap { display: inline-flex; }
+        .menu-qty-wrap .cart-qty-btn { width: 26px; height: 26px; }
         
         .quota-box {
             background: linear-gradient(135deg, rgba(224, 242, 254, 0.9), rgba(191, 219, 254, 0.82));
@@ -1246,6 +1254,7 @@ $token = trim((string)($_GET['t'] ?? ''));
         var locked = !!payload.is_locked;
         var price = parseFloat(item.price || 0);
         var free = String(item.is_free) === '1' || item.is_free === 1 || item.is_free === true;
+        var qtyVal = getMenuQty(group, item.id);
         var noteMap = group === 'main'
             ? (payload.selected_main_notes || {})
             : (group === 'drink' ? (payload.selected_drink_notes || {}) : (payload.selected_child_notes || {}));
@@ -1267,6 +1276,9 @@ $token = trim((string)($_GET['t'] ?? ''));
             var noteHtmlLocked = noteVal
                 ? '<div class="menu-note-readonly">' + esc(t('requestLabel')) + ': ' + esc(noteVal) + '</div>'
                 : '';
+            var qtyHtmlLocked = item.pre_selected
+                ? '<div class="menu-qty-wrap" style="display:inline-flex"><span class="cart-qty-val">x' + qtyVal + '</span></div>'
+                : '';
             return '<div class="menu-item locked' + (item.pre_selected ? ' selected' : '') + '">' +
                 '<input type="checkbox" class="menu-check" data-group="' + group + '" data-menu-name="' + esc(item.menu_name) + '" data-menu-category="' + esc(item.category || '-') + '" data-menu-price="' + price + '" data-menu-free="' + (free ? '1' : '0') + '" value="' + item.id + '" ' + checked + ' disabled>' +
                 imgHtml +
@@ -1277,10 +1289,17 @@ $token = trim((string)($_GET['t'] ?? ''));
                 '<span class="menu-cat">' + esc(item.category || '-') + '</span>' +
                 '<span class="menu-price ' + (free ? 'free' : '') + '">' + (free ? 'FREE' : 'Rp ' + Math.round(price).toLocaleString('id-ID')) + '</span>' +
                 '</div>' +
+                qtyHtmlLocked +
                 noteHtmlLocked +
                 '</div>' +
                 '</div>';
         }
+
+        var qtyHtmlEdit = '<div class="menu-qty-wrap" data-group="' + group + '" data-menu-id="' + item.id + '">' +
+            '<button type="button" class="cart-qty-btn" data-action="qty-minus" data-group="' + group + '" data-id="' + item.id + '" onclick="event.preventDefault();event.stopPropagation();">-</button>' +
+            '<span class="cart-qty-val" data-menu-qty-group="' + group + '" data-menu-qty-val="' + item.id + '">' + qtyVal + '</span>' +
+            '<button type="button" class="cart-qty-btn" data-action="qty-plus" data-group="' + group + '" data-id="' + item.id + '" onclick="event.preventDefault();event.stopPropagation();">+</button>' +
+            '</div>';
 
         var noteHtmlEdit = '<div class="menu-note-wrap">' +
             '<label class="menu-note-label">' + esc(t('menuNoteLabel')) + '</label>' +
@@ -1298,9 +1317,22 @@ $token = trim((string)($_GET['t'] ?? ''));
             '<span class="menu-cat">' + esc(item.category || '-') + '</span>' +
             '<span class="menu-price ' + (free ? 'free' : '') + '">' + (free ? 'FREE' : 'Rp ' + Math.round(price).toLocaleString('id-ID')) + '</span>' +
             '</div>' +
+            qtyHtmlEdit +
             noteHtmlEdit +
             '</div>' +
             '</label>';
+    }
+
+    function syncMenuQtyDisplay() {
+        Array.from(document.querySelectorAll('.menu-check')).forEach(function (cb) {
+            var group = String(cb.dataset.group || '');
+            var id = parseInt(cb.value || '0', 10);
+            if (!group || !Number.isFinite(id) || id <= 0) return;
+            var qtyValEl = document.querySelector('.cart-qty-val[data-menu-qty-group="' + group + '"][data-menu-qty-val="' + id + '"]');
+            if (qtyValEl) {
+                qtyValEl.textContent = String(getMenuQty(group, id));
+            }
+        });
     }
 
     function refreshQuotaInfo(group, max, target, infoTargetId, extraUnitPrice) {
@@ -1558,6 +1590,7 @@ $token = trim((string)($_GET['t'] ?? ''));
     }
 
     function refreshSelectionUI() {
+        syncMenuQtyDisplay();
         renderCart();
         showQuotaPopup();
     }
