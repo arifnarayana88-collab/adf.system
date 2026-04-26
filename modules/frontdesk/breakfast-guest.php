@@ -100,7 +100,7 @@ $token = trim((string)($_GET['t'] ?? ''));
         
         .menu-img-wrap {
             width: 100%;
-            height: 72px;
+            height: 118px;
             background: linear-gradient(135deg, rgba(191, 219, 254, 0.28), rgba(147, 197, 253, 0.2));
             display: flex;
             align-items: center;
@@ -341,6 +341,7 @@ $token = trim((string)($_GET['t'] ?? ''));
             .header-logo { height: 40px; max-width: 130px; }
             .header-top { align-items: flex-start; }
             .field-grid { grid-template-columns: 1fr; }
+            .menu-img-wrap { height: 104px; }
         }
     </style>
 </head>
@@ -574,6 +575,22 @@ $token = trim((string)($_GET['t'] ?? ''));
         return p[2] + '/' + p[1] + '/' + p[0];
     }
 
+    function formatTime(v) {
+        var val = String(v || '').trim();
+        if (!val) return '-';
+        return val.slice(0, 5);
+    }
+
+    function formatService(v) {
+        var key = String(v || '').trim();
+        var map = {
+            restaurant: 'Restaurant',
+            room_service: 'Room Service',
+            take_away: 'Take Away'
+        };
+        return map[key] || (key || '-');
+    }
+
     function renderMeta() {
         var meta = document.getElementById('metaBox');
         meta.className = 'meta meta-stack';
@@ -581,6 +598,9 @@ $token = trim((string)($_GET['t'] ?? ''));
             ['Guest', payload.guest_name || '-'],
             ['Room', Array.isArray(payload.room_number) ? payload.room_number.join(', ') : '-'],
             ['Date', formatDate(payload.breakfast_date)],
+            ['Breakfast Time', formatTime(payload.breakfast_time)],
+            ['Service', formatService(payload.breakfast_service)],
+            ['Location', payload.breakfast_location || '-'],
             ['Expires', payload.expires_at || '-']
         ].map(function (it) {
             return '<div class="meta-item-light"><div class="meta-lbl-dark">' + esc(it[0]) + '</div><div class="meta-val">' + esc(it[1]) + '</div></div>';
