@@ -96,25 +96,24 @@ $token = trim((string)($_GET['t'] ?? ''));
         .menu-item:hover { border-color: rgba(59, 130, 246, 0.55); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(59, 130, 246, 0.12); }
         .menu-item.selected { border-color: #38bdf8; background: linear-gradient(135deg, rgba(224, 242, 254, 0.92), rgba(191, 219, 254, 0.88)); }
         .menu-item.locked { cursor: default; }
-        .menu-item input { display: none; }
+        .menu-item .menu-check { display: none; }
         
         .menu-img-wrap {
             width: 100%;
-            min-height: 160px;
+            height: 132px;
             background: linear-gradient(135deg, rgba(191, 219, 254, 0.28), rgba(147, 197, 253, 0.2));
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: visible;
-            padding: 8px;
+            overflow: hidden;
+            padding: 0;
         }
         .menu-img {
-            width: auto;
-            height: auto;
-            max-width: 100%;
-            max-height: 220px;
-            object-fit: contain;
-            border-radius: 8px;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            border-radius: 0;
         }
         .menu-img-placeholder { font-size: 2.2rem; }
         
@@ -147,6 +146,7 @@ $token = trim((string)($_GET['t'] ?? ''));
             letter-spacing: .2px;
         }
         .menu-note-input {
+            display: block;
             width: 100%;
             border: 1px solid rgba(148, 163, 184, 0.32);
             border-radius: 8px;
@@ -348,8 +348,7 @@ $token = trim((string)($_GET['t'] ?? ''));
             .header-logo { height: 40px; max-width: 130px; }
             .header-top { align-items: flex-start; }
             .field-grid { grid-template-columns: 1fr; }
-            .menu-img-wrap { min-height: 138px; }
-            .menu-img { max-height: 180px; }
+            .menu-img-wrap { height: 116px; }
         }
     </style>
 </head>
