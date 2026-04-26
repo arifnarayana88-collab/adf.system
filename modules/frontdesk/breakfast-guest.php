@@ -254,6 +254,45 @@ $token = trim((string)($_GET['t'] ?? ''));
             justify-content: center;
         }
         .btn-wa:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(22, 163, 74, 0.3); }
+
+        .wa-float {
+            position: fixed;
+            right: 16px;
+            bottom: 18px;
+            z-index: 9998;
+            height: 54px;
+            min-width: 54px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.5);
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.96), rgba(22, 163, 74, 0.96));
+            color: #fff;
+            text-decoration: none;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 0 14px;
+            font-size: 0.82rem;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+            box-shadow: 0 12px 24px rgba(21, 128, 61, 0.34);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .wa-float.show { display: inline-flex; }
+        .wa-float:hover { transform: translateY(-2px); box-shadow: 0 16px 28px rgba(21, 128, 61, 0.4); }
+        .wa-float-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.22);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.78rem;
+            font-weight: 900;
+        }
+        .wa-float-text { white-space: nowrap; }
         
         .msg { margin-top: 12px; font-size: 0.9rem; font-weight: 600; padding: 10px; border-radius: 8px; }
         .ok { background: #d1fae5; color: #059669; }
@@ -398,6 +437,14 @@ $token = trim((string)($_GET['t'] ?? ''));
             .menu-img-wrap { height: 150px; }
             .menu-name { font-size: 0.92rem; }
             .menu-desc { font-size: 0.74rem; min-height: 38px; }
+            .wa-float {
+                right: 12px;
+                bottom: 14px;
+                height: 50px;
+                min-width: 50px;
+                padding: 0 12px;
+            }
+            .wa-float-text { display: none; }
         }
 
         @media (max-width: 430px) {
@@ -511,6 +558,11 @@ $token = trim((string)($_GET['t'] ?? ''));
         </div>
         <div class="msg" id="submitMsg"></div>
     </div>
+
+    <a class="wa-float" id="waFloatBtn" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp Front Office">
+        <span class="wa-float-icon">WA</span>
+        <span class="wa-float-text">Front Office</span>
+    </a>
 </div>
 
 <script>
@@ -529,6 +581,7 @@ $token = trim((string)($_GET['t'] ?? ''));
     var childGrid = document.getElementById('childGrid');
     var drinkGrid = document.getElementById('drinkGrid');
     var waFoBtn = document.getElementById('btnWaFo');
+    var waFloatBtn = document.getElementById('waFloatBtn');
     var onTheSpotBtn = document.getElementById('btnOnTheSpot');
     var breakfastTimeEl = document.getElementById('breakfastTime');
     var serviceTypeEl = document.getElementById('serviceType');
@@ -623,11 +676,17 @@ $token = trim((string)($_GET['t'] ?? ''));
             if (breakfastLocationEl) breakfastLocationEl.disabled = true;
 
             if (waFoBtn) {
-                waFoBtn.href = buildWaFoLink();
+                var waLink = buildWaFoLink();
+                waFoBtn.href = waLink;
                 waFoBtn.classList.remove('hidden');
+                if (waFloatBtn) {
+                    waFloatBtn.href = waLink;
+                    waFloatBtn.classList.add('show');
+                }
             }
         } else if (waFoBtn) {
             waFoBtn.classList.add('hidden');
+            if (waFloatBtn) waFloatBtn.classList.remove('show');
             if (onTheSpotBtn) onTheSpotBtn.style.display = 'inline-flex';
             if (breakfastTimeEl) breakfastTimeEl.disabled = false;
             if (serviceTypeEl) serviceTypeEl.disabled = false;
