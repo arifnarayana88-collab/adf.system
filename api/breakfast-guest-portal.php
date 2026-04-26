@@ -253,7 +253,7 @@ if ($action === 'create_link') {
     // New quota structure based on guest composition
     $adultCount = max(0, (int)($body['adult_count'] ?? 1));
     $childYoung = max(0, (int)($body['child_young_count'] ?? 0)); // < 7 years old
-    $childOld = max(0, (int)($body['child_old_count'] ?? 0));     // >= 7 years old
+    $childOld = 0; // kids >=7 are not configured separately in this flow
     
     $maxMain = max(0, (int)($body['max_main'] ?? 2));
     $maxDrink = max(0, (int)($body['max_drink'] ?? 2));
@@ -266,9 +266,9 @@ if ($action === 'create_link') {
     $totalDrinkQuota = $maxDrink;
     $totalChildQuota = $maxChild;
 
-    $extraMainPrice = to_float($body['extra_main_price'] ?? '', to_float(get_setting($db, 'breakfast_extra_main_price'), 55000));
-    $extraDrinkPrice = to_float($body['extra_drink_price'] ?? '', to_float(get_setting($db, 'breakfast_extra_drink_price'), 25000));
-    $extraChildPrice = to_float($body['extra_child_price'] ?? '', to_float(get_setting($db, 'breakfast_extra_child_price'), 30000));
+    $extraMainPrice = 75000.0;
+    $extraDrinkPrice = 75000.0;
+    $extraChildPrice = 75000.0;
 
     $childMenuIds = $body['child_menu_ids'] ?? [];
     if (!is_array($childMenuIds)) $childMenuIds = [];
@@ -555,17 +555,9 @@ if ($action === 'get_link') {
     }
     $waMediaPath = get_setting($db, 'breakfast_wa_media_path');
     $portalLogoPath = get_setting($db, 'breakfast_portal_logo_path');
-    $extraMainPrice = to_float(get_setting($db, 'breakfast_extra_main_price'), 55000);
-    $extraDrinkPrice = to_float(get_setting($db, 'breakfast_extra_drink_price'), 25000);
-    $extraChildPrice = to_float(get_setting($db, 'breakfast_extra_child_price'), 30000);
-    if (!empty($link['booking_id'])) {
-        $quota = $db->fetchOne("SELECT extra_main_price, extra_drink_price, extra_child_price FROM breakfast_guest_quota WHERE booking_id = ? LIMIT 1", [(int)$link['booking_id']]);
-        if ($quota) {
-            $extraMainPrice = to_float($quota['extra_main_price'], $extraMainPrice);
-            $extraDrinkPrice = to_float($quota['extra_drink_price'], $extraDrinkPrice);
-            $extraChildPrice = to_float($quota['extra_child_price'], $extraChildPrice);
-        }
-    }
+    $extraMainPrice = 75000.0;
+    $extraDrinkPrice = 75000.0;
+    $extraChildPrice = 75000.0;
     $waMediaUrl = '';
     if ($waMediaPath) {
         $waMediaUrl = (strpos($waMediaPath, 'http') === 0)
@@ -703,17 +695,9 @@ if ($action === 'submit_link') {
             }
         }
 
-        $extraMainPrice = to_float(get_setting($db, 'breakfast_extra_main_price'), 55000);
-        $extraDrinkPrice = to_float(get_setting($db, 'breakfast_extra_drink_price'), 25000);
-        $extraChildPrice = to_float(get_setting($db, 'breakfast_extra_child_price'), 30000);
-        if (!empty($link['booking_id'])) {
-            $quota = $db->fetchOne("SELECT extra_main_price, extra_drink_price, extra_child_price FROM breakfast_guest_quota WHERE booking_id = ? LIMIT 1", [(int)$link['booking_id']]);
-            if ($quota) {
-                $extraMainPrice = to_float($quota['extra_main_price'], $extraMainPrice);
-                $extraDrinkPrice = to_float($quota['extra_drink_price'], $extraDrinkPrice);
-                $extraChildPrice = to_float($quota['extra_child_price'], $extraChildPrice);
-            }
-        }
+        $extraMainPrice = 75000.0;
+        $extraDrinkPrice = 75000.0;
+        $extraChildPrice = 75000.0;
 
         $allSelected = array_values(array_unique(array_merge($selectedMain, $selectedDrink, $selectedChild)));
         if (count($allSelected) === 0) {
@@ -752,7 +736,7 @@ if ($action === 'submit_link') {
             }
             $menuItems[] = $item;
             if ($isExtra) {
-                $charge = (float)$m['price'] > 0 ? (float)$m['price'] : (float)$extraMainPrice;
+                $charge = (float)$extraMainPrice;
                 $totalPrice += $charge;
                 $extraChargeTotal += $charge;
             } elseif (!(int)$m['is_free']) {
@@ -787,7 +771,7 @@ if ($action === 'submit_link') {
             }
             $menuItems[] = $item;
             if ($isExtra) {
-                $charge = (float)$m['price'] > 0 ? (float)$m['price'] : (float)$extraDrinkPrice;
+                $charge = (float)$extraDrinkPrice;
                 $totalPrice += $charge;
                 $extraChargeTotal += $charge;
             } elseif (!(int)$m['is_free']) {
@@ -821,7 +805,7 @@ if ($action === 'submit_link') {
             }
             $menuItems[] = $item;
             if ($isExtra) {
-                $charge = (float)$m['price'] > 0 ? (float)$m['price'] : (float)$extraChildPrice;
+                $charge = (float)$extraChildPrice;
                 $totalPrice += $charge;
                 $extraChargeTotal += $charge;
             } elseif (!(int)$m['is_free']) {

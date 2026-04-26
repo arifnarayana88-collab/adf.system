@@ -300,14 +300,14 @@ include '../../includes/header.php';
                                        data-phone="<?php echo htmlspecialchars($g['guest_phone'] ?? ''); ?>"
                                        data-adults="<?php echo (int)($savedQuota['adult_count'] ?? 1); ?>"
                                        data-child-young="<?php echo (int)($savedQuota['child_young_count'] ?? 0); ?>"
-                                       data-child-old="<?php echo (int)($savedQuota['child_old_count'] ?? 0); ?>"
+                                       data-child-old="0"
                                        data-total-pax="<?php echo (int)($savedQuota['total_pax'] ?? 0); ?>"
                                        data-max-main="<?php echo (int)($savedQuota['max_main'] ?? 2); ?>"
                                        data-max-drink="<?php echo (int)($savedQuota['max_drink'] ?? 2); ?>"
                                        data-max-child="<?php echo (int)($savedQuota['max_child'] ?? 2); ?>"
-                                       data-extra-main-price="<?php echo (float)($savedQuota['extra_main_price'] ?? 55000); ?>"
-                                       data-extra-drink-price="<?php echo (float)($savedQuota['extra_drink_price'] ?? 25000); ?>"
-                                       data-extra-child-price="<?php echo (float)($savedQuota['extra_child_price'] ?? 30000); ?>"
+                                       data-extra-main-price="75000"
+                                       data-extra-drink-price="75000"
+                                       data-extra-child-price="75000"
                                        data-child-menu-ids="<?php echo htmlspecialchars(json_encode($savedChildIds)); ?>">
                                 <div class="guest-info">
                                     <div class="guest-name"><?php echo htmlspecialchars($g['guest_name']); ?></div>
@@ -523,20 +523,16 @@ include '../../includes/header.php';
             <button type="button" class="bf-modal-close" onclick="closeGuestSetup()">✕</button>
         </div>
         <div class="bf-link-grid">
-            <div class="bf-link-group"><label>Adults (>=7)</label><input type="number" id="setupAdult" min="0" max="10"></div>
-            <div class="bf-link-group"><label>Kids < 7</label><input type="number" id="setupKidYoung" min="0" max="10"></div>
-            <div class="bf-link-group"><label>Kids >= 7</label><input type="number" id="setupKidOld" min="0" max="10"></div>
+            <div class="bf-link-group"><label>Adults (>=7)</label><input type="number" id="setupAdult" min="0" max="10" oninput="updateSetupPax()"></div>
+            <div class="bf-link-group"><label>Kids < 7</label><input type="number" id="setupKidYoung" min="0" max="10" oninput="updateSetupPax()"></div>
+            <div class="bf-link-group"><label>Total Pax</label><input type="number" id="setupTotalPax" min="0" max="20" readonly></div>
         </div>
         <div class="bf-link-grid" style="margin-top:.5rem">
             <div class="bf-link-group"><label>Food Quota</label><input type="number" id="setupFood" min="0" max="10"></div>
             <div class="bf-link-group"><label>Drink Quota</label><input type="number" id="setupDrink" min="0" max="10"></div>
             <div class="bf-link-group"><label>Fruit / Free Kids Quota</label><input type="number" id="setupFruit" min="0" max="10"></div>
         </div>
-        <div class="bf-link-grid" style="margin-top:.5rem">
-            <div class="bf-link-group"><label>Extra Food Price</label><input type="number" id="setupExtraFood" min="0" step="1000"></div>
-            <div class="bf-link-group"><label>Extra Drink Price</label><input type="number" id="setupExtraDrink" min="0" step="1000"></div>
-            <div class="bf-link-group"><label>Extra Fruit Price</label><input type="number" id="setupExtraFruit" min="0" step="1000"></div>
-        </div>
+        <div style="margin-top:.55rem;font-size:.72rem;color:var(--text-muted)">Extra Breakfast charge is fixed at Rp 75.000 per item when guest selects above quota.</div>
         <div class="bf-wa-row" style="justify-content:flex-end;margin-top:.8rem">
             <button type="button" class="bf-btn-reset" onclick="closeGuestSetup()">Cancel</button>
             <button type="button" class="bf-link-send" onclick="saveGuestSetup()">Save Setup</button>
@@ -603,13 +599,10 @@ function openGuestSetup(evt, btn) {
     document.getElementById('guestSetupTitle').textContent = 'Setup: ' + (cb.dataset.name || 'Guest');
     document.getElementById('setupAdult').value = parseInt(cb.dataset.adults || '1', 10) || 1;
     document.getElementById('setupKidYoung').value = parseInt(cb.dataset.childYoung || '0', 10) || 0;
-    document.getElementById('setupKidOld').value = parseInt(cb.dataset.childOld || '0', 10) || 0;
+    document.getElementById('setupTotalPax').value = (parseInt(cb.dataset.adults || '1', 10) || 1) + (parseInt(cb.dataset.childYoung || '0', 10) || 0);
     document.getElementById('setupFood').value = parseInt(cb.dataset.maxMain || '2', 10) || 2;
     document.getElementById('setupDrink').value = parseInt(cb.dataset.maxDrink || '2', 10) || 2;
     document.getElementById('setupFruit').value = parseInt(cb.dataset.maxChild || '0', 10) || 0;
-    document.getElementById('setupExtraFood').value = Math.round(parseFloat(cb.dataset.extraMainPrice || '55000') || 55000);
-    document.getElementById('setupExtraDrink').value = Math.round(parseFloat(cb.dataset.extraDrinkPrice || '25000') || 25000);
-    document.getElementById('setupExtraFruit').value = Math.round(parseFloat(cb.dataset.extraChildPrice || '30000') || 30000);
 
     document.getElementById('guestSetupModal').classList.add('show');
 }
@@ -619,18 +612,24 @@ function closeGuestSetup() {
     activeSetupCheckbox = null;
 }
 
+function updateSetupPax() {
+    var adults = Math.max(0, parseInt(document.getElementById('setupAdult').value || '0', 10) || 0);
+    var kids = Math.max(0, parseInt(document.getElementById('setupKidYoung').value || '0', 10) || 0);
+    document.getElementById('setupTotalPax').value = adults + kids;
+}
+
 function saveGuestSetup() {
     if (!activeSetupCheckbox) return;
 
     var adults = Math.max(0, parseInt(document.getElementById('setupAdult').value || '1', 10) || 1);
     var kidYoung = Math.max(0, parseInt(document.getElementById('setupKidYoung').value || '0', 10) || 0);
-    var kidOld = Math.max(0, parseInt(document.getElementById('setupKidOld').value || '0', 10) || 0);
+    var kidOld = 0;
     var food = Math.max(0, parseInt(document.getElementById('setupFood').value || '2', 10) || 2);
     var drink = Math.max(0, parseInt(document.getElementById('setupDrink').value || '2', 10) || 2);
     var fruit = Math.max(0, parseInt(document.getElementById('setupFruit').value || '0', 10) || 0);
-    var extraFood = Math.max(0, parseFloat(document.getElementById('setupExtraFood').value || '55000') || 55000);
-    var extraDrink = Math.max(0, parseFloat(document.getElementById('setupExtraDrink').value || '25000') || 25000);
-    var extraFruit = Math.max(0, parseFloat(document.getElementById('setupExtraFruit').value || '30000') || 30000);
+    var extraFood = 75000;
+    var extraDrink = 75000;
+    var extraFruit = 75000;
 
     activeSetupCheckbox.dataset.adults = String(adults);
     activeSetupCheckbox.dataset.childYoung = String(kidYoung);
@@ -943,13 +942,13 @@ function getSelectedChildMenuIdsFromGuest(cb) {
 async function createGuestPortalLinkFromCheckbox(cb) {
     var adultCount = parseInt(cb.dataset.adults || '1', 10);
     var childYoung = parseInt(cb.dataset.childYoung || '0', 10);
-    var childOld = parseInt(cb.dataset.childOld || '0', 10);
+    var childOld = 0;
     var quotaMain = parseInt(cb.dataset.maxMain || '2', 10);
     var quotaDrink = parseInt(cb.dataset.maxDrink || '2', 10);
     var quotaChild = parseInt(cb.dataset.maxChild || '0', 10);
-    var extraMainPrice = parseFloat(cb.dataset.extraMainPrice || '55000');
-    var extraDrinkPrice = parseFloat(cb.dataset.extraDrinkPrice || '25000');
-    var extraChildPrice = parseFloat(cb.dataset.extraChildPrice || '30000');
+    var extraMainPrice = 75000;
+    var extraDrinkPrice = 75000;
+    var extraChildPrice = 75000;
     var expireHours = 24;
     
     if (!Number.isFinite(adultCount) || adultCount < 0) adultCount = 0;
@@ -958,9 +957,9 @@ async function createGuestPortalLinkFromCheckbox(cb) {
     if (!Number.isFinite(quotaMain) || quotaMain < 0) quotaMain = 0;
     if (!Number.isFinite(quotaDrink) || quotaDrink < 0) quotaDrink = 0;
     if (!Number.isFinite(quotaChild) || quotaChild < 0) quotaChild = 0;
-    if (!Number.isFinite(extraMainPrice) || extraMainPrice < 0) extraMainPrice = 55000;
-    if (!Number.isFinite(extraDrinkPrice) || extraDrinkPrice < 0) extraDrinkPrice = 25000;
-    if (!Number.isFinite(extraChildPrice) || extraChildPrice < 0) extraChildPrice = 30000;
+    if (!Number.isFinite(extraMainPrice) || extraMainPrice < 0) extraMainPrice = 75000;
+    if (!Number.isFinite(extraDrinkPrice) || extraDrinkPrice < 0) extraDrinkPrice = 75000;
+    if (!Number.isFinite(extraChildPrice) || extraChildPrice < 0) extraChildPrice = 75000;
     if (!Number.isFinite(expireHours) || expireHours < 1) expireHours = 24;
 
     var body = {
