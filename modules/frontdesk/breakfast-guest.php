@@ -825,7 +825,7 @@ $token = trim((string)($_GET['t'] ?? ''));
         document.getElementById('mainCard').classList.add('hidden');
         document.getElementById('drinkCard').classList.add('hidden');
         document.getElementById('childCard').classList.add('hidden');
-        document.getElementById('submitCard').classList.remove('hidden');
+        document.getElementById('submitCard').classList.add('hidden');
 
         var mainMenus = payload.view_main_menus || [];
         var drinkMenus = payload.view_drink_menus || [];
@@ -1112,16 +1112,23 @@ $token = trim((string)($_GET['t'] ?? ''));
         var cartCard = document.getElementById('cartCard');
         var cartList = document.getElementById('cartList');
         var cartSummaryText = document.getElementById('cartSummaryText');
+        var submitCard = document.getElementById('submitCard');
         if (!cartCard || !cartList || !cartSummaryText) return;
 
         if (!items.length) {
             cartCard.classList.add('hidden');
             cartList.innerHTML = '';
             cartSummaryText.textContent = 'Belum ada menu dipilih.';
+            if (submitCard && !payload.is_locked) {
+                submitCard.classList.add('hidden');
+            }
             return;
         }
 
         cartCard.classList.remove('hidden');
+        if (submitCard) {
+            submitCard.classList.remove('hidden');
+        }
         cartSummaryText.innerHTML = '<strong>' + items.length + '</strong> item di keranjang. Silakan cek lagi sebelum lanjut isi detail.';
         cartList.innerHTML = items.map(function (item) {
             var priceText = item.free ? 'FREE' : 'Rp ' + Math.round(item.price).toLocaleString('id-ID');
@@ -1251,7 +1258,10 @@ $token = trim((string)($_GET['t'] ?? ''));
             if (ev.target.id === 'btnContinueDetails') {
                 ev.preventDefault();
                 var submitCard = document.getElementById('submitCard');
-                if (submitCard) submitCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (submitCard) {
+                    submitCard.classList.remove('hidden');
+                    submitCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
                 if (breakfastTimeEl) breakfastTimeEl.focus();
             }
         });
