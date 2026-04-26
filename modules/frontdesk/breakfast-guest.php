@@ -42,12 +42,26 @@ $token = trim((string)($_GET['t'] ?? ''));
             border-radius: 16px;
             padding: 14px 16px 12px;
         }
+        .header-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .header-brand { min-width: 0; }
+        .header-logo {
+            height: 46px;
+            max-width: 170px;
+            object-fit: contain;
+            display: none;
+            background: rgba(255,255,255,0.94);
+            border-radius: 10px;
+            padding: 5px 8px;
+            border: 1px solid rgba(255,255,255,0.45);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
+        }
+        .header-logo.show { display: block; }
         .header-card .muted-white { color: #eff6ff; }
         h1 { margin: 0; font-size: 1.06rem; font-weight: 700; letter-spacing: .45px; text-transform: uppercase; }
-        .header-subtitle { font-size: 0.78rem; color: #dbeafe; margin-top: 3px; letter-spacing: .25px; }
+        .header-subtitle { font-size: 0.78rem; color: #f8fbff; margin-top: 3px; letter-spacing: .25px; }
         .header-divider { margin-top: 8px; height: 1px; background: linear-gradient(90deg, rgba(219, 234, 254, 0.15), rgba(219, 234, 254, 0.75), rgba(219, 234, 254, 0.15)); }
         .muted { color: #475569; font-size: 0.9rem; }
-        .muted-white { color: #dbeafe; font-size: 0.92rem; }
+        .muted-white { color: #ffffff; font-size: 0.92rem; font-weight: 500; text-shadow: 0 1px 2px rgba(15, 23, 42, 0.22); }
         .meta { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
         .meta-item { background: rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; }
         .meta-item-light { background: rgba(255,255,255,0.88); border: 1px solid rgba(96, 165, 250, 0.22); border-radius: 12px; padding: 10px 12px; }
@@ -219,6 +233,8 @@ $token = trim((string)($_GET['t'] ?? ''));
             font-weight: 700 !important; 
             font-size: 1rem !important; 
         }
+        .header-card .meta-lbl-dark { color: rgba(219, 234, 254, 0.92); }
+        .header-card .meta-val { color: #ffffff; text-shadow: 0 1px 2px rgba(15, 23, 42, 0.25); }
         .drink-section { 
             margin-top: 24px; 
             padding-top: 20px; 
@@ -228,6 +244,8 @@ $token = trim((string)($_GET['t'] ?? ''));
         @media (max-width: 600px) {
             .menu-grid { grid-template-columns: repeat(2, 1fr); }
             .quota-box { flex-direction: column; text-align: center; }
+            .header-logo { height: 40px; max-width: 130px; }
+            .header-top { align-items: flex-start; }
         }
     </style>
 </head>
@@ -235,8 +253,13 @@ $token = trim((string)($_GET['t'] ?? ''));
 <div class="wrap">
     <div class="card" id="headerCard">
         <div class="header-card">
-            <h1>Breakfast Selection</h1>
-            <div class="header-subtitle">Curated Morning Dining Experience</div>
+            <div class="header-top">
+                <div class="header-brand">
+                    <h1>Breakfast Selection</h1>
+                    <div class="header-subtitle">Curated Morning Dining Experience</div>
+                </div>
+                <img id="portalLogo" class="header-logo" alt="Narayana Logo">
+            </div>
             <div class="header-divider"></div>
             <div class="muted-white" id="stateText">Loading details...</div>
             <div class="meta hidden" id="metaBox"></div>
@@ -313,6 +336,7 @@ $token = trim((string)($_GET['t'] ?? ''));
     var API = <?php echo json_encode(rtrim(BASE_URL, '/') . '/api/breakfast-guest-portal.php'); ?>;
     var BASE_URL = <?php echo json_encode(rtrim(BASE_URL, '/')); ?>;
     var payload = null;
+    var portalLogoEl = document.getElementById('portalLogo');
 
     var mainGrid = document.getElementById('mainGrid');
     var childGrid = document.getElementById('childGrid');
@@ -396,6 +420,17 @@ $token = trim((string)($_GET['t'] ?? ''));
             mediaEl.href = infoMedia;
             mediaEl.classList.remove('hidden');
         }
+
+        if (portalLogoEl) {
+            var logoUrl = (payload.portal_logo_url || '').trim();
+            if (logoUrl) {
+                portalLogoEl.src = logoUrl;
+                portalLogoEl.classList.add('show');
+            } else {
+                portalLogoEl.classList.remove('show');
+                portalLogoEl.removeAttribute('src');
+            }
+        }
     }
 
     function menuCard(item, group) {
@@ -478,6 +513,12 @@ $token = trim((string)($_GET['t'] ?? ''));
         document.addEventListener('change', function (ev) {
             var el = ev.target;
             if (!el.classList.contains('menu-check')) return;
+
+            var menuItem = el.closest('.menu-item');
+            if (menuItem) {
+                menuItem.classList.toggle('selected', !!el.checked);
+            }
+
             var group = el.dataset.group;
             if (group === 'main') {
                 refreshQuotaInfo('main', parseInt(payload.max_main || 0, 10), document.getElementById('mainSelected'), 'mainExtraInfo', parseFloat(payload.extra_main_price || 0));

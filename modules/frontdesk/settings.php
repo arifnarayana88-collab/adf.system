@@ -221,6 +221,45 @@ elseif ($activeTab === 'breakfast_menu') {
         return 'uploads/breakfast-menu/' . $newName;
     };
 
+    $storePortalLogo = function ($fileKey, $oldPath = '') use ($deleteLocalImage) {
+        if (empty($_FILES[$fileKey]) || (int)($_FILES[$fileKey]['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return $oldPath;
+        }
+
+        if ((int)($_FILES[$fileKey]['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+            throw new Exception('Upload logo portal gagal.');
+        }
+
+        $allowedExt = ['jpg', 'jpeg', 'png', 'webp'];
+        $origName = $_FILES[$fileKey]['name'] ?? 'portal-logo';
+        $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+        if (!in_array($ext, $allowedExt, true)) {
+            throw new Exception('Format logo harus JPG, JPEG, PNG, atau WEBP.');
+        }
+
+        $maxSize = 3 * 1024 * 1024;
+        if ((int)($_FILES[$fileKey]['size'] ?? 0) > $maxSize) {
+            throw new Exception('Ukuran logo maksimal 3MB.');
+        }
+
+        $uploadDir = BASE_PATH . '/uploads/portal-assets';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0755, true);
+        }
+
+        $newName = 'portal_logo_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $target = $uploadDir . '/' . $newName;
+        if (!move_uploaded_file($_FILES[$fileKey]['tmp_name'], $target)) {
+            throw new Exception('Tidak bisa menyimpan logo portal.');
+        }
+
+        if (!empty($oldPath)) {
+            $deleteLocalImage($oldPath);
+        }
+
+        return 'uploads/portal-assets/' . $newName;
+    };
+
     $defaultPortalInfoText = implode("\n\n", [
         'Hello, here is your breakfast menu selection portal.',
         'Each room has a fixed breakfast allowance.',
@@ -247,6 +286,12 @@ elseif ($activeTab === 'breakfast_menu') {
     if ($portalLinkTemplate === '') {
         $portalLinkTemplate = $defaultPortalLinkTemplate;
     }
+
+    $portalLogoRow = $db->fetchOne("SELECT setting_value FROM settings WHERE setting_key = 'breakfast_portal_logo_path' LIMIT 1");
+    $portalLogoPath = trim((string)($portalLogoRow['setting_value'] ?? ''));
+    $portalLogoUrl = $portalLogoPath !== ''
+        ? ((strpos($portalLogoPath, 'http') === 0) ? $portalLogoPath : BASE_URL . '/' . ltrim($portalLogoPath, '/'))
+        : '';
 
     // Create table if not exists
     try {
@@ -280,9 +325,16 @@ elseif ($activeTab === 'breakfast_menu') {
                     $template = $defaultPortalLinkTemplate;
                 }
 
+                $newLogoPath = $storePortalLogo('portal_logo', $portalLogoPath);
+                if (!empty($_POST['remove_portal_logo'])) {
+                    $deleteLocalImage($newLogoPath);
+                    $newLogoPath = '';
+                }
+
                 $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value, setting_type) VALUES (?, ?, 'text') ON DUPLICATE KEY UPDATE setting_value = ?");
                 $stmt->execute(['breakfast_wa_info_text', $infoText, $infoText]);
                 $stmt->execute(['breakfast_guest_link_template', $template, $template]);
+                $stmt->execute(['breakfast_portal_logo_path', $newLogoPath, $newLogoPath]);
                 $message = "✓ Guest portal text berhasil disimpan!";
                 header("Location: " . $_SERVER['PHP_SELF'] . "?tab=breakfast_menu");
                 exit;
@@ -1259,7 +1311,7 @@ include '../../includes/header.php';
         <p style="color: var(--text-secondary); margin-top: 0.5rem;">
             Use this section to edit the text shown on the portal and the WhatsApp message sent from Front Desk. Placeholders: <strong>{guest_name}</strong>, <strong>{room_label}</strong>, <strong>{room_line}</strong>, <strong>{portal_link}</strong>.
         </p>
-        <form method="POST" style="margin-top: 1rem;">
+        <form method="POST" enctype="multipart/form-data" style="margin-top: 1rem;">
             <input type="hidden" name="action" value="save_portal_templates">
             <div class="form-group">
                 <label class="form-label">Portal Info Text</label>
@@ -1268,6 +1320,20 @@ include '../../includes/header.php';
             <div class="form-group">
                 <label class="form-label">WhatsApp Link Template</label>
                 <textarea name="portal_link_template" class="form-textarea" rows="8" style="white-space: pre-wrap; font-family: inherit;"><?php echo htmlspecialchars($portalLinkTemplate); ?></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Portal Header Logo (Narayana)</label>
+                <input type="file" name="portal_logo" class="form-input" accept=".jpg,.jpeg,.png,.webp">
+                <small style="color: var(--text-secondary); display:block; margin-top:.35rem;">Format: JPG/JPEG/PNG/WEBP, max 3MB. Recommended transparent PNG.</small>
+                <?php if ($portalLogoUrl !== ''): ?>
+                    <div style="margin-top:.6rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+                        <img src="<?php echo htmlspecialchars($portalLogoUrl); ?>" alt="Portal logo" style="height:48px;max-width:200px;object-fit:contain;background:rgba(15,23,42,.08);padding:6px 8px;border-radius:8px;border:1px solid var(--border-color);">
+                        <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;">
+                            <input type="checkbox" name="remove_portal_logo" value="1">
+                            <span>Remove current logo</span>
+                        </label>
+                    </div>
+                <?php endif; ?>
             </div>
             <button type="submit" class="btn btn-success">💾 Save Templates</button>
         </form>

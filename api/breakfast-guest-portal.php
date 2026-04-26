@@ -536,6 +536,7 @@ if ($action === 'get_link') {
         $waInfo = default_portal_info_text();
     }
     $waMediaPath = get_setting($db, 'breakfast_wa_media_path');
+    $portalLogoPath = get_setting($db, 'breakfast_portal_logo_path');
     $extraMainPrice = to_float(get_setting($db, 'breakfast_extra_main_price'), 55000);
     $extraDrinkPrice = to_float(get_setting($db, 'breakfast_extra_drink_price'), 25000);
     $extraChildPrice = to_float(get_setting($db, 'breakfast_extra_child_price'), 30000);
@@ -552,6 +553,13 @@ if ($action === 'get_link') {
         $waMediaUrl = (strpos($waMediaPath, 'http') === 0)
             ? $waMediaPath
             : rtrim(BASE_URL, '/') . '/' . ltrim($waMediaPath, '/');
+    }
+
+    $portalLogoUrl = '';
+    if ($portalLogoPath) {
+        $portalLogoUrl = (strpos($portalLogoPath, 'http') === 0)
+            ? $portalLogoPath
+            : rtrim(BASE_URL, '/') . '/' . ltrim($portalLogoPath, '/');
     }
 
     echo json_encode([
@@ -574,6 +582,7 @@ if ($action === 'get_link') {
             'child_menus' => $childMenus,
             'wa_info_text' => $waInfo,
             'wa_media_url' => $waMediaUrl,
+            'portal_logo_url' => $portalLogoUrl,
             'expires_at' => $link['expires_at'],
             'submitted_at' => $link['submitted_at'] ?? null,
             'is_locked' => $isLocked,
