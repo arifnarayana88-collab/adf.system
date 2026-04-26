@@ -1,6 +1,21 @@
 <?php
 define('APP_ACCESS', true);
 require_once '../../config/config.php';
+require_once '../../config/database.php';
+
+$previewLogoUrl = '';
+try {
+    $db = Database::getInstance();
+    $portalLogoRow = $db->fetchOne("SELECT setting_value FROM settings WHERE setting_key = ? LIMIT 1", ['breakfast_portal_logo_path']);
+    $portalLogoPath = $portalLogoRow['setting_value'] ?? '';
+    if ($portalLogoPath) {
+        $previewLogoUrl = (strpos($portalLogoPath, 'http') === 0)
+            ? $portalLogoPath
+            : rtrim(BASE_URL, '/') . '/' . ltrim($portalLogoPath, '/');
+    }
+} catch (Throwable $e) {
+    $previewLogoUrl = '';
+}
 
 $token = trim((string)($_GET['t'] ?? ''));
 ?>
@@ -10,6 +25,18 @@ $token = trim((string)($_GET['t'] ?? ''));
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Breakfast Menu Selection</title>
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Breakfast Menu Selection">
+    <meta property="og:description" content="Please select your breakfast menu using this portal.">
+    <?php if ($previewLogoUrl !== ''): ?>
+    <meta property="og:image" content="<?php echo htmlspecialchars($previewLogoUrl); ?>">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="<?php echo htmlspecialchars($previewLogoUrl); ?>">
+    <?php else: ?>
+    <meta name="twitter:card" content="summary">
+    <?php endif; ?>
+    <meta name="twitter:title" content="Breakfast Menu Selection">
+    <meta name="twitter:description" content="Please select your breakfast menu using this portal.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
@@ -61,6 +88,14 @@ $token = trim((string)($_GET['t'] ?? ''));
             box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
         }
         .header-logo.show { display: block; }
+        .portal-preview-hero {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            left: -9999px;
+            top: -9999px;
+            overflow: hidden;
+        }
         .header-card .muted-white { color: #eff6ff; }
         h1 {
             margin: 0;

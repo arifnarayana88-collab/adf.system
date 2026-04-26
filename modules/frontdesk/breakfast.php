@@ -1016,14 +1016,32 @@ function buildPortalLinkWaMessage(guestName, roomLabel, portalLink) {
         .replace(/\{room_line\}/g, roomLabel ? 'Room: ' + roomLabel : '')
         .replace(/\{portal_link\}/g, portalLink || '');
 
-    return message
+    var cleaned = message
         .split('\n')
-        .map(function (line) { return line.trimEnd(); })
+        .map(function (line) { return line.trim(); })
         .filter(function (line, index, arr) {
-            return line.trim() !== '' || (index > 0 && arr[index - 1].trim() !== '');
-        })
-        .join('\n')
-        .trim();
+            return line !== '' || (index > 0 && arr[index - 1] !== '');
+        });
+
+    var deduped = [];
+    var lastLine = null;
+    var seenPortalLink = false;
+    for (var i = 0; i < cleaned.length; i++) {
+        var line = cleaned[i];
+        if (!line) {
+            if (deduped.length && deduped[deduped.length - 1] !== '') deduped.push('');
+            continue;
+        }
+        if (line === lastLine) continue;
+        if (portalLink && line.indexOf(portalLink) !== -1) {
+            if (seenPortalLink) continue;
+            seenPortalLink = true;
+        }
+        deduped.push(line);
+        lastLine = line;
+    }
+
+    return deduped.join('\n').trim();
 }
 
 async function sendGuestSelectionLink(evt, btn) {
