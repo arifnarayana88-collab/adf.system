@@ -10,11 +10,14 @@ $token = trim((string)($_GET['t'] ?? ''));
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Breakfast Menu Selection</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
         body {
             margin: 0;
-            font-family: 'Segoe UI', Tahoma, sans-serif;
+            font-family: 'Manrope', 'Segoe UI', Tahoma, sans-serif;
             background:
                 radial-gradient(circle at top left, rgba(125, 211, 252, 0.35), transparent 32%),
                 radial-gradient(circle at top right, rgba(147, 197, 253, 0.28), transparent 28%),
@@ -35,12 +38,14 @@ $token = trim((string)($_GET['t'] ?? ''));
         }
         .header-card {
             background:
-                radial-gradient(circle at top right, rgba(255, 255, 255, 0.35), transparent 42%),
-                linear-gradient(140deg, rgba(30, 64, 175, 0.96), rgba(37, 99, 235, 0.9) 55%, rgba(14, 165, 233, 0.86));
+                radial-gradient(circle at 90% 8%, rgba(255, 255, 255, 0.45), transparent 30%),
+                radial-gradient(circle at 8% 80%, rgba(186, 230, 253, 0.28), transparent 35%),
+                linear-gradient(135deg, rgba(22, 78, 99, 0.98), rgba(3, 105, 161, 0.93) 52%, rgba(14, 116, 144, 0.9));
             color: white;
             border: none;
             border-radius: 16px;
-            padding: 14px 16px 12px;
+            padding: 16px 16px 14px;
+            box-shadow: 0 14px 36px rgba(12, 74, 110, 0.32);
         }
         .header-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         .header-brand { min-width: 0; }
@@ -57,8 +62,15 @@ $token = trim((string)($_GET['t'] ?? ''));
         }
         .header-logo.show { display: block; }
         .header-card .muted-white { color: #eff6ff; }
-        h1 { margin: 0; font-size: 1.06rem; font-weight: 700; letter-spacing: .45px; text-transform: uppercase; }
-        .header-subtitle { font-size: 0.78rem; color: #f8fbff; margin-top: 3px; letter-spacing: .25px; }
+        h1 {
+            margin: 0;
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.24rem;
+            font-weight: 700;
+            letter-spacing: .4px;
+            text-transform: none;
+        }
+        .header-subtitle { font-size: 0.8rem; color: #e0f2fe; margin-top: 3px; letter-spacing: .35px; }
         .header-divider { margin-top: 8px; height: 1px; background: linear-gradient(90deg, rgba(219, 234, 254, 0.15), rgba(219, 234, 254, 0.75), rgba(219, 234, 254, 0.15)); }
         .muted { color: #475569; font-size: 0.9rem; }
         .muted-white { color: #ffffff; font-size: 0.92rem; font-weight: 500; text-shadow: 0 1px 2px rgba(15, 23, 42, 0.22); }
@@ -118,9 +130,15 @@ $token = trim((string)($_GET['t'] ?? ''));
             color: #059669; 
         }
         .menu-price.free { color: #10b981; }
-        .menu-note-wrap { display: none; margin-top: 8px; }
-        .menu-item.selected .menu-note-wrap { display: block; }
-        .menu-check:checked ~ .menu-content .menu-note-wrap { display: block; }
+        .menu-note-wrap { display: block; margin-top: 8px; }
+        .menu-note-label {
+            display: block;
+            font-size: 0.68rem;
+            color: #334155;
+            font-weight: 700;
+            margin-bottom: 4px;
+            letter-spacing: .2px;
+        }
         .menu-note-input {
             width: 100%;
             border: 1px solid rgba(148, 163, 184, 0.32);
@@ -132,6 +150,11 @@ $token = trim((string)($_GET['t'] ?? ''));
             line-height: 1.35;
         }
         .menu-note-input:focus { outline: none; border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.12); }
+        .menu-note-input:disabled {
+            background: rgba(241, 245, 249, 0.82);
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
         .menu-note-readonly { margin-top: 8px; font-size: 0.72rem; color: #475569; background: rgba(241, 245, 249, 0.8); border-radius: 8px; padding: 6px 8px; }
         
         .quota-box {
@@ -186,6 +209,37 @@ $token = trim((string)($_GET['t'] ?? ''));
         .ok { background: #d1fae5; color: #059669; }
         .err { background: #fee2e2; color: #dc2626; }
         .hidden { display: none; }
+
+        .quota-popup {
+            position: fixed;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(92vw, 620px);
+            z-index: 9999;
+            background: linear-gradient(135deg, rgba(153, 27, 27, 0.97), rgba(220, 38, 38, 0.95));
+            color: #fff;
+            border: 1px solid rgba(254, 202, 202, 0.55);
+            border-radius: 12px;
+            box-shadow: 0 14px 28px rgba(127, 29, 29, 0.35);
+            padding: 12px 14px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .quota-popup.show { display: flex; }
+        .quota-popup-text { font-size: 0.84rem; font-weight: 700; line-height: 1.35; }
+        .quota-popup-close {
+            border: 1px solid rgba(255,255,255,0.48);
+            background: rgba(255,255,255,0.14);
+            color: #fff;
+            border-radius: 8px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            padding: 6px 8px;
+            cursor: pointer;
+        }
         
         .info-box {
             border: 1px dashed rgba(96, 165, 250, 0.5);
@@ -252,12 +306,17 @@ $token = trim((string)($_GET['t'] ?? ''));
 </head>
 <body>
 <div class="wrap">
+    <div id="quotaPopup" class="quota-popup" role="alert" aria-live="assertive">
+        <div class="quota-popup-text" id="quotaPopupText"></div>
+        <button type="button" class="quota-popup-close" id="quotaPopupClose">Close</button>
+    </div>
+
     <div class="card" id="headerCard">
         <div class="header-card">
             <div class="header-top">
                 <div class="header-brand">
-                    <h1>Breakfast Selection</h1>
-                    <div class="header-subtitle">Curated Morning Dining Experience</div>
+                    <h1>Narayana Breakfast Selection</h1>
+                    <div class="header-subtitle">Elegant Morning Dining Experience</div>
                 </div>
                 <img id="portalLogo" class="header-logo" alt="Narayana Logo">
             </div>
@@ -338,6 +397,9 @@ $token = trim((string)($_GET['t'] ?? ''));
     var BASE_URL = <?php echo json_encode(rtrim(BASE_URL, '/')); ?>;
     var payload = null;
     var portalLogoEl = document.getElementById('portalLogo');
+    var quotaPopupEl = document.getElementById('quotaPopup');
+    var quotaPopupTextEl = document.getElementById('quotaPopupText');
+    var quotaPopupCloseEl = document.getElementById('quotaPopupClose');
 
     var mainGrid = document.getElementById('mainGrid');
     var childGrid = document.getElementById('childGrid');
@@ -475,6 +537,7 @@ $token = trim((string)($_GET['t'] ?? ''));
         }
 
         var noteHtmlEdit = '<div class="menu-note-wrap">' +
+            '<label class="menu-note-label">Menu note (optional)</label>' +
             '<input class="menu-note-input" type="text" data-group="' + group + '" data-menu-id="' + item.id + '" value="' + esc(noteVal) + '"' +
             ' placeholder="Special request (e.g. spicy / medium / no onion)" onclick="event.stopPropagation()" onfocus="event.stopPropagation()">' +
             '</div>';
@@ -513,6 +576,48 @@ $token = trim((string)($_GET['t'] ?? ''));
         }
     }
 
+    function updateNoteInputStates() {
+        Array.from(document.querySelectorAll('.menu-item')).forEach(function (card) {
+            var check = card.querySelector('.menu-check');
+            var input = card.querySelector('.menu-note-input');
+            if (!check || !input) return;
+            input.disabled = !check.checked;
+        });
+    }
+
+    function syncOverQuotaPopup() {
+        if (!payload || payload.is_locked) {
+            if (quotaPopupEl) quotaPopupEl.classList.remove('show');
+            return;
+        }
+        var counts = {
+            main: Array.from(document.querySelectorAll('.menu-check[data-group="main"]:checked')).length,
+            drink: Array.from(document.querySelectorAll('.menu-check[data-group="drink"]:checked')).length,
+            child: Array.from(document.querySelectorAll('.menu-check[data-group="child"]:checked')).length
+        };
+        var extras = [];
+        var maxMain = parseInt(payload.max_main || 0, 10);
+        var maxDrink = parseInt(payload.max_drink || 0, 10);
+        var maxChild = parseInt(payload.max_child || 0, 10);
+        var extraMain = Math.max(0, counts.main - maxMain);
+        var extraDrink = Math.max(0, counts.drink - maxDrink);
+        var extraChild = Math.max(0, counts.child - maxChild);
+
+        if (extraMain > 0) extras.push(extraMain + ' Main');
+        if (extraDrink > 0) extras.push(extraDrink + ' Drink');
+        if (extraChild > 0) extras.push(extraChild + ' Kids/Fruit');
+
+        if (extras.length === 0) {
+            quotaPopupEl.classList.remove('show');
+            return;
+        }
+
+        var totalExtra = extraMain + extraDrink + extraChild;
+        var estTotal = totalExtra * 75000;
+        quotaPopupTextEl.textContent = 'Over quota: ' + extras.join(', ') + '. Extra charge Rp ' + estTotal.toLocaleString('id-ID') + ' (Rp 75.000/item).';
+        quotaPopupEl.classList.add('show');
+    }
+
     function attachQuotaHandlers() {
         document.addEventListener('change', function (ev) {
             var el = ev.target;
@@ -522,6 +627,9 @@ $token = trim((string)($_GET['t'] ?? ''));
             if (menuItem) {
                 menuItem.classList.toggle('selected', !!el.checked);
             }
+
+            updateNoteInputStates();
+            syncOverQuotaPopup();
 
             var group = el.dataset.group;
             if (group === 'main') {
@@ -575,6 +683,8 @@ $token = trim((string)($_GET['t'] ?? ''));
             refreshQuotaInfo('main', parseInt(payload.max_main || 0, 10), document.getElementById('mainSelected'), 'mainExtraInfo', parseFloat(payload.extra_main_price || 0));
             refreshQuotaInfo('drink', parseInt(payload.max_drink || 0, 10), document.getElementById('drinkSelected'), 'drinkExtraInfo', parseFloat(payload.extra_drink_price || 0));
             refreshQuotaInfo('child', parseInt(payload.max_child || 0, 10), document.getElementById('childSelected'), 'childExtraInfo', parseFloat(payload.extra_child_price || 0));
+            updateNoteInputStates();
+            syncOverQuotaPopup();
         } catch (err) {
             setState('Failed to load link: ' + err.message, true);
         }
@@ -644,6 +754,11 @@ $token = trim((string)($_GET['t'] ?? ''));
     }
 
     attachQuotaHandlers();
+    if (quotaPopupCloseEl) {
+        quotaPopupCloseEl.addEventListener('click', function () {
+            quotaPopupEl.classList.remove('show');
+        });
+    }
     loadLink();
     document.getElementById('btnSubmit').addEventListener('click', submitChoice);
 })();
