@@ -161,6 +161,7 @@ $token = trim((string)($_GET['t'] ?? ''));
             color: #1f2937;
             margin-bottom: 4px;
             line-height: 1.28;
+            line-clamp: 2;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -171,6 +172,7 @@ $token = trim((string)($_GET['t'] ?? ''));
             color: #64748b;
             line-height: 1.35;
             margin-bottom: 8px;
+            line-clamp: 4;
             display: -webkit-box;
             -webkit-line-clamp: 4;
             -webkit-box-orient: vertical;
@@ -290,6 +292,14 @@ $token = trim((string)($_GET['t'] ?? ''));
         }
         .btn-wa:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(22, 163, 74, 0.3); }
 
+        .btn-ghost {
+            background: rgba(255,255,255,0.82);
+            color: #0f172a;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+        }
+        .btn-ghost:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12); }
+
         .wa-float {
             position: fixed;
             right: 16px;
@@ -379,34 +389,157 @@ $token = trim((string)($_GET['t'] ?? ''));
 
         .quota-popup {
             position: fixed;
-            top: 14px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: min(92vw, 620px);
+            inset: 0;
             z-index: 9999;
-            background: linear-gradient(135deg, rgba(153, 27, 27, 0.97), rgba(220, 38, 38, 0.95));
-            color: #fff;
-            border: 1px solid rgba(254, 202, 202, 0.55);
-            border-radius: 12px;
-            box-shadow: 0 14px 28px rgba(127, 29, 29, 0.35);
-            padding: 12px 14px;
+            background: rgba(15, 23, 42, 0.42);
+            backdrop-filter: blur(10px);
             display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+        }
+        .quota-popup.show { display: flex; }
+        .quota-modal {
+            width: min(94vw, 720px);
+            background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,245,249,0.98));
+            border: 1px solid rgba(248, 113, 113, 0.28);
+            border-radius: 22px;
+            box-shadow: 0 26px 60px rgba(15, 23, 42, 0.28);
+            overflow: hidden;
+        }
+        .quota-modal-head {
+            padding: 18px 18px 14px;
+            background: linear-gradient(135deg, rgba(127, 29, 29, 0.98), rgba(220, 38, 38, 0.96));
+            color: #fff;
+        }
+        .quota-modal-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+            font-weight: 800;
+            letter-spacing: .2px;
+        }
+        .quota-modal-title .badge {
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.16);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+        .quota-modal-body {
+            padding: 18px;
+            color: #0f172a;
+        }
+        .quota-popup-text {
+            font-size: 0.95rem;
+            line-height: 1.55;
+            font-weight: 600;
+            color: #334155;
+        }
+        .quota-popup-highlight {
+            margin-top: 12px;
+            background: rgba(254, 226, 226, 0.8);
+            border: 1px solid rgba(248, 113, 113, 0.22);
+            border-radius: 14px;
+            padding: 14px;
+            color: #991b1b;
+            font-weight: 800;
+            font-size: 1.08rem;
+        }
+        .quota-popup-note {
+            margin-top: 10px;
+            color: #475569;
+            font-size: 0.84rem;
+            line-height: 1.45;
+        }
+        .quota-popup-actions {
+            display: flex;
+            gap: 10px;
+            padding: 0 18px 18px;
+            flex-wrap: wrap;
+        }
+        .quota-popup-actions .btn {
+            flex: 1;
+            min-width: 140px;
+        }
+        .quota-popup-close {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.35);
+            border-radius: 12px;
+            font-size: 0.86rem;
+            font-weight: 800;
+            padding: 12px 14px;
+            cursor: pointer;
+        }
+        .quota-popup-ok {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.86rem;
+            font-weight: 800;
+            padding: 12px 14px;
+            cursor: pointer;
+            box-shadow: 0 8px 18px rgba(22, 163, 74, 0.22);
+        }
+        .quota-popup-ok:hover { transform: translateY(-1px); }
+
+        .cart-items {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .cart-empty {
+            background: rgba(255,255,255,0.78);
+            border: 1px dashed rgba(96, 165, 250, 0.28);
+            border-radius: 12px;
+            padding: 14px;
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+        .cart-item {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            background: rgba(255,255,255,0.84);
+            border: 1px solid rgba(96, 165, 250, 0.18);
+            border-radius: 14px;
+            padding: 12px;
+        }
+        .cart-main { min-width: 0; }
+        .cart-name { font-weight: 800; color: #0f172a; font-size: 0.92rem; }
+        .cart-meta { margin-top: 3px; color: #1d4ed8; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .2px; }
+        .cart-note { margin-top: 6px; font-size: 0.78rem; color: #475569; }
+        .cart-remove {
+            border: none;
+            background: rgba(239, 68, 68, 0.12);
+            color: #b91c1c;
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-weight: 800;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .cart-footer {
+            margin-top: 12px;
+            display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 10px;
+            flex-wrap: wrap;
         }
-        .quota-popup.show { display: flex; }
-        .quota-popup-text { font-size: 0.84rem; font-weight: 700; line-height: 1.35; }
-        .quota-popup-close {
-            border: 1px solid rgba(255,255,255,0.48);
-            background: rgba(255,255,255,0.14);
-            color: #fff;
-            border-radius: 8px;
-            font-size: 0.76rem;
+        .cart-summary {
+            font-size: 0.82rem;
+            color: #334155;
             font-weight: 700;
-            padding: 6px 8px;
-            cursor: pointer;
         }
+        .cart-summary strong { color: #0f172a; }
         
         .info-box {
             border: 1px dashed rgba(96, 165, 250, 0.5);
@@ -490,9 +623,21 @@ $token = trim((string)($_GET['t'] ?? ''));
 </head>
 <body>
 <div class="wrap">
-    <div id="quotaPopup" class="quota-popup" role="alert" aria-live="assertive">
-        <div class="quota-popup-text" id="quotaPopupText"></div>
-        <button type="button" class="quota-popup-close" id="quotaPopupClose">Close</button>
+    <div id="quotaPopup" class="quota-popup" role="alertdialog" aria-modal="true" aria-labelledby="quotaPopupTitle" aria-describedby="quotaPopupText">
+        <div class="quota-modal">
+            <div class="quota-modal-head">
+                <div class="quota-modal-title" id="quotaPopupTitle"><span class="badge">!</span> Extra Breakfast Detected</div>
+            </div>
+            <div class="quota-modal-body">
+                <div class="quota-popup-text" id="quotaPopupText"></div>
+                <div class="quota-popup-highlight" id="quotaPopupHighlight"></div>
+                <div class="quota-popup-note" id="quotaPopupNote">Choose OK to keep extra items, or Close to automatically return to the allowed breakfast quota.</div>
+            </div>
+            <div class="quota-popup-actions">
+                <button type="button" class="quota-popup-ok" id="quotaPopupOk">OK, keep extra</button>
+                <button type="button" class="quota-popup-close" id="quotaPopupClose">Close, back to quota</button>
+            </div>
+        </div>
     </div>
 
     <div class="card" id="headerCard">
@@ -564,6 +709,15 @@ $token = trim((string)($_GET['t'] ?? ''));
         <div class="menu-grid" id="childGrid"></div>
     </div>
 
+    <div class="card hidden" id="cartCard">
+        <div class="section-title"><span class="section-icon">🧺</span> Keranjang Pilihan</div>
+        <div class="cart-items" id="cartList"></div>
+        <div class="cart-footer">
+            <div class="cart-summary" id="cartSummaryText">Belum ada menu dipilih.</div>
+            <button type="button" class="btn btn-ghost" id="btnContinueDetails">Fix Selection & Continue</button>
+        </div>
+    </div>
+
     <div class="card hidden" id="submitCard">
         <div class="section-title"><span class="section-icon">📝</span> Additional Notes</div>
         <div class="field-grid" id="breakfastFieldGrid">
@@ -610,7 +764,10 @@ $token = trim((string)($_GET['t'] ?? ''));
     var portalLogoEl = document.getElementById('portalLogo');
     var quotaPopupEl = document.getElementById('quotaPopup');
     var quotaPopupTextEl = document.getElementById('quotaPopupText');
+    var quotaPopupHighlightEl = document.getElementById('quotaPopupHighlight');
+    var quotaPopupNoteEl = document.getElementById('quotaPopupNote');
     var quotaPopupCloseEl = document.getElementById('quotaPopupClose');
+    var quotaPopupOkEl = document.getElementById('quotaPopupOk');
 
     var mainGrid = document.getElementById('mainGrid');
     var childGrid = document.getElementById('childGrid');
@@ -761,17 +918,18 @@ $token = trim((string)($_GET['t'] ?? ''));
     }
 
     function formatService(v) {
-        var key = String(v || '').trim();
         var map = {
             restaurant: 'Restaurant',
             room_service: 'Room Service',
             take_away: 'Take Away'
         };
-        return map[key] || (key || '-');
+        return map[String(v || '').trim()] || (String(v || '').trim() || '-');
     }
 
     function renderMeta() {
         var meta = document.getElementById('metaBox');
+        if (!meta) return;
+
         meta.className = 'meta meta-stack';
         meta.innerHTML = [
             ['Guest', payload.guest_name || '-'],
@@ -850,7 +1008,7 @@ $token = trim((string)($_GET['t'] ?? ''));
                 ? '<div class="menu-note-readonly">Request: ' + esc(noteVal) + '</div>'
                 : '';
             return '<div class="menu-item locked' + (item.pre_selected ? ' selected' : '') + '">' +
-                '<input type="checkbox" class="menu-check" data-group="' + group + '" value="' + item.id + '" ' + checked + ' disabled>' +
+                '<input type="checkbox" class="menu-check" data-group="' + group + '" data-menu-name="' + esc(item.menu_name) + '" data-menu-category="' + esc(item.category || '-') + '" data-menu-price="' + price + '" data-menu-free="' + (free ? '1' : '0') + '" value="' + item.id + '" ' + checked + ' disabled>' +
                 imgHtml +
                 '<div class="menu-content">' +
                 '<div class="menu-name">' + esc(item.menu_name) + '</div>' +
@@ -871,7 +1029,7 @@ $token = trim((string)($_GET['t'] ?? ''));
             '</div>';
         
         return '<label class="menu-item' + (item.pre_selected ? ' selected' : '') + '">' +
-            '<input type="checkbox" class="menu-check" data-group="' + group + '" value="' + item.id + '" ' + checked + '>' +
+            '<input type="checkbox" class="menu-check" data-group="' + group + '" data-menu-name="' + esc(item.menu_name) + '" data-menu-category="' + esc(item.category || '-') + '" data-menu-price="' + price + '" data-menu-free="' + (free ? '1' : '0') + '" value="' + item.id + '" ' + checked + '>' +
             imgHtml +
             '<div class="menu-content">' +
             '<div class="menu-name">' + esc(item.menu_name) + '</div>' +
@@ -915,42 +1073,141 @@ $token = trim((string)($_GET['t'] ?? ''));
             if (String(input.value || '').trim() !== '' && !check.checked) {
                 check.checked = true;
                 menuItem.classList.add('selected');
-                check.dispatchEvent(new Event('change', { bubbles: true }));
+                var changeEvt = document.createEvent('Event');
+                changeEvt.initEvent('change', true, true);
+                check.dispatchEvent(changeEvt);
             }
+            refreshSelectionUI();
         });
     }
 
-    function syncOverQuotaPopup() {
+    function getCheckedItems(group) {
+        return Array.from(document.querySelectorAll('.menu-check[data-group="' + group + '"]:checked'));
+    }
+
+    function getSelectedCartItems() {
+        var groups = ['main', 'drink', 'child'];
+        var items = [];
+        groups.forEach(function (group) {
+            getCheckedItems(group).forEach(function (cb) {
+                var id = parseInt(cb.value, 10);
+                if (!Number.isFinite(id) || id <= 0) return;
+                var noteInput = document.querySelector('.menu-note-input[data-group="' + group + '"][data-menu-id="' + id + '"]');
+                items.push({
+                    id: id,
+                    group: group,
+                    name: String(cb.dataset.menuName || '-'),
+                    category: String(cb.dataset.menuCategory || '-'),
+                    price: parseFloat(cb.dataset.menuPrice || '0') || 0,
+                    free: String(cb.dataset.menuFree || '0') === '1',
+                    note: noteInput ? String(noteInput.value || '').trim() : ''
+                });
+            });
+        });
+        return items;
+    }
+
+    function renderCart() {
+        var items = getSelectedCartItems();
+        var cartCard = document.getElementById('cartCard');
+        var cartList = document.getElementById('cartList');
+        var cartSummaryText = document.getElementById('cartSummaryText');
+        if (!cartCard || !cartList || !cartSummaryText) return;
+
+        if (!items.length) {
+            cartCard.classList.add('hidden');
+            cartList.innerHTML = '';
+            cartSummaryText.textContent = 'Belum ada menu dipilih.';
+            return;
+        }
+
+        cartCard.classList.remove('hidden');
+        cartSummaryText.innerHTML = '<strong>' + items.length + '</strong> item di keranjang. Silakan cek lagi sebelum lanjut isi detail.';
+        cartList.innerHTML = items.map(function (item) {
+            var priceText = item.free ? 'FREE' : 'Rp ' + Math.round(item.price).toLocaleString('id-ID');
+            var noteHtml = item.note ? '<div class="cart-note">Note: ' + esc(item.note) + '</div>' : '';
+            return '<div class="cart-item">' +
+                '<div class="cart-main">' +
+                    '<div class="cart-name">' + esc(item.name) + '</div>' +
+                    '<div class="cart-meta">' + esc(item.group) + ' · ' + esc(item.category) + ' · ' + esc(priceText) + '</div>' +
+                    noteHtml +
+                '</div>' +
+                '<button type="button" class="cart-remove" data-cart-id="' + item.id + '" data-cart-group="' + esc(item.group) + '">Remove</button>' +
+            '</div>';
+        }).join('');
+    }
+
+    function countOverQuota() {
+        if (!payload || payload.is_locked) return { total: 0, details: [] };
+        var groups = [
+            ['main', parseInt(payload.max_main || 0, 10)],
+            ['drink', parseInt(payload.max_drink || 0, 10)],
+            ['child', parseInt(payload.max_child || 0, 10)]
+        ];
+        var details = [];
+        var total = 0;
+        groups.forEach(function (pair) {
+            var group = pair[0];
+            var max = pair[1];
+            var extra = Math.max(0, getCheckedItems(group).length - max);
+            if (extra > 0) {
+                details.push({ group: group, extra: extra });
+                total += extra;
+            }
+        });
+        return { total: total, details: details };
+    }
+
+    function showQuotaPopup() {
         if (!payload || payload.is_locked) {
             if (quotaPopupEl) quotaPopupEl.classList.remove('show');
             return;
         }
-        var counts = {
-            main: Array.from(document.querySelectorAll('.menu-check[data-group="main"]:checked')).length,
-            drink: Array.from(document.querySelectorAll('.menu-check[data-group="drink"]:checked')).length,
-            child: Array.from(document.querySelectorAll('.menu-check[data-group="child"]:checked')).length
-        };
-        var extras = [];
-        var maxMain = parseInt(payload.max_main || 0, 10);
-        var maxDrink = parseInt(payload.max_drink || 0, 10);
-        var maxChild = parseInt(payload.max_child || 0, 10);
-        var extraMain = Math.max(0, counts.main - maxMain);
-        var extraDrink = Math.max(0, counts.drink - maxDrink);
-        var extraChild = Math.max(0, counts.child - maxChild);
-
-        if (extraMain > 0) extras.push(extraMain + ' Main');
-        if (extraDrink > 0) extras.push(extraDrink + ' Drink');
-        if (extraChild > 0) extras.push(extraChild + ' Kids/Fruit');
-
-        if (extras.length === 0) {
+        var over = countOverQuota();
+        if (!over.total) {
             quotaPopupEl.classList.remove('show');
             return;
         }
 
-        var totalExtra = extraMain + extraDrink + extraChild;
+        var extraMain = Math.max(0, getCheckedItems('main').length - parseInt(payload.max_main || 0, 10));
+        var extraDrink = Math.max(0, getCheckedItems('drink').length - parseInt(payload.max_drink || 0, 10));
+        var extraChild = Math.max(0, getCheckedItems('child').length - parseInt(payload.max_child || 0, 10));
+        var lines = [];
+        if (extraMain > 0) lines.push(extraMain + ' extra main');
+        if (extraDrink > 0) lines.push(extraDrink + ' extra drink');
+        if (extraChild > 0) lines.push(extraChild + ' extra kids/fruit');
+
+        var totalExtra = over.total;
         var estTotal = totalExtra * 75000;
-        quotaPopupTextEl.textContent = 'Over quota: ' + extras.join(', ') + '. Extra charge Rp ' + estTotal.toLocaleString('id-ID') + ' (Rp 75.000/item).';
+        if (quotaPopupTextEl) quotaPopupTextEl.textContent = 'You selected more than the included breakfast allowance.';
+        if (quotaPopupHighlightEl) quotaPopupHighlightEl.textContent = 'Extra charge: Rp ' + estTotal.toLocaleString('id-ID') + ' (' + lines.join(', ') + ')';
+        if (quotaPopupNoteEl) quotaPopupNoteEl.textContent = 'OK = keep these extra items. Close = trim back to the allowed quota.';
         quotaPopupEl.classList.add('show');
+    }
+
+    function enforceQuotaLimits() {
+        var groups = [
+            ['main', parseInt(payload.max_main || 0, 10)],
+            ['drink', parseInt(payload.max_drink || 0, 10)],
+            ['child', parseInt(payload.max_child || 0, 10)]
+        ];
+        groups.forEach(function (pair) {
+            var group = pair[0];
+            var max = pair[1];
+            var checked = getCheckedItems(group);
+            if (checked.length <= max) return;
+            checked.slice(max).forEach(function (cb) {
+                cb.checked = false;
+                var card = cb.closest('.menu-item');
+                if (card) card.classList.remove('selected');
+            });
+        });
+        refreshSelectionUI();
+    }
+
+    function refreshSelectionUI() {
+        renderCart();
+        showQuotaPopup();
     }
 
     function attachQuotaHandlers() {
@@ -963,7 +1220,7 @@ $token = trim((string)($_GET['t'] ?? ''));
                 menuItem.classList.toggle('selected', !!el.checked);
             }
 
-            syncOverQuotaPopup();
+            refreshSelectionUI();
 
             var group = el.dataset.group;
             if (group === 'main') {
@@ -972,6 +1229,30 @@ $token = trim((string)($_GET['t'] ?? ''));
                 refreshQuotaInfo('drink', parseInt(payload.max_drink || 0, 10), document.getElementById('drinkSelected'), 'drinkExtraInfo', parseFloat(payload.extra_drink_price || 0));
             } else {
                 refreshQuotaInfo('child', parseInt(payload.max_child || 0, 10), document.getElementById('childSelected'), 'childExtraInfo', parseFloat(payload.extra_child_price || 0));
+            }
+        });
+
+        document.addEventListener('click', function (ev) {
+            var removeBtn = ev.target.closest('.cart-remove');
+            if (removeBtn) {
+                ev.preventDefault();
+                var id = parseInt(removeBtn.dataset.cartId || '0', 10);
+                var group = String(removeBtn.dataset.cartGroup || '');
+                var cb = document.querySelector('.menu-check[data-group="' + group + '"][value="' + id + '"]');
+                if (cb) {
+                    cb.checked = false;
+                    var card = cb.closest('.menu-item');
+                    if (card) card.classList.remove('selected');
+                    refreshSelectionUI();
+                }
+                return;
+            }
+
+            if (ev.target.id === 'btnContinueDetails') {
+                ev.preventDefault();
+                var submitCard = document.getElementById('submitCard');
+                if (submitCard) submitCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (breakfastTimeEl) breakfastTimeEl.focus();
             }
         });
     }
@@ -1028,7 +1309,7 @@ $token = trim((string)($_GET['t'] ?? ''));
             refreshQuotaInfo('main', parseInt(payload.max_main || 0, 10), document.getElementById('mainSelected'), 'mainExtraInfo', parseFloat(payload.extra_main_price || 0));
             refreshQuotaInfo('drink', parseInt(payload.max_drink || 0, 10), document.getElementById('drinkSelected'), 'drinkExtraInfo', parseFloat(payload.extra_drink_price || 0));
             refreshQuotaInfo('child', parseInt(payload.max_child || 0, 10), document.getElementById('childSelected'), 'childExtraInfo', parseFloat(payload.extra_child_price || 0));
-            syncOverQuotaPopup();
+            refreshSelectionUI();
         } catch (err) {
             setState('Failed to load link: ' + err.message, true);
         }
@@ -1149,9 +1430,15 @@ $token = trim((string)($_GET['t'] ?? ''));
     attachQuotaHandlers();
     attachNoteAutoSelect();
     fillBreakfastTimeOptions();
+    if (quotaPopupOkEl) {
+        quotaPopupOkEl.addEventListener('click', function () {
+            if (quotaPopupEl) quotaPopupEl.classList.remove('show');
+        });
+    }
     if (quotaPopupCloseEl) {
         quotaPopupCloseEl.addEventListener('click', function () {
-            quotaPopupEl.classList.remove('show');
+            enforceQuotaLimits();
+            if (quotaPopupEl) quotaPopupEl.classList.remove('show');
         });
     }
     loadLink();
