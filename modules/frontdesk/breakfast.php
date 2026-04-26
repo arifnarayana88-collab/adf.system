@@ -306,7 +306,7 @@ include '../../includes/header.php';
                                        data-max-drink="<?php echo (int)($savedQuota['max_drink'] ?? 2); ?>"
                                        data-max-child="<?php echo (int)($savedQuota['max_child'] ?? 2); ?>"
                                        data-extra-main-price="<?php echo (int)($savedQuota['extra_main_price'] ?? 75000); ?>"
-                                       data-extra-drink-price="<?php echo (int)($savedQuota['extra_drink_price'] ?? 75000); ?>"
+                                       data-extra-drink-price="<?php echo (int)((isset($savedQuota['extra_drink_price']) && (int)$savedQuota['extra_drink_price'] === 75000) ? 20000 : ($savedQuota['extra_drink_price'] ?? 20000)); ?>"
                                        data-extra-child-price="<?php echo (int)($savedQuota['extra_child_price'] ?? 75000); ?>"
                                        data-child-menu-ids="<?php echo htmlspecialchars(json_encode($savedChildIds)); ?>">
                                 <div class="guest-info">
@@ -570,7 +570,8 @@ function applyGuestSettingsFromCheckbox(cb) {
     var maxDrink = parseInt(cb.dataset.maxDrink || '2', 10) || 2;
     var maxChild = parseInt(cb.dataset.maxChild || '0', 10) || 0;
     var extraMainPrice = parseFloat(cb.dataset.extraMainPrice || '75000') || 75000;
-    var extraDrinkPrice = parseFloat(cb.dataset.extraDrinkPrice || '75000') || 75000;
+    var extraDrinkPrice = parseFloat(cb.dataset.extraDrinkPrice || '20000') || 20000;
+    if (Math.round(extraDrinkPrice) === 75000) extraDrinkPrice = 20000;
     var extraChildPrice = parseFloat(cb.dataset.extraChildPrice || '75000') || 75000;
     var childMenuIds = [];
     try {
@@ -606,7 +607,9 @@ function openGuestSetup(evt, btn) {
     document.getElementById('setupFood').value = parseInt(cb.dataset.maxMain || '2', 10) || 2;
     document.getElementById('setupDrink').value = parseInt(cb.dataset.maxDrink || '2', 10) || 2;
     document.getElementById('setupFruit').value = parseInt(cb.dataset.maxChild || '0', 10) || 0;
-    document.getElementById('setupExtraDrink').value = parseInt(cb.dataset.extraDrinkPrice || '75000', 10) || 75000;
+    var setupDrinkPrice = parseInt(cb.dataset.extraDrinkPrice || '20000', 10) || 20000;
+    if (setupDrinkPrice === 75000) setupDrinkPrice = 20000;
+    document.getElementById('setupExtraDrink').value = setupDrinkPrice;
 
     document.getElementById('guestSetupModal').classList.add('show');
 }
@@ -632,7 +635,8 @@ function saveGuestSetup() {
     var drink = Math.max(0, parseInt(document.getElementById('setupDrink').value || '2', 10) || 2);
     var fruit = Math.max(0, parseInt(document.getElementById('setupFruit').value || '0', 10) || 0);
     var extraFood = 75000;
-    var extraDrink = Math.max(0, parseInt(document.getElementById('setupExtraDrink').value || '75000', 10) || 75000);
+    var extraDrink = Math.max(0, parseInt(document.getElementById('setupExtraDrink').value || '20000', 10) || 20000);
+    if (extraDrink === 75000) extraDrink = 20000;
     var extraFruit = 75000;
 
     activeSetupCheckbox.dataset.adults = String(adults);
@@ -951,7 +955,8 @@ async function createGuestPortalLinkFromCheckbox(cb) {
     var quotaDrink = parseInt(cb.dataset.maxDrink || '2', 10);
     var quotaChild = parseInt(cb.dataset.maxChild || '0', 10);
     var extraMainPrice = 75000;
-    var extraDrinkPrice = parseFloat(cb.dataset.extraDrinkPrice || '75000');
+    var extraDrinkPrice = parseFloat(cb.dataset.extraDrinkPrice || '20000');
+    if (Math.round(extraDrinkPrice) === 75000) extraDrinkPrice = 20000;
     var extraChildPrice = 75000;
     var expireHours = 24;
     
@@ -962,7 +967,7 @@ async function createGuestPortalLinkFromCheckbox(cb) {
     if (!Number.isFinite(quotaDrink) || quotaDrink < 0) quotaDrink = 0;
     if (!Number.isFinite(quotaChild) || quotaChild < 0) quotaChild = 0;
     if (!Number.isFinite(extraMainPrice) || extraMainPrice < 0) extraMainPrice = 75000;
-    if (!Number.isFinite(extraDrinkPrice) || extraDrinkPrice < 0) extraDrinkPrice = 75000;
+    if (!Number.isFinite(extraDrinkPrice) || extraDrinkPrice < 0) extraDrinkPrice = 20000;
     if (!Number.isFinite(extraChildPrice) || extraChildPrice < 0) extraChildPrice = 75000;
     if (!Number.isFinite(expireHours) || expireHours < 1) expireHours = 24;
 

@@ -247,6 +247,7 @@ try {
     try { $pdo->exec("ALTER TABLE breakfast_guest_quota ADD COLUMN total_pax INT NOT NULL DEFAULT 1 AFTER child_old_count"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE breakfast_guest_quota ADD COLUMN max_drink INT NOT NULL DEFAULT 2 AFTER max_main"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE breakfast_guest_quota ADD COLUMN extra_drink_price DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER extra_main_price"); } catch (Exception $e) {}
+    try { $pdo->exec("UPDATE breakfast_guest_quota SET extra_drink_price = 20000 WHERE extra_drink_price = 75000 OR extra_drink_price = 0"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE breakfast_orders ADD COLUMN breakfast_location VARCHAR(120) NULL AFTER location"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE breakfast_orders ADD COLUMN on_the_spot TINYINT(1) NOT NULL DEFAULT 0 AFTER breakfast_location"); } catch (Exception $e) {}
 } catch (Exception $e) {
@@ -291,7 +292,8 @@ if ($action === 'create_link') {
     $totalChildQuota = $maxChild;
 
     $extraMainPrice = max(0, to_float($body['extra_main_price'] ?? 75000, 75000));
-    $extraDrinkPrice = max(0, to_float($body['extra_drink_price'] ?? 75000, 75000));
+    $extraDrinkPrice = max(0, to_float($body['extra_drink_price'] ?? 20000, 20000));
+    if ((int)round($extraDrinkPrice) === 75000) $extraDrinkPrice = 20000.0;
     $extraChildPrice = max(0, to_float($body['extra_child_price'] ?? 75000, 75000));
 
     $childMenuIds = $body['child_menu_ids'] ?? [];
@@ -540,7 +542,7 @@ if ($action === 'get_link') {
     $waMediaPath = get_setting($db, 'breakfast_wa_media_path');
     $portalLogoPath = get_setting($db, 'breakfast_portal_logo_path');
     $extraMainPrice = 75000.0;
-    $extraDrinkPrice = 75000.0;
+    $extraDrinkPrice = 20000.0;
     $extraChildPrice = 75000.0;
 
     $quotaRow = null;
@@ -559,7 +561,8 @@ if ($action === 'get_link') {
     }
     if ($quotaRow) {
         $extraMainPrice = max(0, to_float($quotaRow['extra_main_price'] ?? 75000, 75000));
-        $extraDrinkPrice = max(0, to_float($quotaRow['extra_drink_price'] ?? 75000, 75000));
+        $extraDrinkPrice = max(0, to_float($quotaRow['extra_drink_price'] ?? 20000, 20000));
+        if ((int)round($extraDrinkPrice) === 75000) $extraDrinkPrice = 20000.0;
         $extraChildPrice = max(0, to_float($quotaRow['extra_child_price'] ?? 75000, 75000));
     }
     $waMediaUrl = '';
@@ -722,7 +725,7 @@ if ($action === 'submit_link') {
         }
 
         $extraMainPrice = 75000.0;
-        $extraDrinkPrice = 75000.0;
+        $extraDrinkPrice = 20000.0;
         $extraChildPrice = 75000.0;
 
         $quotaRow = null;
@@ -741,7 +744,8 @@ if ($action === 'submit_link') {
         }
         if ($quotaRow) {
             $extraMainPrice = max(0, to_float($quotaRow['extra_main_price'] ?? 75000, 75000));
-            $extraDrinkPrice = max(0, to_float($quotaRow['extra_drink_price'] ?? 75000, 75000));
+            $extraDrinkPrice = max(0, to_float($quotaRow['extra_drink_price'] ?? 20000, 20000));
+            if ((int)round($extraDrinkPrice) === 75000) $extraDrinkPrice = 20000.0;
             $extraChildPrice = max(0, to_float($quotaRow['extra_child_price'] ?? 75000, 75000));
         }
 
