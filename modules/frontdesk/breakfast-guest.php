@@ -1296,9 +1296,9 @@ $token = trim((string)($_GET['t'] ?? ''));
         }
 
         var qtyHtmlEdit = '<div class="menu-qty-wrap" data-group="' + group + '" data-menu-id="' + item.id + '">' +
-            '<button type="button" class="cart-qty-btn" data-action="qty-minus" data-group="' + group + '" data-id="' + item.id + '" onclick="event.preventDefault();event.stopPropagation();">-</button>' +
+            '<button type="button" class="cart-qty-btn" data-action="qty-minus" data-group="' + group + '" data-id="' + item.id + '">-</button>' +
             '<span class="cart-qty-val" data-menu-qty-group="' + group + '" data-menu-qty-val="' + item.id + '">' + qtyVal + '</span>' +
-            '<button type="button" class="cart-qty-btn" data-action="qty-plus" data-group="' + group + '" data-id="' + item.id + '" onclick="event.preventDefault();event.stopPropagation();">+</button>' +
+            '<button type="button" class="cart-qty-btn" data-action="qty-plus" data-group="' + group + '" data-id="' + item.id + '">+</button>' +
             '</div>';
 
         var noteHtmlEdit = '<div class="menu-note-wrap">' +
