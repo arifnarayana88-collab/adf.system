@@ -951,7 +951,7 @@ if ($action === 'submit_link') {
 
             // Prevent duplicate extra rows for the same link token: update if exists, else insert.
             $existingExtra = $db->fetchOne(
-                "SELECT id FROM booking_extras WHERE booking_id = ? AND item_name = 'Breakfast Extra (Guest Portal)' AND notes LIKE ? LIMIT 1",
+                "SELECT id FROM booking_extras WHERE booking_id = ? AND item_name = 'Extra Breakfast' AND notes LIKE ? LIMIT 1",
                 [$targetBookingId, '%token=' . ($link['short_code'] ?? $token) . '%']
             );
 
@@ -965,7 +965,7 @@ if ($action === 'submit_link') {
                     ]);
             } else {
                 $pdo->prepare("INSERT INTO booking_extras (booking_id, item_name, quantity, unit_price, total_price, notes, created_by)
-                    VALUES (?, 'Breakfast Extra (Guest Portal)', 1, ?, ?, ?, NULL)")
+                    VALUES (?, 'Extra Breakfast', 1, ?, ?, ?, NULL)")
                     ->execute([
                         $targetBookingId,
                         (float)$extraChargeTotal,
