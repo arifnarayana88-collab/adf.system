@@ -76,6 +76,30 @@ $token = trim((string)($_GET['t'] ?? ''));
         }
         .header-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         .header-brand { min-width: 0; }
+        .header-tools { display: flex; align-items: center; gap: 8px; }
+        .lang-switch {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.18);
+            border: 1px solid rgba(255,255,255,0.42);
+            border-radius: 10px;
+            padding: 6px 8px;
+            color: #fff;
+            font-size: 0.76rem;
+            font-weight: 800;
+        }
+        .lang-select {
+            border: 1px solid rgba(255,255,255,0.42);
+            background: rgba(255,255,255,0.96);
+            color: #0f172a;
+            border-radius: 8px;
+            font-size: 0.74rem;
+            font-weight: 800;
+            padding: 4px 6px;
+            min-width: 58px;
+            cursor: pointer;
+        }
         .header-logo {
             height: 46px;
             max-width: 170px;
@@ -656,7 +680,16 @@ $token = trim((string)($_GET['t'] ?? ''));
                     <h1>Narayana Breakfast Selection</h1>
                     <div class="header-subtitle">Elegant Morning Dining Experience</div>
                 </div>
-                <img id="portalLogo" class="header-logo" alt="Narayana Logo">
+                <div class="header-tools">
+                    <div class="lang-switch">
+                        <span aria-hidden="true">🌐</span>
+                        <select id="langSelect" class="lang-select" aria-label="Language">
+                            <option value="en">EN</option>
+                            <option value="id">ID</option>
+                        </select>
+                    </div>
+                    <img id="portalLogo" class="header-logo" alt="Narayana Logo">
+                </div>
             </div>
             <div class="header-divider"></div>
             <div class="muted-white" id="stateText">Loading details...</div>
@@ -791,9 +824,179 @@ $token = trim((string)($_GET['t'] ?? ''));
     var waFoBtn = document.getElementById('btnWaFo');
     var waFloatBtn = document.getElementById('waFloatBtn');
     var onTheSpotBtn = document.getElementById('btnOnTheSpot');
+    var langSelectEl = document.getElementById('langSelect');
     var breakfastTimeEl = document.getElementById('breakfastTime');
     var serviceTypeEl = document.getElementById('serviceType');
     var breakfastLocationEl = document.getElementById('breakfastLocation');
+    var lang = 'en';
+    var i18n = {
+        en: {
+            loading: 'Loading details...',
+            infoTitle: 'Information',
+            onspotTitle: 'On The Spot Option',
+            onspotNote: 'You are welcome to order directly at the restaurant. Please allow extra time, as preparation may take a little longer during busy breakfast hours.',
+            mainTitle: 'Main Course',
+            drinkTitle: 'Beverages',
+            childTitle: 'Kids / Fruit',
+            cartTitle: 'Selected Cart',
+            submitTitle: 'Additional Notes',
+            allowedMain: 'Allowed Main Course',
+            allowedDrink: 'Allowed Beverages',
+            allowedChild: 'Allowed Kids / Fruit',
+            selected: 'Selected',
+            continueDetails: 'Fix Selection & Continue',
+            breakfastTime: 'Breakfast Time',
+            serviceType: 'Service Type',
+            breakfastLocation: 'Breakfast Location',
+            selectService: 'Select service',
+            restaurant: 'Restaurant',
+            roomService: 'Room Service',
+            takeAway: 'Take Away',
+            locationPlaceholder: 'Example: Main Restaurant',
+            notesPlaceholder: 'Example: no spicy food / egg allergy / others',
+            submitBtn: 'Submit Breakfast Selection',
+            mediaOpen: 'Open attachment',
+            cartEmpty: 'No menu selected yet.',
+            cartSummary: '<strong>{count}</strong> item(s) in your cart. Please review before continuing to details.',
+            selectTime: 'Select time',
+            menuNoteLabel: 'Menu note (optional)',
+            menuNotePlaceholder: 'Special request (e.g. spicy / medium / no onion)',
+            requestLabel: 'Request',
+            noAdditionalInfo: 'No additional information.',
+            guest: 'Guest',
+            room: 'Room',
+            date: 'Date',
+            breakfastTimeMeta: 'Breakfast Time',
+            serviceMeta: 'Service',
+            locationMeta: 'Location',
+            expires: 'Expires',
+            cartGroupMain: 'Main',
+            cartGroupDrink: 'Drink',
+            cartGroupChild: 'Kids / Fruit'
+        },
+        id: {
+            loading: 'Memuat detail...',
+            infoTitle: 'Informasi',
+            onspotTitle: 'Opsi On The Spot',
+            onspotNote: 'Anda dapat memesan langsung di restoran. Mohon bersabar karena waktu persiapan bisa sedikit lebih lama saat jam sarapan ramai.',
+            mainTitle: 'Menu Utama',
+            drinkTitle: 'Minuman',
+            childTitle: 'Anak / Buah',
+            cartTitle: 'Keranjang Pilihan',
+            submitTitle: 'Catatan Tambahan',
+            allowedMain: 'Jatah Menu Utama',
+            allowedDrink: 'Jatah Minuman',
+            allowedChild: 'Jatah Anak / Buah',
+            selected: 'Dipilih',
+            continueDetails: 'Lanjut Isi Detail',
+            breakfastTime: 'Waktu Sarapan',
+            serviceType: 'Jenis Layanan',
+            breakfastLocation: 'Lokasi Sarapan',
+            selectService: 'Pilih layanan',
+            restaurant: 'Restoran',
+            roomService: 'Room Service',
+            takeAway: 'Take Away',
+            locationPlaceholder: 'Contoh: Restoran Utama',
+            notesPlaceholder: 'Contoh: tidak pedas / alergi telur / lainnya',
+            submitBtn: 'Kirim Pilihan Sarapan',
+            mediaOpen: 'Buka lampiran',
+            cartEmpty: 'Belum ada menu dipilih.',
+            cartSummary: '<strong>{count}</strong> item di keranjang. Silakan cek lagi sebelum lanjut isi detail.',
+            selectTime: 'Pilih waktu',
+            menuNoteLabel: 'Catatan menu (opsional)',
+            menuNotePlaceholder: 'Permintaan khusus (contoh: pedas / sedang / tanpa bawang)',
+            requestLabel: 'Catatan',
+            noAdditionalInfo: 'Tidak ada informasi tambahan.',
+            guest: 'Tamu',
+            room: 'Kamar',
+            date: 'Tanggal',
+            breakfastTimeMeta: 'Waktu Sarapan',
+            serviceMeta: 'Layanan',
+            locationMeta: 'Lokasi',
+            expires: 'Kedaluwarsa',
+            cartGroupMain: 'Utama',
+            cartGroupDrink: 'Minuman',
+            cartGroupChild: 'Anak / Buah'
+        }
+    };
+
+    function t(key, vars) {
+        var dict = i18n[lang] || i18n.en;
+        var out = dict[key] || i18n.en[key] || key;
+        if (!vars) return out;
+        Object.keys(vars).forEach(function (k) {
+            out = out.replace(new RegExp('\\{' + k + '\\}', 'g'), String(vars[k]));
+        });
+        return out;
+    }
+
+    function applyLanguage() {
+        var infoTitleEl = document.querySelector('#infoCard .section-title');
+        if (infoTitleEl) infoTitleEl.innerHTML = '<span class="section-icon">ℹ️</span> ' + esc(t('infoTitle'));
+        var onspotTitleEl = document.querySelector('#onTheSpotCard .section-title');
+        if (onspotTitleEl) onspotTitleEl.innerHTML = '<span class="section-icon">🍳</span> ' + esc(t('onspotTitle'));
+        var onspotNoteEl = document.querySelector('#onTheSpotCard .onspot-note');
+        if (onspotNoteEl) onspotNoteEl.textContent = t('onspotNote');
+        var mainTitleEl = document.querySelector('#mainCard .section-title');
+        if (mainTitleEl) mainTitleEl.innerHTML = '<span class="section-icon">🍽️</span> ' + esc(t('mainTitle'));
+        var drinkTitleEl = document.querySelector('#drinkCard .section-title');
+        if (drinkTitleEl) drinkTitleEl.innerHTML = '<span class="section-icon">🥤</span> ' + esc(t('drinkTitle'));
+        var childTitleEl = document.querySelector('#childCard .section-title');
+        if (childTitleEl) childTitleEl.innerHTML = '<span class="section-icon">👶</span> ' + esc(t('childTitle'));
+        var cartTitleEl = document.querySelector('#cartCard .section-title');
+        if (cartTitleEl) cartTitleEl.innerHTML = '<span class="section-icon">🧺</span> ' + esc(t('cartTitle'));
+        var submitTitleEl = document.querySelector('#submitCard .section-title');
+        if (submitTitleEl && submitTitleEl.textContent.indexOf('Submitted') === -1 && submitTitleEl.textContent.indexOf('Terkirim') === -1) {
+            submitTitleEl.innerHTML = '<span class="section-icon">📝</span> ' + esc(t('submitTitle'));
+        }
+
+        var quotaLabels = document.querySelectorAll('#mainCard .quota-label, #drinkCard .quota-label, #childCard .quota-label');
+        if (quotaLabels.length >= 6) {
+            quotaLabels[0].textContent = t('allowedMain');
+            quotaLabels[1].textContent = t('selected');
+            quotaLabels[2].textContent = t('allowedDrink');
+            quotaLabels[3].textContent = t('selected');
+            quotaLabels[4].textContent = t('allowedChild');
+            quotaLabels[5].textContent = t('selected');
+        }
+
+        var mediaEl = document.getElementById('infoMedia');
+        if (mediaEl) mediaEl.textContent = t('mediaOpen');
+        var continueBtn = document.getElementById('btnContinueDetails');
+        if (continueBtn) continueBtn.textContent = t('continueDetails');
+        var submitBtn = document.getElementById('btnSubmit');
+        if (submitBtn && !submitBtn.disabled) submitBtn.textContent = t('submitBtn');
+        if (onTheSpotBtn) onTheSpotBtn.textContent = 'ON THE SPOT';
+        if (quotaPopupOkEl) quotaPopupOkEl.textContent = (lang === 'id') ? 'OK, simpan extra' : 'OK, keep extra';
+        if (quotaPopupCloseEl) quotaPopupCloseEl.textContent = (lang === 'id') ? 'Close, kembali ke jatah' : 'Close, back to quota';
+        var quotaTitle = document.getElementById('quotaPopupTitle');
+        if (quotaTitle) quotaTitle.innerHTML = '<span class="badge">!</span> ' + ((lang === 'id') ? 'Extra Breakfast Terdeteksi' : 'Extra Breakfast Detected');
+
+        var btLabel = document.querySelector('label[for="breakfastTime"]');
+        if (btLabel) btLabel.childNodes[0].nodeValue = t('breakfastTime');
+        var stLabel = document.querySelector('label[for="serviceType"]');
+        if (stLabel) stLabel.childNodes[0].nodeValue = t('serviceType');
+        var blLabel = document.querySelector('label[for="breakfastLocation"]');
+        if (blLabel) blLabel.childNodes[0].nodeValue = t('breakfastLocation');
+
+        var servicePlaceholderOpt = serviceTypeEl ? serviceTypeEl.querySelector('option[value=""]') : null;
+        if (servicePlaceholderOpt) servicePlaceholderOpt.textContent = t('selectService');
+        var serviceRestaurantOpt = serviceTypeEl ? serviceTypeEl.querySelector('option[value="restaurant"]') : null;
+        if (serviceRestaurantOpt) serviceRestaurantOpt.textContent = t('restaurant');
+        var serviceRoomOpt = serviceTypeEl ? serviceTypeEl.querySelector('option[value="room_service"]') : null;
+        if (serviceRoomOpt) serviceRoomOpt.textContent = t('roomService');
+        var serviceTakeAwayOpt = serviceTypeEl ? serviceTypeEl.querySelector('option[value="take_away"]') : null;
+        if (serviceTakeAwayOpt) serviceTakeAwayOpt.textContent = t('takeAway');
+
+        var notesEl = document.getElementById('notes');
+        if (notesEl) notesEl.placeholder = t('notesPlaceholder');
+        if (breakfastLocationEl && !breakfastLocationEl.value) breakfastLocationEl.placeholder = t('locationPlaceholder');
+
+        var stateEl = document.getElementById('stateText');
+        if (stateEl && (!payload || stateEl.textContent.trim() === '' || stateEl.textContent === 'Loading details...')) {
+            stateEl.textContent = t('loading');
+        }
+    }
 
     function pad2(n) {
         return n < 10 ? ('0' + n) : String(n);
@@ -805,7 +1008,7 @@ $token = trim((string)($_GET['t'] ?? ''));
 
     function fillBreakfastTimeOptions() {
         if (!breakfastTimeEl) return;
-        var out = ['<option value="">Select time</option>'];
+        var out = ['<option value="">' + esc(t('selectTime')) + '</option>'];
         for (var mins = (6 * 60) + 30; mins <= (10 * 60); mins += 30) {
             var h = Math.floor(mins / 60);
             var m = mins % 60;
@@ -865,15 +1068,19 @@ $token = trim((string)($_GET['t'] ?? ''));
 
         if (payload.is_locked) {
             var submitTitle = document.querySelector('#submitCard .section-title');
-            if (submitTitle) submitTitle.innerHTML = '<span class="section-icon">🔒</span> Submitted Menu';
+            if (submitTitle) submitTitle.innerHTML = '<span class="section-icon">🔒</span> ' + (lang === 'id' ? 'Menu Terkirim' : 'Submitted Menu');
             var notes = document.getElementById('notes');
             notes.disabled = true;
-            notes.value = 'This breakfast selection has already been submitted. Please contact Front Office for changes.';
+            notes.value = (lang === 'id')
+                ? 'Pilihan sarapan ini sudah dikirim. Silakan hubungi Front Office untuk perubahan.'
+                : 'This breakfast selection has already been submitted. Please contact Front Office for changes.';
             var btn = document.getElementById('btnSubmit');
             btn.disabled = true;
-            btn.textContent = 'Submitted';
+            btn.textContent = (lang === 'id') ? 'Terkirim' : 'Submitted';
             var msg = document.getElementById('submitMsg');
-            msg.textContent = 'This link is read-only. Menu changes can only be made by Front Office.';
+            msg.textContent = (lang === 'id')
+                ? 'Link ini hanya-baca. Perubahan menu hanya bisa dilakukan oleh Front Office.'
+                : 'This link is read-only. Menu changes can only be made by Front Office.';
             msg.className = 'msg ok';
 
             var submitBtn = document.getElementById('btnSubmit');
@@ -951,13 +1158,13 @@ $token = trim((string)($_GET['t'] ?? ''));
 
         meta.className = 'meta meta-stack';
         meta.innerHTML = [
-            ['Guest', payload.guest_name || '-'],
-            ['Room', Array.isArray(payload.room_number) ? payload.room_number.join(', ') : '-'],
-            ['Date', formatDate(payload.breakfast_date)],
-            ['Breakfast Time', formatTime(payload.breakfast_time)],
-            ['Service', formatService(payload.breakfast_service)],
-            ['Location', payload.breakfast_location || '-'],
-            ['Expires', payload.expires_at || '-']
+            [t('guest'), payload.guest_name || '-'],
+            [t('room'), Array.isArray(payload.room_number) ? payload.room_number.join(', ') : '-'],
+            [t('date'), formatDate(payload.breakfast_date)],
+            [t('breakfastTimeMeta'), formatTime(payload.breakfast_time)],
+            [t('serviceMeta'), formatService(payload.breakfast_service)],
+            [t('locationMeta'), payload.breakfast_location || '-'],
+            [t('expires'), payload.expires_at || '-']
         ].map(function (it) {
             return '<div class="meta-item-light"><div class="meta-lbl-dark">' + esc(it[0]) + '</div><div class="meta-val">' + esc(it[1]) + '</div></div>';
         }).join('');
@@ -968,7 +1175,7 @@ $token = trim((string)($_GET['t'] ?? ''));
 
         var infoText = (payload.wa_info_text || '').trim();
         var infoMedia = (payload.wa_media_url || '').trim();
-        document.getElementById('infoText').textContent = infoText || 'No additional information.';
+        document.getElementById('infoText').textContent = infoText || t('noAdditionalInfo');
         if (infoMedia) {
             var mediaEl = document.getElementById('infoMedia');
             mediaEl.href = infoMedia;
@@ -1024,7 +1231,7 @@ $token = trim((string)($_GET['t'] ?? ''));
 
         if (locked) {
             var noteHtmlLocked = noteVal
-                ? '<div class="menu-note-readonly">Request: ' + esc(noteVal) + '</div>'
+                ? '<div class="menu-note-readonly">' + esc(t('requestLabel')) + ': ' + esc(noteVal) + '</div>'
                 : '';
             return '<div class="menu-item locked' + (item.pre_selected ? ' selected' : '') + '">' +
                 '<input type="checkbox" class="menu-check" data-group="' + group + '" data-menu-name="' + esc(item.menu_name) + '" data-menu-category="' + esc(item.category || '-') + '" data-menu-price="' + price + '" data-menu-free="' + (free ? '1' : '0') + '" value="' + item.id + '" ' + checked + ' disabled>' +
@@ -1042,9 +1249,9 @@ $token = trim((string)($_GET['t'] ?? ''));
         }
 
         var noteHtmlEdit = '<div class="menu-note-wrap">' +
-            '<label class="menu-note-label">Menu note (optional)</label>' +
+            '<label class="menu-note-label">' + esc(t('menuNoteLabel')) + '</label>' +
             '<input class="menu-note-input" type="text" data-group="' + group + '" data-menu-id="' + item.id + '" value="' + esc(noteVal) + '"' +
-            ' placeholder="Special request (e.g. spicy / medium / no onion)" onclick="event.stopPropagation()" onfocus="event.stopPropagation()">' +
+            ' placeholder="' + esc(t('menuNotePlaceholder')) + '" onclick="event.stopPropagation()" onfocus="event.stopPropagation()">' +
             '</div>';
         
         return '<label class="menu-item' + (item.pre_selected ? ' selected' : '') + '">' +
@@ -1074,8 +1281,14 @@ $token = trim((string)($_GET['t'] ?? ''));
             return;
         }
         var est = Math.max(0, extraUnitPrice || 0) * extraCount;
-        var estText = est > 0 ? (' (est. +' + est.toLocaleString('id-ID') + ')') : '';
-        infoEl.textContent = 'Extra ' + extraCount + ' item(s)' + estText + ' will be charged at Front Desk.';
+        var estText = est > 0
+            ? ((lang === 'id')
+                ? (' (estimasi +' + est.toLocaleString('id-ID') + ')')
+                : (' (est. +' + est.toLocaleString('id-ID') + ')'))
+            : '';
+        infoEl.textContent = (lang === 'id')
+            ? ('Tambahan ' + extraCount + ' item' + estText + ' akan ditagihkan di Front Desk.')
+            : ('Extra ' + extraCount + ' item(s)' + estText + ' will be charged at Front Desk.');
         if (max <= 0) {
             infoEl.textContent = '';
         }
@@ -1137,7 +1350,7 @@ $token = trim((string)($_GET['t'] ?? ''));
         if (!items.length) {
             cartCard.classList.add('hidden');
             cartList.innerHTML = '';
-            cartSummaryText.textContent = 'Belum ada menu dipilih.';
+            cartSummaryText.textContent = t('cartEmpty');
             if (submitCard && !payload.is_locked) {
                 submitCard.classList.add('hidden');
             }
@@ -1148,14 +1361,17 @@ $token = trim((string)($_GET['t'] ?? ''));
         if (submitCard) {
             submitCard.classList.remove('hidden');
         }
-        cartSummaryText.innerHTML = '<strong>' + items.length + '</strong> item di keranjang. Silakan cek lagi sebelum lanjut isi detail.';
+        cartSummaryText.innerHTML = t('cartSummary', { count: items.length });
         cartList.innerHTML = items.map(function (item) {
             var priceText = item.free ? 'FREE' : 'Rp ' + Math.round(item.price).toLocaleString('id-ID');
             var noteHtml = item.note ? '<div class="cart-note">Note: ' + esc(item.note) + '</div>' : '';
+            var groupLabel = item.group === 'main'
+                ? t('cartGroupMain')
+                : (item.group === 'drink' ? t('cartGroupDrink') : t('cartGroupChild'));
             return '<div class="cart-item">' +
                 '<div class="cart-main">' +
                     '<div class="cart-name">' + esc(item.name) + '</div>' +
-                    '<div class="cart-meta">' + esc(item.group) + ' · ' + esc(item.category) + ' · ' + esc(priceText) + '</div>' +
+                    '<div class="cart-meta">' + esc(groupLabel) + ' · ' + esc(item.category) + ' · ' + esc(priceText) + '</div>' +
                     noteHtml +
                 '</div>' +
             '</div>';
@@ -1198,15 +1414,23 @@ $token = trim((string)($_GET['t'] ?? ''));
         var extraDrink = Math.max(0, getCheckedItems('drink').length - parseInt(payload.max_drink || 0, 10));
         var extraChild = Math.max(0, getCheckedItems('child').length - parseInt(payload.max_child || 0, 10));
         var lines = [];
-        if (extraMain > 0) lines.push(extraMain + ' extra main');
-        if (extraDrink > 0) lines.push(extraDrink + ' extra drink');
-        if (extraChild > 0) lines.push(extraChild + ' extra kids/fruit');
+        if (extraMain > 0) lines.push(lang === 'id' ? (extraMain + ' extra menu utama') : (extraMain + ' extra main'));
+        if (extraDrink > 0) lines.push(lang === 'id' ? (extraDrink + ' extra minuman') : (extraDrink + ' extra drink'));
+        if (extraChild > 0) lines.push(lang === 'id' ? (extraChild + ' extra anak/buah') : (extraChild + ' extra kids/fruit'));
 
-        var totalExtra = over.total;
-        var estTotal = totalExtra * 75000;
-        if (quotaPopupTextEl) quotaPopupTextEl.textContent = 'You selected more than the included breakfast allowance.';
-        if (quotaPopupHighlightEl) quotaPopupHighlightEl.textContent = 'Extra charge: Rp ' + estTotal.toLocaleString('id-ID') + ' (' + lines.join(', ') + ')';
-        if (quotaPopupNoteEl) quotaPopupNoteEl.textContent = 'OK = keep these extra items. Close = trim back to the allowed quota.';
+        var estTotal =
+            (extraMain * (parseFloat(payload.extra_main_price || 0) || 0)) +
+            (extraDrink * (parseFloat(payload.extra_drink_price || 0) || 0)) +
+            (extraChild * (parseFloat(payload.extra_child_price || 0) || 0));
+        if (quotaPopupTextEl) quotaPopupTextEl.textContent = (lang === 'id')
+            ? 'Pilihan Anda melebihi jatah sarapan yang termasuk.'
+            : 'You selected more than the included breakfast allowance.';
+        if (quotaPopupHighlightEl) quotaPopupHighlightEl.textContent = (lang === 'id')
+            ? ('Biaya tambahan: Rp ' + estTotal.toLocaleString('id-ID') + ' (' + lines.join(', ') + ')')
+            : ('Extra charge: Rp ' + estTotal.toLocaleString('id-ID') + ' (' + lines.join(', ') + ')');
+        if (quotaPopupNoteEl) quotaPopupNoteEl.textContent = (lang === 'id')
+            ? 'OK = simpan item tambahan. Close = kembali ke jatah yang diizinkan.'
+            : 'OK = keep these extra items. Close = trim back to the allowed quota.';
         quotaPopupEl.classList.add('show');
     }
 
@@ -1288,14 +1512,14 @@ $token = trim((string)($_GET['t'] ?? ''));
 
     async function loadLink() {
         if (!token) {
-            setState('Token is missing.', true);
+            setState((lang === 'id') ? 'Token tidak ditemukan.' : 'Token is missing.', true);
             return;
         }
         try {
             var res = await fetch(API + '?action=get_link&token=' + encodeURIComponent(token));
             var json = await res.json();
             if (!json.success) {
-                setState(json.message || 'Invalid link.', true);
+                setState(json.message || ((lang === 'id') ? 'Link tidak valid.' : 'Invalid link.'), true);
                 return;
             }
 
@@ -1307,9 +1531,9 @@ $token = trim((string)($_GET['t'] ?? ''));
             setState(
                 payload.is_locked
                     ? ((parseInt(payload.on_the_spot || 0, 10) === 1)
-                        ? 'ON The Spot selected. Please come to restaurant in the morning.'
-                        : 'Selection already submitted. This link is read-only.')
-                    : 'Please choose items based on your allowance.',
+                        ? ((lang === 'id') ? 'ON The Spot dipilih. Silakan datang ke restoran pada pagi hari.' : 'ON The Spot selected. Please come to restaurant in the morning.')
+                        : ((lang === 'id') ? 'Pilihan sudah dikirim. Link ini hanya-baca.' : 'Selection already submitted. This link is read-only.'))
+                    : ((lang === 'id') ? 'Silakan pilih menu sesuai jatah Anda.' : 'Please choose items based on your allowance.'),
                 false
             );
             renderMeta();
@@ -1323,8 +1547,9 @@ $token = trim((string)($_GET['t'] ?? ''));
             refreshQuotaInfo('drink', parseInt(payload.max_drink || 0, 10), document.getElementById('drinkSelected'), 'drinkExtraInfo', parseFloat(payload.extra_drink_price || 0));
             refreshQuotaInfo('child', parseInt(payload.max_child || 0, 10), document.getElementById('childSelected'), 'childExtraInfo', parseFloat(payload.extra_child_price || 0));
             refreshSelectionUI();
+            applyLanguage();
         } catch (err) {
-            setState('Failed to load link: ' + err.message, true);
+            setState(((lang === 'id') ? 'Gagal memuat link: ' : 'Failed to load link: ') + err.message, true);
         }
     }
 
@@ -1353,23 +1578,23 @@ $token = trim((string)($_GET['t'] ?? ''));
         }
 
         if (!breakfastTime) {
-            msgEl.textContent = 'Breakfast time is required.';
+            msgEl.textContent = (lang === 'id') ? 'Waktu sarapan wajib diisi.' : 'Breakfast time is required.';
             msgEl.classList.add('err');
             return;
         }
         if (!serviceType) {
-            msgEl.textContent = 'Service type is required.';
+            msgEl.textContent = (lang === 'id') ? 'Jenis layanan wajib dipilih.' : 'Service type is required.';
             msgEl.classList.add('err');
             return;
         }
         if (!breakfastLocation) {
-            msgEl.textContent = 'Breakfast location is required.';
+            msgEl.textContent = (lang === 'id') ? 'Lokasi sarapan wajib diisi.' : 'Breakfast location is required.';
             msgEl.classList.add('err');
             return;
         }
 
         if (!onTheSpot && (selectedMain.length + selectedDrink.length + selectedChild.length === 0)) {
-            msgEl.textContent = 'Please select at least 1 item.';
+            msgEl.textContent = (lang === 'id') ? 'Silakan pilih minimal 1 item.' : 'Please select at least 1 item.';
             msgEl.classList.add('err');
             return;
         }
@@ -1404,7 +1629,9 @@ $token = trim((string)($_GET['t'] ?? ''));
         var spotBtn = document.getElementById('btnOnTheSpot');
         btn.disabled = true;
         if (spotBtn) spotBtn.disabled = true;
-        btn.textContent = onTheSpot ? 'Submitting ON The Spot...' : 'Submitting...';
+        btn.textContent = onTheSpot
+            ? ((lang === 'id') ? 'Mengirim ON The Spot...' : 'Submitting ON The Spot...')
+            : ((lang === 'id') ? 'Mengirim...' : 'Submitting...');
 
         try {
             var res = await fetch(API, {
@@ -1414,35 +1641,54 @@ $token = trim((string)($_GET['t'] ?? ''));
             });
             var json = await res.json();
             if (!json.success) {
-                msgEl.textContent = json.message || 'Failed to submit selection.';
+                msgEl.textContent = json.message || ((lang === 'id') ? 'Gagal mengirim pilihan.' : 'Failed to submit selection.');
                 msgEl.classList.add('err');
                 btn.disabled = false;
                 if (spotBtn) spotBtn.disabled = false;
-                btn.textContent = 'Submit Breakfast Selection';
+                btn.textContent = (lang === 'id') ? 'Kirim Pilihan Sarapan' : 'Submit Breakfast Selection';
                 return;
             }
 
             msgEl.textContent = onTheSpot
-                ? 'Thank you. ON The Spot selected. Please come to restaurant in the morning and choose menu directly.'
-                : 'Thank you. Your breakfast selection has been submitted.';
+                ? ((lang === 'id') ? 'Terima kasih. ON The Spot dipilih. Silakan datang ke restoran pada pagi hari dan pilih menu langsung.' : 'Thank you. ON The Spot selected. Please come to restaurant in the morning and choose menu directly.')
+                : ((lang === 'id') ? 'Terima kasih. Pilihan sarapan Anda sudah dikirim.' : 'Thank you. Your breakfast selection has been submitted.');
             if (json.data && json.data.extra_total_price && json.data.extra_total_price > 0) {
-                msgEl.textContent += ' Extra charge: Rp ' + Math.round(json.data.extra_total_price).toLocaleString('id-ID') + ' (pay at Front Desk).';
+                msgEl.textContent += (lang === 'id' ? ' Biaya tambahan: Rp ' : ' Extra charge: Rp ')
+                    + Math.round(json.data.extra_total_price).toLocaleString('id-ID')
+                    + (lang === 'id' ? ' (bayar di Front Desk).' : ' (pay at Front Desk).');
             }
             msgEl.classList.add('ok');
-            btn.textContent = 'Submitted';
+            btn.textContent = (lang === 'id') ? 'Terkirim' : 'Submitted';
             await loadLink();
         } catch (err) {
-            msgEl.textContent = 'Connection error: ' + err.message;
+            msgEl.textContent = ((lang === 'id') ? 'Koneksi bermasalah: ' : 'Connection error: ') + err.message;
             msgEl.classList.add('err');
             btn.disabled = false;
             if (spotBtn) spotBtn.disabled = false;
-            btn.textContent = 'Submit Breakfast Selection';
+            btn.textContent = (lang === 'id') ? 'Kirim Pilihan Sarapan' : 'Submit Breakfast Selection';
         }
     }
 
     attachQuotaHandlers();
     attachNoteAutoSelect();
+    try {
+        var savedLang = localStorage.getItem('breakfastPortalLang');
+        if (savedLang === 'id' || savedLang === 'en') {
+            lang = savedLang;
+        }
+    } catch (e) {}
+    if (langSelectEl) {
+        langSelectEl.value = lang;
+        langSelectEl.addEventListener('change', function () {
+            lang = (langSelectEl.value === 'id') ? 'id' : 'en';
+            try { localStorage.setItem('breakfastPortalLang', lang); } catch (e) {}
+            fillBreakfastTimeOptions();
+            applyLanguage();
+            refreshSelectionUI();
+        });
+    }
     fillBreakfastTimeOptions();
+    applyLanguage();
     if (quotaPopupOkEl) {
         quotaPopupOkEl.addEventListener('click', function () {
             if (quotaPopupEl) quotaPopupEl.classList.remove('show');
