@@ -84,7 +84,7 @@ $token = trim((string)($_GET['t'] ?? ''));
         .section-icon { font-size: 1.3rem; }
         
         /* Moka-style menu cards */
-        .menu-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .menu-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
         .menu-item {
             border: 1px solid rgba(96, 165, 250, 0.18);
             border-radius: 14px;
@@ -92,6 +92,8 @@ $token = trim((string)($_GET['t'] ?? ''));
             overflow: hidden;
             transition: all 0.2s ease;
             cursor: pointer;
+            display: flex;
+            flex-direction: column;
         }
         .menu-item:hover { border-color: rgba(59, 130, 246, 0.55); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(59, 130, 246, 0.12); }
         .menu-item.selected { border-color: #38bdf8; background: linear-gradient(135deg, rgba(224, 242, 254, 0.92), rgba(191, 219, 254, 0.88)); }
@@ -117,10 +119,30 @@ $token = trim((string)($_GET['t'] ?? ''));
         }
         .menu-img-placeholder { font-size: 2.2rem; }
         
-        .menu-content { padding: 10px 11px 11px; }
-        .menu-name { font-weight: 700; font-size: 0.96rem; color: #1f2937; margin-bottom: 4px; }
-        .menu-desc { font-size: 0.76rem; color: #64748b; line-height: 1.35; margin-bottom: 8px; min-height: 30px; }
-        .menu-footer { display: flex; justify-content: space-between; align-items: center; }
+        .menu-content { padding: 10px 11px 11px; display: flex; flex-direction: column; flex: 1; }
+        .menu-name {
+            font-weight: 700;
+            font-size: 0.96rem;
+            color: #1f2937;
+            margin-bottom: 4px;
+            line-height: 1.28;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .menu-desc {
+            font-size: 0.76rem;
+            color: #64748b;
+            line-height: 1.35;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 40px;
+        }
+        .menu-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
         .menu-cat { 
             font-size: 0.65rem; 
             padding: 3px 8px; 
@@ -374,6 +396,13 @@ $token = trim((string)($_GET['t'] ?? ''));
             .header-top { align-items: flex-start; }
             .field-grid { grid-template-columns: 1fr; }
             .menu-img-wrap { height: 150px; }
+            .menu-name { font-size: 0.92rem; }
+            .menu-desc { font-size: 0.74rem; min-height: 38px; }
+        }
+
+        @media (max-width: 430px) {
+            .menu-grid { grid-template-columns: 1fr; }
+            .menu-img-wrap { height: 188px; }
         }
     </style>
 </head>
