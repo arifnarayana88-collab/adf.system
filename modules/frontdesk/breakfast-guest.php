@@ -212,11 +212,15 @@ $token = trim((string)($_GET['t'] ?? ''));
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28); }
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
         .btn-spot {
-            background: linear-gradient(135deg, #0ea5e9, #0284c7);
+            background: linear-gradient(135deg, #22c55e, #16a34a);
             color: #fff;
-            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.24);
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.24);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
         }
-        .btn-spot:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(2, 132, 199, 0.28); }
+        .btn-spot:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(22, 163, 74, 0.3); }
         .btn-spot:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
         .btn-wa {
             background: linear-gradient(135deg, #22c55e, #16a34a);
@@ -473,7 +477,7 @@ $token = trim((string)($_GET['t'] ?? ''));
         <textarea id="notes" placeholder="Example: no spicy food / egg allergy / others"></textarea>
         <div class="actions">
             <button class="btn btn-primary" id="btnSubmit">Submit Breakfast Selection</button>
-            <button class="btn btn-spot" id="btnOnTheSpot" type="button">ON The Spot</button>
+            <button class="btn btn-spot" id="btnOnTheSpot" type="button">ON THE SPOT</button>
             <a class="btn btn-wa hidden" id="btnWaFo" target="_blank" rel="noopener noreferrer">WhatsApp Front Office</a>
         </div>
         <div class="msg" id="submitMsg"></div>

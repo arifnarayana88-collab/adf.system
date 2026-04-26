@@ -506,15 +506,17 @@ if ($action === 'get_link') {
 
     // Separate drinks from main courses
     $drinkCategories = ['drinks', 'beverages'];
+    $alwaysMainNames = ['pancake', 'waffle'];
     $drinkMenus = [];
     $mainMenus = [];
     foreach ($menus as $m) {
         $menuId = (int)$m['id'];
+        $menuNameLower = strtolower(trim((string)($m['menu_name'] ?? '')));
         $m['pre_selected'] = false;
         if ($isLocked) {
             $m['pre_selected'] = in_array($menuId, $selectedMainIds, true) || in_array($menuId, $selectedDrinkIds, true) || in_array($menuId, $selectedChildIds, true);
         }
-        if (in_array($menuId, $childIds, true)) continue;
+        if (in_array($menuId, $childIds, true) && !in_array($menuNameLower, $alwaysMainNames, true)) continue;
         if (in_array(strtolower($m['category'] ?? ''), $drinkCategories, true)) {
             $drinkMenus[] = $m;
         } else {
