@@ -249,7 +249,7 @@ if ($action === 'create_link') {
     $totalPax = max(1, (int)($body['total_pax'] ?? ($adultCount + $childYoung + $childOld)));
     $totalMainQuota = ($adultCount * $maxMain) + ($childOld * $maxMain);
     $totalDrinkQuota = ($adultCount * $maxDrink) + ($childOld * $maxDrink);
-    $totalChildQuota = $childYoung; // young children only get child menu quota
+    $totalChildQuota = $childYoung * $maxChild; // young children use configured kids/fruit quota
 
     $extraMainPrice = to_float($body['extra_main_price'] ?? '', to_float(get_setting($db, 'breakfast_extra_main_price'), 55000));
     $extraDrinkPrice = to_float($body['extra_drink_price'] ?? '', to_float(get_setting($db, 'breakfast_extra_drink_price'), 25000));

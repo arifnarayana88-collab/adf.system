@@ -215,6 +215,7 @@ include '../../includes/header.php';
 .bf-guest-count{font-size:.72rem;color:var(--primary-color);font-weight:600;margin-top:.4rem}
 .bf-guest-tools{display:flex;align-items:center;gap:.4rem}
 .bf-link-guest-btn{padding:.25rem .5rem;border:none;border-radius:6px;font-size:.66rem;font-weight:700;cursor:pointer;background:rgba(14,165,233,.14);color:#0284c7}
+.bf-setup-guest-btn{padding:.25rem .5rem;border:none;border-radius:6px;font-size:.66rem;font-weight:700;cursor:pointer;background:rgba(99,102,241,.14);color:#4f46e5}
 .bf-wa-phone{font-size:.62rem;color:#64748b;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bf-wa-panel{margin-top:.6rem;padding:.65rem;border:1px solid var(--bg-tertiary);border-radius:8px;background:var(--bg-primary)}
 .bf-wa-panel-title{font-size:.72rem;font-weight:800;color:var(--text-primary);margin-bottom:.45rem}
@@ -226,6 +227,12 @@ include '../../includes/header.php';
 .bf-link-group input{padding:.35rem .45rem;border-radius:6px;border:1px solid var(--bg-tertiary);background:var(--bg-secondary);color:var(--text-primary);font-size:.72rem}
 .bf-child-menu-list{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.4rem}
 .bf-child-menu-item{font-size:.66rem;padding:.2rem .4rem;border-radius:999px;background:rgba(99,102,241,.12);color:#4f46e5;display:flex;align-items:center;gap:.25rem}
+.bf-modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,.45);z-index:9999;display:none;align-items:center;justify-content:center;padding:16px}
+.bf-modal{width:min(700px,100%);max-height:85vh;overflow:auto;background:var(--bg-secondary);border:1px solid var(--bg-tertiary);border-radius:12px;padding:12px}
+.bf-modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem}
+.bf-modal-title{font-size:.9rem;font-weight:800;color:var(--text-primary)}
+.bf-modal-close{border:none;background:rgba(239,68,68,.12);color:#ef4444;border-radius:6px;padding:.3rem .55rem;font-weight:700;cursor:pointer}
+.bf-modal-backdrop.show{display:flex}
 /* Notes in sidebar */
 .bf-order-note{font-size:.62rem;color:#f59e0b;font-style:italic;margin-left:.2rem}
 .bf-order-special{font-size:.68rem;color:var(--text-muted);background:rgba(245,158,11,.08);padding:.3rem .5rem;border-radius:4px;margin-top:.35rem;font-style:italic;border-left:2px solid #f59e0b}
@@ -298,6 +305,9 @@ include '../../includes/header.php';
                                        data-max-main="<?php echo (int)($savedQuota['max_main'] ?? 2); ?>"
                                        data-max-drink="<?php echo (int)($savedQuota['max_drink'] ?? 2); ?>"
                                        data-max-child="<?php echo (int)($savedQuota['max_child'] ?? 2); ?>"
+                                       data-extra-main-price="<?php echo (float)($savedQuota['extra_main_price'] ?? 55000); ?>"
+                                       data-extra-drink-price="<?php echo (float)($savedQuota['extra_drink_price'] ?? 25000); ?>"
+                                       data-extra-child-price="<?php echo (float)($savedQuota['extra_child_price'] ?? 30000); ?>"
                                        data-child-menu-ids="<?php echo htmlspecialchars(json_encode($savedChildIds)); ?>">
                                 <div class="guest-info">
                                     <div class="guest-name"><?php echo htmlspecialchars($g['guest_name']); ?></div>
@@ -309,6 +319,7 @@ include '../../includes/header.php';
                                     <?php else: ?>
                                         <span class="bf-wa-phone">No phone</span>
                                     <?php endif; ?>
+                                    <button type="button" class="bf-setup-guest-btn" onclick="openGuestSetup(event,this)">Setup</button>
                                     <button type="button" class="bf-link-guest-btn" onclick="sendGuestSelectionLink(event,this)">Link</button>
                                 </div>
                             </label>
@@ -334,23 +345,43 @@ include '../../includes/header.php';
                                 </div>
                                 <div style="font-size:.72rem;margin-top:.5rem;padding:.5rem;background:rgba(14,165,233,.1);border-radius:6px;color:#0284c7">
                                     <strong>📊 Ringkasan Quota:</strong>
-                                    <span id="quotaSummary">Main Course: 2 | Minum: 2 | Menu Anak: 0</span>
+                                    <span id="quotaSummary">Total Pax: 1 | Food: 2 | Drinks: 2 | Fruit/Kids: 0</span>
                                 </div>
                                 <div class="bf-link-grid" style="margin-top:.5rem">
                                     <div class="bf-link-group">
-                                        <label>Kuota Main/Dewasa</label>
+                                        <label>Food / Adult</label>
                                         <input type="number" id="linkQuotaMain" min="0" max="10" value="2" onchange="updateQuotaDisplay()">
                                     </div>
                                     <div class="bf-link-group">
-                                        <label>Kuota Minum</label>
+                                        <label>Drinks</label>
                                         <input type="number" id="linkQuotaDrink" min="0" max="10" value="2" onchange="updateQuotaDisplay()">
                                     </div>
                                     <div class="bf-link-group">
-                                        <label>Kadaluarsa (jam)</label>
+                                        <label>Fruit / Free Kids</label>
+                                        <input type="number" id="linkQuotaChild" min="0" max="10" value="0" onchange="updateQuotaDisplay()">
+                                    </div>
+                                </div>
+                                <div class="bf-link-grid" style="margin-top:.5rem">
+                                    <div class="bf-link-group">
+                                        <label>Extra Food Price</label>
+                                        <input type="number" id="linkExtraMainPrice" min="0" step="1000" value="55000">
+                                    </div>
+                                    <div class="bf-link-group">
+                                        <label>Extra Drink Price</label>
+                                        <input type="number" id="linkExtraDrinkPrice" min="0" step="1000" value="25000">
+                                    </div>
+                                    <div class="bf-link-group">
+                                        <label>Extra Fruit Price</label>
+                                        <input type="number" id="linkExtraChildPrice" min="0" step="1000" value="30000">
+                                    </div>
+                                </div>
+                                <div class="bf-link-grid" style="margin-top:.5rem">
+                                    <div class="bf-link-group">
+                                        <label>Expiry (Hours)</label>
                                         <input type="number" id="linkExpireHours" min="1" max="72" value="24">
                                     </div>
                                 </div>
-                                <div style="font-size:.66rem;color:var(--text-muted);margin-top:.45rem">Menu anak (usia <7 thn) - hanya pancake & waffle:</div>
+                                <div style="font-size:.66rem;color:var(--text-muted);margin-top:.45rem">Free kids under 7 menu options:</div>
                                 <div class="bf-child-menu-list" id="childMenuIdsWrap"></div>
                                 <div class="bf-wa-row" style="margin-top:.55rem">
                                     <button type="button" class="bf-link-send" onclick="sendSelectedGuestsPortalLinks()">🔗+📲 Buat Link & Kirim WA (terpilih)</button>
@@ -543,10 +574,39 @@ include '../../includes/header.php';
     </div>
 </div>
 
+<div class="bf-modal-backdrop" id="guestSetupModal">
+    <div class="bf-modal">
+        <div class="bf-modal-head">
+            <div class="bf-modal-title" id="guestSetupTitle">Guest Setup</div>
+            <button type="button" class="bf-modal-close" onclick="closeGuestSetup()">✕</button>
+        </div>
+        <div class="bf-link-grid">
+            <div class="bf-link-group"><label>Adults (>=7)</label><input type="number" id="setupAdult" min="0" max="10"></div>
+            <div class="bf-link-group"><label>Kids < 7</label><input type="number" id="setupKidYoung" min="0" max="10"></div>
+            <div class="bf-link-group"><label>Kids >= 7</label><input type="number" id="setupKidOld" min="0" max="10"></div>
+        </div>
+        <div class="bf-link-grid" style="margin-top:.5rem">
+            <div class="bf-link-group"><label>Food Quota</label><input type="number" id="setupFood" min="0" max="10"></div>
+            <div class="bf-link-group"><label>Drink Quota</label><input type="number" id="setupDrink" min="0" max="10"></div>
+            <div class="bf-link-group"><label>Fruit / Free Kids Quota</label><input type="number" id="setupFruit" min="0" max="10"></div>
+        </div>
+        <div class="bf-link-grid" style="margin-top:.5rem">
+            <div class="bf-link-group"><label>Extra Food Price</label><input type="number" id="setupExtraFood" min="0" step="1000"></div>
+            <div class="bf-link-group"><label>Extra Drink Price</label><input type="number" id="setupExtraDrink" min="0" step="1000"></div>
+            <div class="bf-link-group"><label>Extra Fruit Price</label><input type="number" id="setupExtraFruit" min="0" step="1000"></div>
+        </div>
+        <div class="bf-wa-row" style="justify-content:flex-end;margin-top:.8rem">
+            <button type="button" class="bf-btn-reset" onclick="closeGuestSetup()">Cancel</button>
+            <button type="button" class="bf-link-send" onclick="saveGuestSetup()">Save Setup</button>
+        </div>
+    </div>
+</div>
+
 <script>
 // Guest checkbox counter
 var guestChecks = document.querySelectorAll('input[name="guest_checks[]"]');
 var guestCountEl = document.getElementById('guestCount');
+var activeSetupCheckbox = null;
 if (guestChecks.length > 0) {
     guestChecks.forEach(function(cb) {
         cb.addEventListener('change', function() {
@@ -567,7 +627,10 @@ function applyGuestSettingsFromCheckbox(cb) {
     var childOld = parseInt(cb.dataset.childOld || '0', 10) || 0;
     var maxMain = parseInt(cb.dataset.maxMain || '2', 10) || 2;
     var maxDrink = parseInt(cb.dataset.maxDrink || '2', 10) || 2;
-    var maxChild = parseInt(cb.dataset.maxChild || '2', 10) || 2;
+    var maxChild = parseInt(cb.dataset.maxChild || '0', 10) || 0;
+    var extraMainPrice = parseFloat(cb.dataset.extraMainPrice || '55000') || 55000;
+    var extraDrinkPrice = parseFloat(cb.dataset.extraDrinkPrice || '25000') || 25000;
+    var extraChildPrice = parseFloat(cb.dataset.extraChildPrice || '30000') || 30000;
     var childMenuIds = [];
     try {
         childMenuIds = JSON.parse(cb.dataset.childMenuIds || '[]');
@@ -580,6 +643,10 @@ function applyGuestSettingsFromCheckbox(cb) {
     var childOldInput = document.getElementById('linkChildOld');
     var mainInput = document.getElementById('linkQuotaMain');
     var drinkInput = document.getElementById('linkQuotaDrink');
+    var childInput = document.getElementById('linkQuotaChild');
+    var extraMainInput = document.getElementById('linkExtraMainPrice');
+    var extraDrinkInput = document.getElementById('linkExtraDrinkPrice');
+    var extraChildInput = document.getElementById('linkExtraChildPrice');
     var childMenuChecks = document.querySelectorAll('.child-menu-id');
 
     if (adultInput) adultInput.value = adults;
@@ -587,12 +654,74 @@ function applyGuestSettingsFromCheckbox(cb) {
     if (childOldInput) childOldInput.value = childOld;
     if (mainInput) mainInput.value = maxMain;
     if (drinkInput) drinkInput.value = maxDrink;
+    if (childInput) childInput.value = maxChild;
+    if (extraMainInput) extraMainInput.value = Math.round(extraMainPrice);
+    if (extraDrinkInput) extraDrinkInput.value = Math.round(extraDrinkPrice);
+    if (extraChildInput) extraChildInput.value = Math.round(extraChildPrice);
 
     childMenuChecks.forEach(function(chk) {
         chk.checked = childMenuIds.indexOf(parseInt(chk.value, 10)) >= 0;
     });
 
     updateQuotaDisplay();
+}
+
+function openGuestSetup(evt, btn) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    var row = btn.closest('.bf-guest-item');
+    var cb = row ? row.querySelector('input[name="guest_checks[]"]') : null;
+    if (!cb) return;
+    activeSetupCheckbox = cb;
+
+    document.getElementById('guestSetupTitle').textContent = 'Setup: ' + (cb.dataset.name || 'Guest');
+    document.getElementById('setupAdult').value = parseInt(cb.dataset.adults || '1', 10) || 1;
+    document.getElementById('setupKidYoung').value = parseInt(cb.dataset.childYoung || '0', 10) || 0;
+    document.getElementById('setupKidOld').value = parseInt(cb.dataset.childOld || '0', 10) || 0;
+    document.getElementById('setupFood').value = parseInt(cb.dataset.maxMain || '2', 10) || 2;
+    document.getElementById('setupDrink').value = parseInt(cb.dataset.maxDrink || '2', 10) || 2;
+    document.getElementById('setupFruit').value = parseInt(cb.dataset.maxChild || '0', 10) || 0;
+    document.getElementById('setupExtraFood').value = Math.round(parseFloat(cb.dataset.extraMainPrice || '55000') || 55000);
+    document.getElementById('setupExtraDrink').value = Math.round(parseFloat(cb.dataset.extraDrinkPrice || '25000') || 25000);
+    document.getElementById('setupExtraFruit').value = Math.round(parseFloat(cb.dataset.extraChildPrice || '30000') || 30000);
+
+    document.getElementById('guestSetupModal').classList.add('show');
+}
+
+function closeGuestSetup() {
+    document.getElementById('guestSetupModal').classList.remove('show');
+    activeSetupCheckbox = null;
+}
+
+function saveGuestSetup() {
+    if (!activeSetupCheckbox) return;
+
+    var adults = Math.max(0, parseInt(document.getElementById('setupAdult').value || '1', 10) || 1);
+    var kidYoung = Math.max(0, parseInt(document.getElementById('setupKidYoung').value || '0', 10) || 0);
+    var kidOld = Math.max(0, parseInt(document.getElementById('setupKidOld').value || '0', 10) || 0);
+    var food = Math.max(0, parseInt(document.getElementById('setupFood').value || '2', 10) || 2);
+    var drink = Math.max(0, parseInt(document.getElementById('setupDrink').value || '2', 10) || 2);
+    var fruit = Math.max(0, parseInt(document.getElementById('setupFruit').value || '0', 10) || 0);
+    var extraFood = Math.max(0, parseFloat(document.getElementById('setupExtraFood').value || '55000') || 55000);
+    var extraDrink = Math.max(0, parseFloat(document.getElementById('setupExtraDrink').value || '25000') || 25000);
+    var extraFruit = Math.max(0, parseFloat(document.getElementById('setupExtraFruit').value || '30000') || 30000);
+
+    activeSetupCheckbox.dataset.adults = String(adults);
+    activeSetupCheckbox.dataset.childYoung = String(kidYoung);
+    activeSetupCheckbox.dataset.childOld = String(kidOld);
+    activeSetupCheckbox.dataset.totalPax = String(adults + kidYoung + kidOld);
+    activeSetupCheckbox.dataset.maxMain = String(food);
+    activeSetupCheckbox.dataset.maxDrink = String(drink);
+    activeSetupCheckbox.dataset.maxChild = String(fruit);
+    activeSetupCheckbox.dataset.extraMainPrice = String(extraFood);
+    activeSetupCheckbox.dataset.extraDrinkPrice = String(extraDrink);
+    activeSetupCheckbox.dataset.extraChildPrice = String(extraFruit);
+
+    if (activeSetupCheckbox.checked) {
+        applyGuestSettingsFromCheckbox(activeSetupCheckbox);
+    }
+
+    closeGuestSetup();
 }
 
 // Collect common form data (menu, time, pax, etc)
@@ -896,6 +1025,10 @@ async function createGuestPortalLinkFromCheckbox(cb) {
     var childOld = parseInt((document.getElementById('linkChildOld') || {value:'0'}).value, 10);
     var quotaMain = parseInt((document.getElementById('linkQuotaMain') || {value:'2'}).value, 10);
     var quotaDrink = parseInt((document.getElementById('linkQuotaDrink') || {value:'2'}).value, 10);
+    var quotaChild = parseInt((document.getElementById('linkQuotaChild') || {value:'0'}).value, 10);
+    var extraMainPrice = parseFloat((document.getElementById('linkExtraMainPrice') || {value:'55000'}).value);
+    var extraDrinkPrice = parseFloat((document.getElementById('linkExtraDrinkPrice') || {value:'25000'}).value);
+    var extraChildPrice = parseFloat((document.getElementById('linkExtraChildPrice') || {value:'30000'}).value);
     var expireHours = parseInt((document.getElementById('linkExpireHours') || {value:'24'}).value, 10);
     
     if (!Number.isFinite(adultCount) || adultCount < 0) adultCount = 0;
@@ -903,6 +1036,10 @@ async function createGuestPortalLinkFromCheckbox(cb) {
     if (!Number.isFinite(childOld) || childOld < 0) childOld = 0;
     if (!Number.isFinite(quotaMain) || quotaMain < 0) quotaMain = 0;
     if (!Number.isFinite(quotaDrink) || quotaDrink < 0) quotaDrink = 0;
+    if (!Number.isFinite(quotaChild) || quotaChild < 0) quotaChild = 0;
+    if (!Number.isFinite(extraMainPrice) || extraMainPrice < 0) extraMainPrice = 55000;
+    if (!Number.isFinite(extraDrinkPrice) || extraDrinkPrice < 0) extraDrinkPrice = 25000;
+    if (!Number.isFinite(extraChildPrice) || extraChildPrice < 0) extraChildPrice = 30000;
     if (!Number.isFinite(expireHours) || expireHours < 1) expireHours = 24;
 
     var body = {
@@ -920,7 +1057,10 @@ async function createGuestPortalLinkFromCheckbox(cb) {
         total_pax: adultCount + childYoung + childOld,
         max_main: quotaMain,
         max_drink: quotaDrink,
-        max_child: childYoung, // young children get child menu quota
+        max_child: quotaChild,
+        extra_main_price: extraMainPrice,
+        extra_drink_price: extraDrinkPrice,
+        extra_child_price: extraChildPrice,
         child_menu_ids: getSelectedChildMenuIds(),
         expire_hours: expireHours
     };
@@ -943,13 +1083,14 @@ function updateQuotaDisplay() {
     var childOld = parseInt((document.getElementById('linkChildOld') || {value:'0'}).value, 10) || 0;
     var quotaMain = parseInt((document.getElementById('linkQuotaMain') || {value:'2'}).value, 10) || 0;
     var quotaDrink = parseInt((document.getElementById('linkQuotaDrink') || {value:'2'}).value, 10) || 0;
+    var quotaChild = parseInt((document.getElementById('linkQuotaChild') || {value:'0'}).value, 10) || 0;
     
     var totalMain = (adultCount * quotaMain) + (childOld * quotaMain);
     var totalDrink = (adultCount * quotaDrink) + (childOld * quotaDrink);
-    var totalChild = childYoung; // young children only get child menu
+    var totalChild = childYoung * quotaChild;
     var totalPax = adultCount + childYoung + childOld;
     
-    var summary = 'Total Pax: ' + totalPax + ' | Main Course: ' + totalMain + ' | Minum: ' + totalDrink + ' | Menu Anak: ' + totalChild;
+    var summary = 'Total Pax: ' + totalPax + ' | Food: ' + totalMain + ' | Drinks: ' + totalDrink + ' | Fruit/Kids: ' + totalChild;
     var el = document.getElementById('quotaSummary');
     if (el) el.textContent = summary;
 }

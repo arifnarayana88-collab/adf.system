@@ -5,11 +5,11 @@ require_once '../../config/config.php';
 $token = trim((string)($_GET['t'] ?? ''));
 ?>
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pilih Menu Sarapan</title>
+    <title>Breakfast Menu Selection</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -39,7 +39,7 @@ $token = trim((string)($_GET['t'] ?? ''));
             border: none;
         }
         .header-card .muted-white { color: #eff6ff; }
-        h1 { margin: 0 0 4px; font-size: 1.5rem; font-weight: 800; }
+        h1 { margin: 0 0 4px; font-size: 1.22rem; font-weight: 700; letter-spacing: .2px; }
         .muted { color: #475569; font-size: 0.9rem; }
         .muted-white { color: #dbeafe; font-size: 0.92rem; }
         .meta { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
@@ -214,27 +214,27 @@ $token = trim((string)($_GET['t'] ?? ''));
 <div class="wrap">
     <div class="card" id="headerCard">
         <div class="header-card">
-            <h1>🍳 Pilih Menu Sarapan Anda</h1>
-            <div class="muted-white" id="stateText">Memuat data...</div>
+            <h1>Breakfast Selection</h1>
+            <div class="muted-white" id="stateText">Loading details...</div>
             <div class="meta hidden" id="metaBox"></div>
         </div>
     </div>
 
     <div class="card hidden" id="infoCard">
-        <div class="section-title"><span class="section-icon">ℹ️</span> Informasi</div>
+        <div class="section-title"><span class="section-icon">ℹ️</span> Information</div>
         <div class="info-box" id="infoText"></div>
-        <a class="media-link hidden" id="infoMedia" target="_blank">Lihat lampiran info</a>
+        <a class="media-link hidden" id="infoMedia" target="_blank">Open attachment</a>
     </div>
 
     <div class="card hidden" id="mainCard">
-        <div class="section-title"><span class="section-icon">🍽️</span> Menu Utama</div>
+        <div class="section-title"><span class="section-icon">🍽️</span> Main Course</div>
         <div class="quota-box">
             <div>
-                <div class="quota-label">Jatah Main Course</div>
-                <div class="quota-count"><span id="mainQuotaText">0</span> menu</div>
+                <div class="quota-label">Allowed Main Course</div>
+                <div class="quota-count"><span id="mainQuotaText">0</span> items</div>
             </div>
             <div>
-                <div class="quota-label">Terpilih</div>
+                <div class="quota-label">Selected</div>
                 <div class="quota-count" id="mainSelected">0</div>
             </div>
             <div id="mainExtraInfo" class="quota-extra"></div>
@@ -243,14 +243,14 @@ $token = trim((string)($_GET['t'] ?? ''));
     </div>
 
     <div class="card hidden drink-section" id="drinkCard">
-        <div class="section-title"><span class="section-icon">🥤</span> Minuman</div>
+        <div class="section-title"><span class="section-icon">🥤</span> Beverages</div>
         <div class="quota-box">
             <div>
-                <div class="quota-label">Jatah Minuman</div>
-                <div class="quota-count"><span id="drinkQuotaText">0</span> menu</div>
+                <div class="quota-label">Allowed Beverages</div>
+                <div class="quota-count"><span id="drinkQuotaText">0</span> items</div>
             </div>
             <div>
-                <div class="quota-label">Terpilih</div>
+                <div class="quota-label">Selected</div>
                 <div class="quota-count" id="drinkSelected">0</div>
             </div>
             <div id="drinkExtraInfo" class="quota-extra"></div>
@@ -259,14 +259,14 @@ $token = trim((string)($_GET['t'] ?? ''));
     </div>
 
     <div class="card hidden" id="childCard">
-        <div class="section-title"><span class="section-icon">👶</span> Menu Anak</div>
+        <div class="section-title"><span class="section-icon">👶</span> Kids / Fruit</div>
         <div class="quota-box">
             <div>
-                <div class="quota-label">Jatah Menu Anak</div>
-                <div class="quota-count"><span id="childQuotaText">0</span> menu</div>
+                <div class="quota-label">Allowed Kids / Fruit</div>
+                <div class="quota-count"><span id="childQuotaText">0</span> items</div>
             </div>
             <div>
-                <div class="quota-label">Terpilih</div>
+                <div class="quota-label">Selected</div>
                 <div class="quota-count" id="childSelected">0</div>
             </div>
             <div id="childExtraInfo" class="quota-extra"></div>
@@ -275,10 +275,10 @@ $token = trim((string)($_GET['t'] ?? ''));
     </div>
 
     <div class="card hidden" id="submitCard">
-        <div class="section-title"><span class="section-icon">📝</span> Catatan Tambahan</div>
-        <textarea id="notes" placeholder="Contoh: mohon tanpa pedas / alergi telur / dll"></textarea>
+        <div class="section-title"><span class="section-icon">📝</span> Additional Notes</div>
+        <textarea id="notes" placeholder="Example: no spicy food / egg allergy / others"></textarea>
         <div class="actions">
-            <button class="btn btn-primary" id="btnSubmit">Kirim Pilihan Sarapan</button>
+            <button class="btn btn-primary" id="btnSubmit">Submit Breakfast Selection</button>
         </div>
         <div class="msg" id="submitMsg"></div>
     </div>
@@ -356,7 +356,7 @@ $token = trim((string)($_GET['t'] ?? ''));
             ['Guest', payload.guest_name || '-'],
             ['Room', Array.isArray(payload.room_number) ? payload.room_number.join(', ') : '-'],
             ['Date', formatDate(payload.breakfast_date)],
-            ['Link Expires', payload.expires_at || '-']
+            ['Expires', payload.expires_at || '-']
         ].map(function (it) {
             return '<div class="meta-item-light"><div class="meta-lbl-dark">' + esc(it[0]) + '</div><div class="meta-val">' + esc(it[1]) + '</div></div>';
         }).join('');
@@ -367,7 +367,7 @@ $token = trim((string)($_GET['t'] ?? ''));
 
         var infoText = (payload.wa_info_text || '').trim();
         var infoMedia = (payload.wa_media_url || '').trim();
-        document.getElementById('infoText').textContent = infoText || 'Tidak ada info tambahan.';
+        document.getElementById('infoText').textContent = infoText || 'No additional information.';
         if (infoMedia) {
             var mediaEl = document.getElementById('infoMedia');
             mediaEl.href = infoMedia;
@@ -434,7 +434,7 @@ $token = trim((string)($_GET['t'] ?? ''));
         }
         var est = Math.max(0, extraUnitPrice || 0) * extraCount;
         var estText = est > 0 ? (' (estimasi +' + est.toLocaleString('id-ID') + ')') : '';
-        infoEl.textContent = 'Extra ' + extraCount + ' menu' + estText + ' dibayar di Front Desk.';
+            infoEl.textContent = 'Extra ' + extraCount + ' item(s)' + estText + ' will be charged at Front Desk.';
     }
 
     function attachQuotaHandlers() {
@@ -460,19 +460,19 @@ $token = trim((string)($_GET['t'] ?? ''));
 
     async function loadLink() {
         if (!token) {
-            setState('Token tidak tersedia.', true);
+            setState('Token is missing.', true);
             return;
         }
         try {
             var res = await fetch(API + '?action=get_link&token=' + encodeURIComponent(token));
             var json = await res.json();
             if (!json.success) {
-                setState(json.message || 'Link tidak valid.', true);
+                setState(json.message || 'Invalid link.', true);
                 return;
             }
 
             payload = json.data || {};
-            setState(payload.is_locked ? 'Menu sudah dikirim. Link ini hanya untuk melihat pilihan yang sudah tersimpan.' : 'Silakan pilih menu sesuai jatah.', false);
+            setState(payload.is_locked ? 'Selection already submitted. This link is read-only.' : 'Please choose items based on your allowance.', false);
             renderMeta();
             openCards();
 
@@ -484,7 +484,7 @@ $token = trim((string)($_GET['t'] ?? ''));
             refreshQuotaInfo('drink', parseInt(payload.max_drink || 0, 10), document.getElementById('drinkSelected'), 'drinkExtraInfo', parseFloat(payload.extra_drink_price || 0));
             refreshQuotaInfo('child', parseInt(payload.max_child || 0, 10), document.getElementById('childSelected'), 'childExtraInfo', parseFloat(payload.extra_child_price || 0));
         } catch (err) {
-            setState('Gagal memuat link: ' + err.message, true);
+            setState('Failed to load link: ' + err.message, true);
         }
     }
 
@@ -497,7 +497,7 @@ $token = trim((string)($_GET['t'] ?? ''));
         var selectedDrink = selectedIds('drink');
         var selectedChild = selectedIds('child');
         if (selectedMain.length + selectedDrink.length + selectedChild.length === 0) {
-            msgEl.textContent = 'Pilih minimal 1 menu.';
+            msgEl.textContent = 'Please select at least 1 item.';
             msgEl.classList.add('err');
             return;
         }
@@ -514,7 +514,7 @@ $token = trim((string)($_GET['t'] ?? ''));
 
         var btn = document.getElementById('btnSubmit');
         btn.disabled = true;
-        btn.textContent = 'Mengirim...';
+        btn.textContent = 'Submitting...';
 
         try {
             var res = await fetch(API, {
@@ -524,24 +524,24 @@ $token = trim((string)($_GET['t'] ?? ''));
             });
             var json = await res.json();
             if (!json.success) {
-                msgEl.textContent = json.message || 'Gagal mengirim pilihan.';
+                msgEl.textContent = json.message || 'Failed to submit selection.';
                 msgEl.classList.add('err');
                 btn.disabled = false;
-                btn.textContent = 'Kirim Pilihan Sarapan';
+                btn.textContent = 'Submit Breakfast Selection';
                 return;
             }
 
-            msgEl.textContent = 'Terima kasih, pilihan menu Anda berhasil dikirim.';
+            msgEl.textContent = 'Thank you. Your breakfast selection has been submitted.';
             if (json.data && json.data.extra_total_price && json.data.extra_total_price > 0) {
-                msgEl.textContent += ' Extra charge: Rp ' + Math.round(json.data.extra_total_price).toLocaleString('id-ID') + ' (dibayar di Front Desk).';
+                msgEl.textContent += ' Extra charge: Rp ' + Math.round(json.data.extra_total_price).toLocaleString('id-ID') + ' (pay at Front Desk).';
             }
             msgEl.classList.add('ok');
-            btn.textContent = 'Berhasil Dikirim';
+            btn.textContent = 'Submitted';
         } catch (err) {
-            msgEl.textContent = 'Error koneksi: ' + err.message;
+            msgEl.textContent = 'Connection error: ' + err.message;
             msgEl.classList.add('err');
             btn.disabled = false;
-            btn.textContent = 'Kirim Pilihan Sarapan';
+            btn.textContent = 'Submit Breakfast Selection';
         }
     }
 
