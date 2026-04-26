@@ -542,6 +542,35 @@ $token = trim((string)($_GET['t'] ?? ''));
         .cart-name { font-weight: 800; color: #0f172a; font-size: 0.92rem; }
         .cart-meta { margin-top: 3px; color: #1d4ed8; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .2px; }
         .cart-note { margin-top: 6px; font-size: 0.78rem; color: #475569; }
+        .cart-qty {
+            margin-top: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .cart-qty-btn {
+            width: 28px;
+            height: 28px;
+            border: 1px solid rgba(148, 163, 184, 0.38);
+            background: rgba(255,255,255,0.94);
+            color: #0f172a;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 800;
+            cursor: pointer;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .cart-qty-btn:hover { border-color: rgba(59, 130, 246, 0.45); }
+        .cart-qty-val {
+            min-width: 24px;
+            text-align: center;
+            font-weight: 800;
+            color: #0f172a;
+            font-size: 0.84rem;
+        }
         .cart-footer {
             margin-top: 12px;
             display: flex;
@@ -727,22 +756,6 @@ $token = trim((string)($_GET['t'] ?? ''));
         <div class="menu-grid" id="mainGrid"></div>
     </div>
 
-    <div class="card hidden drink-section" id="drinkCard">
-        <div class="section-title"><span class="section-icon">🥤</span> Beverages</div>
-        <div class="quota-box">
-            <div>
-                <div class="quota-label">Allowed Beverages</div>
-                <div class="quota-count"><span id="drinkQuotaText">0</span> items</div>
-            </div>
-            <div>
-                <div class="quota-label">Selected</div>
-                <div class="quota-count" id="drinkSelected">0</div>
-            </div>
-            <div id="drinkExtraInfo" class="quota-extra"></div>
-        </div>
-        <div class="menu-grid" id="drinkGrid"></div>
-    </div>
-
     <div class="card hidden" id="childCard">
         <div class="section-title"><span class="section-icon">👶</span> Kids / Fruit</div>
         <div class="quota-box">
@@ -759,11 +772,28 @@ $token = trim((string)($_GET['t'] ?? ''));
         <div class="menu-grid" id="childGrid"></div>
     </div>
 
+    <div class="card hidden drink-section" id="drinkCard">
+        <div class="section-title"><span class="section-icon">🥤</span> Beverages</div>
+        <div class="quota-box">
+            <div>
+                <div class="quota-label">Allowed Beverages</div>
+                <div class="quota-count"><span id="drinkQuotaText">0</span> items</div>
+            </div>
+            <div>
+                <div class="quota-label">Selected</div>
+                <div class="quota-count" id="drinkSelected">0</div>
+            </div>
+            <div id="drinkExtraInfo" class="quota-extra"></div>
+        </div>
+        <div class="menu-grid" id="drinkGrid"></div>
+    </div>
+
     <div class="card hidden" id="cartCard">
         <div class="section-title"><span class="section-icon">🧺</span> Keranjang Pilihan</div>
         <div class="cart-items" id="cartList"></div>
         <div class="cart-footer">
             <div class="cart-summary" id="cartSummaryText">Belum ada menu dipilih.</div>
+            <button type="button" class="btn btn-ghost" id="btnEditSelection">Edit Selection</button>
             <button type="button" class="btn btn-ghost" id="btnContinueDetails">Fix Selection & Continue</button>
         </div>
     </div>
@@ -1086,6 +1116,8 @@ $token = trim((string)($_GET['t'] ?? ''));
             var submitBtn = document.getElementById('btnSubmit');
             if (submitBtn) submitBtn.style.display = 'none';
             if (onTheSpotBtn) onTheSpotBtn.style.display = 'none';
+            var editBtn = document.getElementById('btnEditSelection');
+            if (editBtn) editBtn.style.display = 'none';
             document.getElementById('onTheSpotCard').classList.add('hidden');
 
             if (breakfastTimeEl) breakfastTimeEl.disabled = true;
@@ -1105,6 +1137,8 @@ $token = trim((string)($_GET['t'] ?? ''));
             waFoBtn.classList.add('hidden');
             if (waFloatBtn) waFloatBtn.classList.remove('show');
             if (onTheSpotBtn) onTheSpotBtn.style.display = 'inline-flex';
+            var editBtnOpen = document.getElementById('btnEditSelection');
+            if (editBtnOpen) editBtnOpen.style.display = 'inline-flex';
             document.getElementById('onTheSpotCard').classList.remove('hidden');
             if (breakfastTimeEl) breakfastTimeEl.disabled = false;
             if (serviceTypeEl) serviceTypeEl.disabled = false;
@@ -1224,7 +1258,7 @@ $token = trim((string)($_GET['t'] ?? ''));
         
         var imgHtml = '';
         if (hasImg) {
-            imgHtml = '<div class="menu-img-wrap"><img class="menu-img" src="' + esc(resolvedImg) + '" alt="' + esc(item.menu_name) + '" onerror="this.parentElement.innerHTML=\'<span class=\'menu-img-placeholder\'>🍽️</span>\'"></div>';
+            imgHtml = '<div class="menu-img-wrap"><img class="menu-img" src="' + esc(resolvedImg) + '" alt="' + esc(item.menu_name) + '" loading="lazy" decoding="async" onerror="this.parentElement.innerHTML=\'<span class=\'menu-img-placeholder\'>🍽️</span>\'"></div>';
         } else {
             imgHtml = '<div class="menu-img-wrap"><span class="menu-img-placeholder">🍽️</span></div>';
         }
@@ -1270,10 +1304,9 @@ $token = trim((string)($_GET['t'] ?? ''));
     }
 
     function refreshQuotaInfo(group, max, target, infoTargetId, extraUnitPrice) {
-        var checks = Array.from(document.querySelectorAll('.menu-check[data-group="' + group + '"]'));
-        var selected = checks.filter(function (c) { return c.checked; });
-        target.textContent = String(selected.length);
-        var extraCount = Math.max(0, selected.length - max);
+        var selectedQty = getSelectedQtyTotal(group);
+        target.textContent = String(selectedQty);
+        var extraCount = Math.max(0, selectedQty - max);
         var infoEl = document.getElementById(infoTargetId);
         if (!infoEl) return;
         if (extraCount <= 0) {
@@ -1317,6 +1350,50 @@ $token = trim((string)($_GET['t'] ?? ''));
         return Array.from(document.querySelectorAll('.menu-check[data-group="' + group + '"]:checked'));
     }
 
+    function getQtyMap(group) {
+        if (!payload) return {};
+        if (group === 'main') {
+            if (!payload.selected_main_qty || typeof payload.selected_main_qty !== 'object') payload.selected_main_qty = {};
+            return payload.selected_main_qty;
+        }
+        if (group === 'drink') {
+            if (!payload.selected_drink_qty || typeof payload.selected_drink_qty !== 'object') payload.selected_drink_qty = {};
+            return payload.selected_drink_qty;
+        }
+        if (!payload.selected_child_qty || typeof payload.selected_child_qty !== 'object') payload.selected_child_qty = {};
+        return payload.selected_child_qty;
+    }
+
+    function getMenuQty(group, id) {
+        var map = getQtyMap(group);
+        var val = parseInt(map[String(id)] || map[id] || '1', 10);
+        if (!Number.isFinite(val) || val < 1) val = 1;
+        return val;
+    }
+
+    function setMenuQty(group, id, qty) {
+        var map = getQtyMap(group);
+        var val = parseInt(qty, 10);
+        if (!Number.isFinite(val) || val < 1) val = 1;
+        map[String(id)] = val;
+    }
+
+    function removeMenuQty(group, id) {
+        var map = getQtyMap(group);
+        delete map[String(id)];
+        delete map[id];
+    }
+
+    function getSelectedQtyTotal(group) {
+        var total = 0;
+        getCheckedItems(group).forEach(function (cb) {
+            var id = parseInt(cb.value, 10);
+            if (!Number.isFinite(id) || id <= 0) return;
+            total += getMenuQty(group, id);
+        });
+        return total;
+    }
+
     function getSelectedCartItems() {
         var groups = ['main', 'drink', 'child'];
         var items = [];
@@ -1325,6 +1402,7 @@ $token = trim((string)($_GET['t'] ?? ''));
                 var id = parseInt(cb.value, 10);
                 if (!Number.isFinite(id) || id <= 0) return;
                 var noteInput = document.querySelector('.menu-note-input[data-group="' + group + '"][data-menu-id="' + id + '"]');
+                var qty = getMenuQty(group, id);
                 items.push({
                     id: id,
                     group: group,
@@ -1332,6 +1410,7 @@ $token = trim((string)($_GET['t'] ?? ''));
                     category: String(cb.dataset.menuCategory || '-'),
                     price: parseFloat(cb.dataset.menuPrice || '0') || 0,
                     free: String(cb.dataset.menuFree || '0') === '1',
+                    qty: qty,
                     note: noteInput ? String(noteInput.value || '').trim() : ''
                 });
             });
@@ -1361,17 +1440,27 @@ $token = trim((string)($_GET['t'] ?? ''));
         if (submitCard) {
             submitCard.classList.remove('hidden');
         }
-        cartSummaryText.innerHTML = t('cartSummary', { count: items.length });
+        var totalPax = 0;
+        items.forEach(function (it) { totalPax += parseInt(it.qty || 1, 10) || 1; });
+        cartSummaryText.innerHTML = '<strong>' + items.length + '</strong> menu, total pax <strong>' + totalPax + '</strong>.';
         cartList.innerHTML = items.map(function (item) {
             var priceText = item.free ? 'FREE' : 'Rp ' + Math.round(item.price).toLocaleString('id-ID');
             var noteHtml = item.note ? '<div class="cart-note">Note: ' + esc(item.note) + '</div>' : '';
             var groupLabel = item.group === 'main'
                 ? t('cartGroupMain')
                 : (item.group === 'drink' ? t('cartGroupDrink') : t('cartGroupChild'));
+            var qtyHtml = payload && payload.is_locked
+                ? '<div class="cart-qty"><span class="cart-qty-val">x' + item.qty + '</span></div>'
+                : '<div class="cart-qty">' +
+                    '<button type="button" class="cart-qty-btn" data-action="qty-minus" data-group="' + esc(item.group) + '" data-id="' + item.id + '">-</button>' +
+                    '<span class="cart-qty-val">' + item.qty + '</span>' +
+                    '<button type="button" class="cart-qty-btn" data-action="qty-plus" data-group="' + esc(item.group) + '" data-id="' + item.id + '">+</button>' +
+                '</div>';
             return '<div class="cart-item">' +
                 '<div class="cart-main">' +
                     '<div class="cart-name">' + esc(item.name) + '</div>' +
                     '<div class="cart-meta">' + esc(groupLabel) + ' · ' + esc(item.category) + ' · ' + esc(priceText) + '</div>' +
+                    qtyHtml +
                     noteHtml +
                 '</div>' +
             '</div>';
@@ -1390,7 +1479,7 @@ $token = trim((string)($_GET['t'] ?? ''));
         groups.forEach(function (pair) {
             var group = pair[0];
             var max = pair[1];
-            var extra = Math.max(0, getCheckedItems(group).length - max);
+            var extra = Math.max(0, getSelectedQtyTotal(group) - max);
             if (extra > 0) {
                 details.push({ group: group, extra: extra });
                 total += extra;
@@ -1410,9 +1499,9 @@ $token = trim((string)($_GET['t'] ?? ''));
             return;
         }
 
-        var extraMain = Math.max(0, getCheckedItems('main').length - parseInt(payload.max_main || 0, 10));
-        var extraDrink = Math.max(0, getCheckedItems('drink').length - parseInt(payload.max_drink || 0, 10));
-        var extraChild = Math.max(0, getCheckedItems('child').length - parseInt(payload.max_child || 0, 10));
+        var extraMain = Math.max(0, getSelectedQtyTotal('main') - parseInt(payload.max_main || 0, 10));
+        var extraDrink = Math.max(0, getSelectedQtyTotal('drink') - parseInt(payload.max_drink || 0, 10));
+        var extraChild = Math.max(0, getSelectedQtyTotal('child') - parseInt(payload.max_child || 0, 10));
         var lines = [];
         if (extraMain > 0) lines.push(lang === 'id' ? (extraMain + ' extra menu utama') : (extraMain + ' extra main'));
         if (extraDrink > 0) lines.push(lang === 'id' ? (extraDrink + ' extra minuman') : (extraDrink + ' extra drink'));
@@ -1443,12 +1532,26 @@ $token = trim((string)($_GET['t'] ?? ''));
         groups.forEach(function (pair) {
             var group = pair[0];
             var max = pair[1];
-            var checked = getCheckedItems(group);
-            if (checked.length <= max) return;
-            checked.slice(max).forEach(function (cb) {
-                cb.checked = false;
-                var card = cb.closest('.menu-item');
-                if (card) card.classList.remove('selected');
+            var currentQty = getSelectedQtyTotal(group);
+            if (currentQty <= max) return;
+            var checked = getCheckedItems(group).slice().reverse();
+            checked.forEach(function (cb) {
+                if (currentQty <= max) return;
+                var id = parseInt(cb.value, 10);
+                if (!Number.isFinite(id) || id <= 0) return;
+                var qty = getMenuQty(group, id);
+                while (qty > 0 && currentQty > max) {
+                    qty--;
+                    currentQty--;
+                }
+                if (qty <= 0) {
+                    cb.checked = false;
+                    removeMenuQty(group, id);
+                    var card = cb.closest('.menu-item');
+                    if (card) card.classList.remove('selected');
+                } else {
+                    setMenuQty(group, id, qty);
+                }
             });
         });
         refreshSelectionUI();
@@ -1469,6 +1572,17 @@ $token = trim((string)($_GET['t'] ?? ''));
                 menuItem.classList.toggle('selected', !!el.checked);
             }
 
+            var id = parseInt(el.value, 10);
+            if (Number.isFinite(id) && id > 0) {
+                if (el.checked) {
+                    if (!getQtyMap(el.dataset.group)[String(id)]) {
+                        setMenuQty(el.dataset.group, id, 1);
+                    }
+                } else {
+                    removeMenuQty(el.dataset.group, id);
+                }
+            }
+
             refreshSelectionUI();
 
             var group = el.dataset.group;
@@ -1482,6 +1596,47 @@ $token = trim((string)($_GET['t'] ?? ''));
         });
 
         document.addEventListener('click', function (ev) {
+            var qtyBtn = ev.target.closest('.cart-qty-btn');
+            if (qtyBtn) {
+                ev.preventDefault();
+                if (payload && payload.is_locked) return;
+                var group = String(qtyBtn.dataset.group || '');
+                var id = parseInt(qtyBtn.dataset.id || '0', 10);
+                if (!group || !Number.isFinite(id) || id <= 0) return;
+                var cb = document.querySelector('.menu-check[data-group="' + group + '"][value="' + id + '"]');
+                if (!cb || !cb.checked) return;
+                var qty = getMenuQty(group, id);
+                if (qtyBtn.dataset.action === 'qty-plus') {
+                    qty += 1;
+                    setMenuQty(group, id, qty);
+                } else if (qtyBtn.dataset.action === 'qty-minus') {
+                    qty -= 1;
+                    if (qty <= 0) {
+                        cb.checked = false;
+                        removeMenuQty(group, id);
+                        var card = cb.closest('.menu-item');
+                        if (card) card.classList.remove('selected');
+                    } else {
+                        setMenuQty(group, id, qty);
+                    }
+                }
+                refreshSelectionUI();
+                var maxMain = parseInt(payload.max_main || 0, 10);
+                var maxDrink = parseInt(payload.max_drink || 0, 10);
+                var maxChild = parseInt(payload.max_child || 0, 10);
+                refreshQuotaInfo('main', maxMain, document.getElementById('mainSelected'), 'mainExtraInfo', parseFloat(payload.extra_main_price || 0));
+                refreshQuotaInfo('drink', maxDrink, document.getElementById('drinkSelected'), 'drinkExtraInfo', parseFloat(payload.extra_drink_price || 0));
+                refreshQuotaInfo('child', maxChild, document.getElementById('childSelected'), 'childExtraInfo', parseFloat(payload.extra_child_price || 0));
+                return;
+            }
+
+            if (ev.target.id === 'btnEditSelection') {
+                ev.preventDefault();
+                var targetCard = document.getElementById('mainCard');
+                if (targetCard) targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
+
             if (ev.target.id === 'btnContinueDetails') {
                 ev.preventDefault();
                 var submitCard = document.getElementById('submitCard');
@@ -1497,17 +1652,19 @@ $token = trim((string)($_GET['t'] ?? ''));
     function selectedWithNotes(group) {
         var ids = [];
         var notes = {};
+        var qty = {};
         Array.from(document.querySelectorAll('.menu-check[data-group="' + group + '"]:checked')).forEach(function (c) {
             var id = parseInt(c.value, 10);
             if (!Number.isFinite(id) || id <= 0) return;
             ids.push(id);
+            qty[String(id)] = getMenuQty(group, id);
             var noteInput = document.querySelector('.menu-note-input[data-group="' + group + '"][data-menu-id="' + id + '"]');
             var note = noteInput ? String(noteInput.value || '').trim() : '';
             if (note) {
                 notes[String(id)] = note;
             }
         });
-        return { ids: ids, notes: notes };
+        return { ids: ids, notes: notes, qty: qty };
     }
 
     async function loadLink() {
@@ -1524,6 +1681,18 @@ $token = trim((string)($_GET['t'] ?? ''));
             }
 
             payload = json.data || {};
+            payload.selected_main_qty = (payload.selected_main_qty && typeof payload.selected_main_qty === 'object') ? payload.selected_main_qty : {};
+            payload.selected_drink_qty = (payload.selected_drink_qty && typeof payload.selected_drink_qty === 'object') ? payload.selected_drink_qty : {};
+            payload.selected_child_qty = (payload.selected_child_qty && typeof payload.selected_child_qty === 'object') ? payload.selected_child_qty : {};
+            (payload.selected_main_ids || []).forEach(function (id) {
+                if (!payload.selected_main_qty[String(id)]) payload.selected_main_qty[String(id)] = 1;
+            });
+            (payload.selected_drink_ids || []).forEach(function (id) {
+                if (!payload.selected_drink_qty[String(id)]) payload.selected_drink_qty[String(id)] = 1;
+            });
+            (payload.selected_child_ids || []).forEach(function (id) {
+                if (!payload.selected_child_qty[String(id)]) payload.selected_child_qty[String(id)] = 1;
+            });
             payload.view_main_menus = filterSelectedMenus(payload.main_menus || [], payload.selected_main_ids || []);
             payload.view_drink_menus = filterSelectedMenus(payload.drink_menus || [], payload.selected_drink_ids || []);
             payload.view_child_menus = filterSelectedMenus(payload.child_menus || [], payload.selected_child_ids || []);
@@ -1605,10 +1774,13 @@ $token = trim((string)($_GET['t'] ?? ''));
             lang: lang,
             selected_main: selectedMain,
             selected_main_notes: mainPicked.notes,
+            selected_main_qty: mainPicked.qty,
             selected_drink: selectedDrink,
             selected_drink_notes: drinkPicked.notes,
+            selected_drink_qty: drinkPicked.qty,
             selected_child: selectedChild,
             selected_child_notes: childPicked.notes,
+            selected_child_qty: childPicked.qty,
             breakfast_time: breakfastTime,
             service_type: serviceType,
             breakfast_location: breakfastLocation,
@@ -1619,10 +1791,13 @@ $token = trim((string)($_GET['t'] ?? ''));
         if (onTheSpot) {
             body.selected_main = [];
             body.selected_main_notes = {};
+            body.selected_main_qty = {};
             body.selected_drink = [];
             body.selected_drink_notes = {};
+            body.selected_drink_qty = {};
             body.selected_child = [];
             body.selected_child_notes = {};
+            body.selected_child_qty = {};
             body.special_requests = ((body.special_requests ? body.special_requests + ' ' : '') + '[ON THE SPOT]').trim();
         }
 
