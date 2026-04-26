@@ -204,6 +204,16 @@ $token = trim((string)($_GET['t'] ?? ''));
         }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28); }
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .btn-wa {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.24);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-wa:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(22, 163, 74, 0.3); }
         
         .msg { margin-top: 12px; font-size: 0.9rem; font-weight: 600; padding: 10px; border-radius: 8px; }
         .ok { background: #d1fae5; color: #059669; }
@@ -385,6 +395,7 @@ $token = trim((string)($_GET['t'] ?? ''));
         <textarea id="notes" placeholder="Example: no spicy food / egg allergy / others"></textarea>
         <div class="actions">
             <button class="btn btn-primary" id="btnSubmit">Submit Breakfast Selection</button>
+            <a class="btn btn-wa hidden" id="btnWaFo" target="_blank" rel="noopener noreferrer">WhatsApp Front Office</a>
         </div>
         <div class="msg" id="submitMsg"></div>
     </div>
@@ -395,6 +406,7 @@ $token = trim((string)($_GET['t'] ?? ''));
     var token = <?php echo json_encode($token); ?>;
     var API = <?php echo json_encode(rtrim(BASE_URL, '/') . '/api/breakfast-guest-portal.php'); ?>;
     var BASE_URL = <?php echo json_encode(rtrim(BASE_URL, '/')); ?>;
+    var FO_WA_NUMBER = '081222228590';
     var payload = null;
     var portalLogoEl = document.getElementById('portalLogo');
     var quotaPopupEl = document.getElementById('quotaPopup');
@@ -404,6 +416,22 @@ $token = trim((string)($_GET['t'] ?? ''));
     var mainGrid = document.getElementById('mainGrid');
     var childGrid = document.getElementById('childGrid');
     var drinkGrid = document.getElementById('drinkGrid');
+    var waFoBtn = document.getElementById('btnWaFo');
+
+    function normalizePhoneToWa(phone) {
+        var num = String(phone || '').replace(/\D+/g, '');
+        if (!num) return '';
+        if (num.indexOf('0') === 0) return '62' + num.slice(1);
+        if (num.indexOf('62') === 0) return num;
+        return num;
+    }
+
+    function buildWaFoLink() {
+        var waNum = normalizePhoneToWa(FO_WA_NUMBER);
+        if (!waNum) return '';
+        var msg = 'Hello Front Office, I want to request changes for my breakfast menu selection.';
+        return 'https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg);
+    }
 
     function setState(text, isErr) {
         var el = document.getElementById('stateText');
@@ -413,15 +441,24 @@ $token = trim((string)($_GET['t'] ?? ''));
 
     function openCards() {
         document.getElementById('metaBox').classList.remove('hidden');
-        document.getElementById('mainCard').classList.remove('hidden');
+        document.getElementById('mainCard').classList.add('hidden');
+        document.getElementById('drinkCard').classList.add('hidden');
+        document.getElementById('childCard').classList.add('hidden');
         document.getElementById('submitCard').classList.remove('hidden');
+
+        var mainMenus = payload.view_main_menus || [];
+        var drinkMenus = payload.view_drink_menus || [];
+        var childMenus = payload.view_child_menus || [];
+
+        if (mainMenus.length > 0) {
+            document.getElementById('mainCard').classList.remove('hidden');
+        }
         
-        // Show drink section if there are drink menus and quota > 0
-        if ((payload.drink_menus || []).length > 0 && (payload.max_drink || 0) > 0) {
+        if (drinkMenus.length > 0 && (payload.is_locked || (payload.max_drink || 0) > 0)) {
             document.getElementById('drinkCard').classList.remove('hidden');
         }
         
-        if ((payload.child_menus || []).length > 0 && (payload.max_child || 0) > 0) {
+        if (childMenus.length > 0 && (payload.is_locked || (payload.max_child || 0) > 0)) {
             document.getElementById('childCard').classList.remove('hidden');
         }
         if ((payload.wa_info_text || '').trim() || (payload.wa_media_url || '').trim()) {
@@ -443,7 +480,26 @@ $token = trim((string)($_GET['t'] ?? ''));
 
             var submitBtn = document.getElementById('btnSubmit');
             if (submitBtn) submitBtn.style.display = 'none';
+
+            if (waFoBtn) {
+                waFoBtn.href = buildWaFoLink();
+                waFoBtn.classList.remove('hidden');
+            }
+        } else if (waFoBtn) {
+            waFoBtn.classList.add('hidden');
         }
+    }
+
+    function filterSelectedMenus(list, selectedIds) {
+        if (!Array.isArray(list)) return [];
+        if (!payload || !payload.is_locked) return list;
+        var selectedMap = {};
+        (selectedIds || []).forEach(function (id) {
+            selectedMap[String(parseInt(id, 10))] = true;
+        });
+        return list.filter(function (m) {
+            return !!selectedMap[String(parseInt(m.id, 10))];
+        });
     }
 
     function esc(s) {
@@ -672,13 +728,17 @@ $token = trim((string)($_GET['t'] ?? ''));
             }
 
             payload = json.data || {};
+            payload.view_main_menus = filterSelectedMenus(payload.main_menus || [], payload.selected_main_ids || []);
+            payload.view_drink_menus = filterSelectedMenus(payload.drink_menus || [], payload.selected_drink_ids || []);
+            payload.view_child_menus = filterSelectedMenus(payload.child_menus || [], payload.selected_child_ids || []);
+
             setState(payload.is_locked ? 'Selection already submitted. This link is read-only.' : 'Please choose items based on your allowance.', false);
             renderMeta();
             openCards();
 
-            mainGrid.innerHTML = (payload.main_menus || []).map(function (m) { return menuCard(m, 'main'); }).join('');
-            drinkGrid.innerHTML = (payload.drink_menus || []).map(function (m) { return menuCard(m, 'drink'); }).join('');
-            childGrid.innerHTML = (payload.child_menus || []).map(function (m) { return menuCard(m, 'child'); }).join('');
+            mainGrid.innerHTML = (payload.view_main_menus || []).map(function (m) { return menuCard(m, 'main'); }).join('');
+            drinkGrid.innerHTML = (payload.view_drink_menus || []).map(function (m) { return menuCard(m, 'drink'); }).join('');
+            childGrid.innerHTML = (payload.view_child_menus || []).map(function (m) { return menuCard(m, 'child'); }).join('');
             
             refreshQuotaInfo('main', parseInt(payload.max_main || 0, 10), document.getElementById('mainSelected'), 'mainExtraInfo', parseFloat(payload.extra_main_price || 0));
             refreshQuotaInfo('drink', parseInt(payload.max_drink || 0, 10), document.getElementById('drinkSelected'), 'drinkExtraInfo', parseFloat(payload.extra_drink_price || 0));
@@ -745,6 +805,7 @@ $token = trim((string)($_GET['t'] ?? ''));
             }
             msgEl.classList.add('ok');
             btn.textContent = 'Submitted';
+            await loadLink();
         } catch (err) {
             msgEl.textContent = 'Connection error: ' + err.message;
             msgEl.classList.add('err');

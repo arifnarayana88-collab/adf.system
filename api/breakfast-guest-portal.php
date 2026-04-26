@@ -394,48 +394,6 @@ if ($action === 'create_link') {
             throw new Exception('Tidak dapat membuat short link');
         }
 
-        // Create pending order record so guest is tracked and not shown in "not yet ordered" list
-        $breakfastTime = '07:00:00'; // default breakfast time
-        $roomJson = json_encode($rooms);
-        $pendingOrderBody = [
-            'booking_id' => $bookingId,
-            'guest_name' => $guestName,
-            'room_number' => $roomJson,
-            'total_pax' => $totalPax,
-            'breakfast_time' => $breakfastTime,
-            'breakfast_date' => $breakfastDate,
-            'location' => 'restaurant',
-            'menu_items' => json_encode([]),  // empty, will be filled when guest submits
-            'special_requests' => '',
-            'order_status' => 'link_sent',  // pending status to show link was sent but not yet filled
-            'created_by' => $userId
-        ];
-        
-        try {
-            $pdo->prepare("INSERT INTO breakfast_orders
-                (booking_id, guest_name, room_number, total_pax, breakfast_time, breakfast_date, location, menu_items, special_requests, order_status, created_by)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE
-                    order_status = 'link_sent',
-                    updated_at = NOW()")
-                ->execute([
-                    $bookingId,
-                    $guestName,
-                    $pendingOrderBody['room_number'],
-                    $totalPax,
-                    $breakfastTime,
-                    $breakfastDate,
-                    'restaurant',
-                    json_encode([]),
-                    '',
-                    'link_sent',
-                    $userId
-                ]);
-        } catch (Exception $orderEx) {
-            // Log but don't fail the link creation if order creation fails
-            error_log('Breakfast order pending creation failed: ' . $orderEx->getMessage());
-        }
-
         $linkUrl = rtrim(BASE_URL, '/') . '/modules/frontdesk/breakfast-guest.php?t=' . urlencode($token);
         $shortLink = rtrim(BASE_URL, '/') . '/go-breakfast.php?k=' . urlencode($shortCode);
         echo json_encode([
