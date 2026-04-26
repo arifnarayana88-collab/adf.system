@@ -120,6 +120,7 @@ $token = trim((string)($_GET['t'] ?? ''));
         .menu-price.free { color: #10b981; }
         .menu-note-wrap { display: none; margin-top: 8px; }
         .menu-item.selected .menu-note-wrap { display: block; }
+        .menu-check:checked ~ .menu-content .menu-note-wrap { display: block; }
         .menu-note-input {
             width: 100%;
             border: 1px solid rgba(148, 163, 184, 0.32);
