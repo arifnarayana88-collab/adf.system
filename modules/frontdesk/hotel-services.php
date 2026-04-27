@@ -894,6 +894,23 @@ include '../../includes/header.php';
     box-shadow:0 2px 8px rgba(15,23,42,0.18);
     line-height:1;
     white-space:nowrap;
+    position:relative;
+    isolation:isolate;
+    overflow:hidden;
+}
+.hs-badge::before {
+    content:'';
+    position:absolute;
+    inset:0;
+    background:linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0));
+    z-index:1;
+}
+.hs-badge-text {
+    position:relative;
+    z-index:2;
+    color:#ffffff !important;
+    -webkit-text-fill-color:#ffffff !important;
+    text-shadow:0 1px 1px rgba(0,0,0,0.28);
 }
 .hs-svc-pill { display:inline-block; padding:0.15rem 0.45rem; border-radius:12px; font-size:0.68rem; font-weight:600; background:#ede9fe; color:#5b21b6; margin:0.1rem 0.1rem 0 0; white-space:nowrap; }
 .hs-action-btn { padding:0.25rem 0.55rem; border:none; border-radius:5px; cursor:pointer; font-size:0.72rem; font-weight:600; transition:opacity 0.2s; }
@@ -1046,8 +1063,8 @@ include '../../includes/header.php';
                 </td>
                 <td style="font-weight:700;white-space:nowrap">Rp <?php echo number_format($inv['total'],0,',','.'); ?></td>
                 <td style="color:#10b981;font-weight:600;white-space:nowrap">Rp <?php echo number_format($inv['paid_amount'],0,',','.'); ?></td>
-                <td><span class="hs-badge" style="background:<?php echo $payStatusColors[$inv['payment_status']]; ?>"><?php echo strtoupper($inv['payment_status']); ?></span></td>
-                <td><span class="hs-badge" style="background:<?php echo $statusColors[$inv['status']]; ?>"><?php echo strtoupper($inv['status']); ?></span></td>
+                <td><span class="hs-badge" style="background:<?php echo $payStatusColors[$inv['payment_status']]; ?>"><span class="hs-badge-text"><?php echo strtoupper($inv['payment_status']); ?></span></span></td>
+                <td><span class="hs-badge" style="background:<?php echo $statusColors[$inv['status']]; ?>"><span class="hs-badge-text"><?php echo strtoupper($inv['status']); ?></span></span></td>
                 <td style="font-size:0.72rem;color:var(--text-secondary);white-space:nowrap"><?php echo date('d M Y', strtotime($inv['created_at'])); ?></td>
                 <td>
                     <div style="display:flex;gap:0.3rem;flex-wrap:wrap;min-width:160px">
