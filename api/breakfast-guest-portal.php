@@ -256,8 +256,10 @@ function auto_submit_on_the_spot_after_midnight($db, $pdo, $link)
         return false;
     }
 
-    $cutoffTs = strtotime($breakfastDate . ' 00:00:00');
-    if ($cutoffTs === false || time() < $cutoffTs) {
+    $tz = new DateTimeZone('Asia/Jakarta');
+    $now = new DateTime('now', $tz);
+    $cutoff = DateTime::createFromFormat('Y-m-d H:i:s', $breakfastDate . ' 00:00:00', $tz);
+    if (!$cutoff || $now < $cutoff) {
         return false;
     }
 

@@ -131,6 +131,22 @@ $token = trim((string)($_GET['t'] ?? ''));
         }
         .header-subtitle { font-size: 0.8rem; color: #e0f2fe; margin-top: 3px; letter-spacing: .35px; }
         .header-divider { margin-top: 8px; height: 1px; background: linear-gradient(90deg, rgba(219, 234, 254, 0.15), rgba(219, 234, 254, 0.75), rgba(219, 234, 254, 0.15)); }
+        .header-wa-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 800;
+            border: 1px solid rgba(255,255,255,0.35);
+            box-shadow: 0 10px 18px rgba(21, 128, 61, 0.3);
+        }
+        .header-wa-btn.hidden { display: none; }
         .muted { color: #475569; font-size: 0.9rem; }
         .muted-white { color: #ffffff; font-size: 0.92rem; font-weight: 500; text-shadow: 0 1px 2px rgba(15, 23, 42, 0.22); }
         .meta { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
@@ -730,6 +746,7 @@ $token = trim((string)($_GET['t'] ?? ''));
             </div>
             <div class="header-divider"></div>
             <div class="muted-white" id="stateText">Loading details...</div>
+            <a class="header-wa-btn hidden" id="headerWaBtn" target="_blank" rel="noopener noreferrer">WhatsApp Front Desk: 081222228590</a>
             <div class="meta hidden" id="metaBox"></div>
         </div>
     </div>
@@ -861,6 +878,7 @@ $token = trim((string)($_GET['t'] ?? ''));
     var drinkGrid = document.getElementById('drinkGrid');
     var waFoBtn = document.getElementById('btnWaFo');
     var waFloatBtn = document.getElementById('waFloatBtn');
+    var headerWaBtn = document.getElementById('headerWaBtn');
     var onTheSpotBtn = document.getElementById('btnOnTheSpot');
     var langSelectEl = document.getElementById('langSelect');
     var breakfastTimeEl = document.getElementById('breakfastTime');
@@ -1155,26 +1173,23 @@ $token = trim((string)($_GET['t'] ?? ''));
     }
 
     function showAutoOnSpotNoticeOnly(message) {
-        var hideIds = ['metaBox', 'mainCard', 'drinkCard', 'childCard', 'cartCard', 'submitCard', 'onTheSpotCard'];
+        var hideIds = ['metaBox', 'infoCard', 'mainCard', 'drinkCard', 'childCard', 'cartCard', 'submitCard', 'onTheSpotCard'];
         hideIds.forEach(function (id) {
             var el = document.getElementById(id);
             if (el) el.classList.add('hidden');
         });
 
-        var infoCard = document.getElementById('infoCard');
-        var infoText = document.getElementById('infoText');
-        var infoMedia = document.getElementById('infoMedia');
-        if (infoText) {
-            infoText.textContent = message;
-        }
-        if (infoMedia) {
-            infoMedia.classList.add('hidden');
-        }
-        if (infoCard) {
-            infoCard.classList.remove('hidden');
-        }
-
         setState(message, false);
+
+        var waLink = buildWaFoLink();
+        if (headerWaBtn) {
+            headerWaBtn.href = waLink;
+            headerWaBtn.classList.remove('hidden');
+        }
+        if (waFloatBtn) {
+            waFloatBtn.href = waLink;
+            waFloatBtn.classList.add('show');
+        }
     }
 
     function filterSelectedMenus(list, selectedIds) {
@@ -1756,6 +1771,10 @@ $token = trim((string)($_GET['t'] ?? ''));
             if (payload.auto_on_the_spot_midnight) {
                 showAutoOnSpotNoticeOnly(payload.auto_on_the_spot_message || 'We are sorry, because you did not select your breakfast menu before midnight, tomorrow you can order directly at the restaurant. Please be patient. If not, you can contact Front Desk to order manually. Thank you.');
                 return;
+            }
+
+            if (headerWaBtn) {
+                headerWaBtn.classList.add('hidden');
             }
 
             setState(
