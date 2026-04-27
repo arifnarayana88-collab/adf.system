@@ -228,6 +228,8 @@ $totalRealCash = $allTimeCashResult['balance'] ?? 0;
 // ============================================
 // KAS OPERASIONAL HARIAN (This Month) - From Master DB
 // ============================================
+$dashCashAvailable = 0;
+$startKasHariIni = 0;
 try {
     // Get owner capital account from master database
     $masterDb = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
@@ -244,6 +246,7 @@ try {
     $stmt = $masterDb->prepare("SELECT id FROM cash_accounts WHERE business_id = ? AND account_type = 'cash'");
     $stmt->execute([$businessId]);
     $pettyCashAccounts = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $allAccIds = array_merge($capitalAccounts, $pettyCashAccounts);
 
     $capitalStats = [
         'received' => 0,
@@ -355,6 +358,22 @@ try {
 
     $startKasHariIni = $startKasOwner + $startKasPetty;
 
+    // Cash Available should follow cashbook formula for selected month:
+    // saldo sebelum periode + net transaksi dalam periode.
+    $dashCashAvailable = $startKasHariIni + $totalOperationalCash;
+    if ($hasCashAccountIdCol && !empty($allAccIds)) {
+        $placeholders = implode(',', array_fill(0, count($allAccIds), '?'));
+        $periodEnd = date('Y-m-t', strtotime($firstDayOfMonth));
+        $qPeriodBal = "SELECT
+            COALESCE(SUM(CASE WHEN transaction_type='income' THEN amount ELSE 0 END),0) -
+            COALESCE(SUM(CASE WHEN transaction_type='expense' THEN amount ELSE 0 END),0) as bal
+            FROM cash_book WHERE cash_account_id IN ($placeholders) AND transaction_date BETWEEN ? AND ?";
+        $pPeriodBal = array_merge($allAccIds, [$firstDayOfMonth, $periodEnd]);
+        $rPeriodBal = $db->fetchOne($qPeriodBal, $pPeriodBal);
+        $periodBal = (float)($rPeriodBal['bal'] ?? 0);
+        $dashCashAvailable = $startKasHariIni + $periodBal;
+    }
+
     // Owner Transfer THIS MONTH only (source_type = 'owner_fund')
     $ownerTransferThisMonth = 0;
     if ($hasSourceTypeCol) {
@@ -378,8 +397,7 @@ try {
     // Today's transactions
     $todayIncome = 0;
     $todayExpense = 0;
-    if ($hasCashAccountIdCol && (!empty($capitalAccounts) || !empty($pettyCashAccounts))) {
-        $allAccIds = array_merge($capitalAccounts, $pettyCashAccounts);
+    if ($hasCashAccountIdCol && !empty($allAccIds)) {
         $placeholders = implode(',', array_fill(0, count($allAccIds), '?'));
         $qToday = "SELECT 
             COALESCE(SUM(CASE WHEN transaction_type='income' THEN amount ELSE 0 END),0) as inc,
@@ -398,6 +416,7 @@ try {
     $totalOperationalExpense = 0;
     $totalOperationalIncome = 0;
     $startKasHariIni = 0;
+    $dashCashAvailable = 0;
     $todayIncome = 0;
     $todayExpense = 0;
 }
@@ -1364,17 +1383,17 @@ if ($trialStatus) {
         <form method="GET" style="display: flex; align-items: center; gap: 0.75rem; margin: 0;">
             <label for="dashboardMonthSelect">Filter Period:</label>
             <select name="dashboard_month" id="dashboardMonthSelect" onchange="this.form.submit();">
-                <?php 
+                <?php
                 $currentMonth = $selected_dashboard_month;
                 for ($m = 1; $m <= 12; $m++) {
                     $monthVal = sprintf('%04d-%02d', $selected_dashboard_year, $m);
                     $selected = ($monthVal == $selected_dashboard_month) ? 'selected' : '';
-                    echo "<option value=\"$monthVal\" $selected>" . $monthNames[$m-1] . " " . $selected_dashboard_year . "</option>";
+                    echo "<option value=\"$monthVal\" $selected>" . $monthNames[$m - 1] . " " . $selected_dashboard_year . "</option>";
                 }
                 ?>
             </select>
             <select name="dashboard_year" id="dashboardYearSelect" onchange="updateDashboardYear(this.value);">
-                <?php 
+                <?php
                 $currentYear = date('Y');
                 for ($y = $currentYear; $y >= $currentYear - 5; $y--) {
                     $selected = ($y == $selected_dashboard_year) ? 'selected' : '';
@@ -1409,7 +1428,6 @@ if ($trialStatus) {
                     <div style="font-size: 1.125rem; font-weight: 700; color: #334155; font-family: 'Monaco', 'Courier New', monospace;"><?php echo formatCurrency($startKasHariIni); ?></div>
                 </div>
                 <!-- Cash Available -->
-                <?php $dashCashAvailable = $startKasHariIni + $totalOperationalCash; ?>
                 <div style="background: linear-gradient(135deg, <?php echo $dashCashAvailable >= 0 ? '#ecfdf5' : '#fef2f2'; ?> 0%, <?php echo $dashCashAvailable >= 0 ? '#d1fae5' : '#fee2e2'; ?> 100%); padding: 0.875rem 1rem; border-radius: 10px; border: 1px solid <?php echo $dashCashAvailable >= 0 ? '#a7f3d0' : '#fecaca'; ?>;">
                     <div style="font-size: 0.65rem; color: <?php echo $dashCashAvailable >= 0 ? '#047857' : '#b91c1c'; ?>; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 0.25rem;">Cash Available</div>
                     <div style="font-size: 1.125rem; font-weight: 700; color: <?php echo $dashCashAvailable >= 0 ? '#059669' : '#dc2626'; ?>; font-family: 'Monaco', 'Courier New', monospace;"><?php echo formatCurrency($dashCashAvailable); ?></div>
@@ -2767,9 +2785,9 @@ if ($trialStatus) {
                                 color: getComputedStyle(document.documentElement).getPropertyValue('--chart-tick-color').trim() || 'rgba(148,163,184,0.45)',
                                 maxTicksLimit: 5,
                                 callback: function(value) {
-                                        if (value >= 1000000) return 'Rp ' + (value / 1000000).toFixed(1) + ' jt';
-                                        if (value >= 1000) return 'Rp ' + (value / 1000).toFixed(0) + ' rb';
-                                        return 'Rp ' + value;
+                                    if (value >= 1000000) return 'Rp ' + (value / 1000000).toFixed(1) + ' jt';
+                                    if (value >= 1000) return 'Rp ' + (value / 1000).toFixed(0) + ' rb';
+                                    return 'Rp ' + value;
                                 }
                             }
                         },
@@ -2783,7 +2801,7 @@ if ($trialStatus) {
                             ticks: {
                                 padding: 6,
                                 font: {
-                                        size: 10,
+                                    size: 10,
                                     weight: '500',
                                     family: "'Inter', sans-serif"
                                 },
