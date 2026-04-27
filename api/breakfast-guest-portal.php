@@ -16,7 +16,7 @@ $pdo = $db->getConnection();
 
 function hotel_date()
 {
-    return (int)date('H') < 12 ? date('Y-m-d', strtotime('-1 day')) : date('Y-m-d');
+    return (int)date('H') < 10 ? date('Y-m-d', strtotime('-1 day')) : date('Y-m-d');
 }
 
 function ensure_breakfast_orders_table($pdo)

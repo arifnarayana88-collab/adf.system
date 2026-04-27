@@ -15,7 +15,8 @@ if (!$auth->hasPermission('frontdesk')) { header('Location: ' . BASE_URL . '/403
 
 $db = Database::getInstance();
 $pdo = $db->getConnection();
-$today = date('Y-m-d');
+// Breakfast hotel date rolls over at 10:00, so last night's picks stay visible until 10 AM.
+$today = ((int)date('H') < 10) ? date('Y-m-d', strtotime('-1 day')) : date('Y-m-d');
 
 $guestLinkMessageTemplate = '';
 try {
