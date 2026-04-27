@@ -465,8 +465,7 @@ $params = [];
 if ($activePeriodType === 'date' && !empty($filterDate)) {
     $whereClauses[] = "cb.transaction_date = :date";
     $params['date'] = $filterDate;
-}
-elseif ($activePeriodType === 'month' && !empty($filterMonth)) {
+} elseif ($activePeriodType === 'month' && !empty($filterMonth)) {
     $whereClauses[] = "DATE_FORMAT(cb.transaction_date, '%Y-%m') = :month";
     $params['month'] = $filterMonth;
 }

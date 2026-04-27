@@ -257,6 +257,13 @@ try {
         'balance' => 0
     ];
 
+    // Keep expense logic consistent with dashboard charts:
+    // project-related expenses (owner_project) are not part of operational expense.
+    $expenseCaseExpr = "CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END";
+    if ($hasSourceTypeCol) {
+        $expenseCaseExpr = "CASE WHEN transaction_type = 'expense' AND (source_type IS NULL OR source_type != 'owner_project') THEN amount ELSE 0 END";
+    }
+
     // Query Modal Owner stats - only if cash_account_id column exists
     if ($hasCashAccountIdCol && !empty($capitalAccounts)) {
         $placeholders = implode(',', array_fill(0, count($capitalAccounts), '?'));
@@ -264,9 +271,9 @@ try {
         $query = "
             SELECT 
                 SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END) as received,
-                SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END) as used,
+                SUM($expenseCaseExpr) as used,
                 (SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END) - 
-                 SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END)) as balance
+                 SUM($expenseCaseExpr)) as balance
             FROM cash_book 
             WHERE cash_account_id IN ($placeholders)
             AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
@@ -287,9 +294,9 @@ try {
         $query = "
             SELECT 
                 SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END) as received,
-                SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END) as used,
+                SUM($expenseCaseExpr) as used,
                 (SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END) - 
-                 SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END)) as balance
+                 SUM($expenseCaseExpr)) as balance
             FROM cash_book 
             WHERE cash_account_id IN ($placeholders)
             AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
@@ -317,7 +324,7 @@ try {
     // (untuk bulan baru, reset dari sisa bulan lalu)
     // ============================================
     $today = date('Y-m-d');
-    $firstDayOfMonth = date('Y-m-01');
+    $firstDayOfMonth = $selected_dashboard_month . '-01';
     $startKasOwner = 0;
     $startKasPetty = 0;
     $ownerTransferThisMonth = 0;
@@ -1398,7 +1405,7 @@ if ($trialStatus) {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
                 <!-- Start Cash -->
                 <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 0.875rem 1rem; border-radius: 10px; border: 1px solid #e2e8f0;">
-                    <div style="font-size: 0.65rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 0.25rem;">Start Cash (<?php echo date('M'); ?>)</div>
+                    <div style="font-size: 0.65rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 0.25rem;">Start Cash (<?php echo date('M', strtotime($selected_dashboard_month . '-01')); ?>)</div>
                     <div style="font-size: 1.125rem; font-weight: 700; color: #334155; font-family: 'Monaco', 'Courier New', monospace;"><?php echo formatCurrency($startKasHariIni); ?></div>
                 </div>
                 <!-- Cash Available -->
