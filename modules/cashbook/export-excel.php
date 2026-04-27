@@ -20,37 +20,43 @@ $pdo->exec("SET time_zone = '+07:00'");
 $masterDbName = DB_NAME;
 
 // ── Filters (same as index.php) ──
-$filterDate     = trim($_GET['date'] ?? '');
-$filterMonth    = trim($_GET['month'] ?? '');
+$rawFilterDate  = trim($_GET['date'] ?? '');
+$rawFilterMonth  = trim($_GET['month'] ?? '');
 $filterType     = trim($_GET['type'] ?? 'all');
 $filterDivision = trim($_GET['division'] ?? 'all');
 $filterPayment  = trim($_GET['payment'] ?? 'all');
 $filterUser     = trim($_GET['user'] ?? 'all');
 $filterSearch   = trim($_GET['search'] ?? '');
 
-// Smart conflict: same logic as index.php
-if (!empty($filterDate) && !empty($filterMonth)) {
-    if (substr($filterDate, 0, 7) === $filterMonth) {
-        $filterDate = '';
-    }
+$filterDate = '';
+$filterMonth = '';
+$activePeriodType = 'all';
+
+if (!empty($rawFilterMonth) && preg_match('/^\d{4}-\d{2}$/', $rawFilterMonth)) {
+    $filterMonth = $rawFilterMonth;
+    $activePeriodType = 'month';
+} elseif (!empty($rawFilterDate) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $rawFilterDate)) {
+    $filterDate = $rawFilterDate;
+    $activePeriodType = 'date';
+} elseif (!isset($_GET['date']) && !isset($_GET['month']) && !isset($_GET['type'])) {
+    $filterMonth = date('Y-m');
+    $activePeriodType = 'month';
 }
 
-if (empty($filterDate) && empty($filterMonth) && !isset($_GET['date']) && !isset($_GET['type'])) {
-    $filterMonth = date('Y-m');
-}
-
-if (!empty($filterMonth) && !preg_match('/^\d{4}-\d{2}$/', $filterMonth)) {
-    $filterMonth = date('Y-m');
+if ($activePeriodType === 'month') {
+    $filterDate = '';
+} elseif ($activePeriodType === 'date') {
+    $filterMonth = '';
 }
 
 // Build WHERE
 $whereClauses = [];
 $params = [];
 
-if (!empty($filterDate)) {
+if ($activePeriodType === 'date' && !empty($filterDate)) {
     $whereClauses[] = "cb.transaction_date = :date";
     $params['date'] = $filterDate;
-} elseif (!empty($filterMonth)) {
+} elseif ($activePeriodType === 'month' && !empty($filterMonth)) {
     $whereClauses[] = "DATE_FORMAT(cb.transaction_date, '%Y-%m') = :month";
     $params['month'] = $filterMonth;
 }

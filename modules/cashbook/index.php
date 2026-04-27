@@ -425,50 +425,48 @@ $pageTitle = ($isCQC ? 'CQC' : $displayCompanyName) . ' - Buku Kas Besar';
 $pageSubtitle = $isCQC ? 'Pencatatan Keuangan Proyek Solar Panel' : 'Pencatatan Transaksi Keuangan';
 
 // Filtering - sanitize inputs (handle empty strings from form submission)
-$filterDate = trim(getGet('date', ''));
-$filterMonth = trim(getGet('month', ''));
+$rawFilterDate = trim(getGet('date', ''));
+$rawFilterMonth = trim(getGet('month', ''));
 $filterType = trim(getGet('type', 'all'));
 $filterDivision = trim(getGet('division', 'all'));
 $filterPayment = trim(getGet('payment', 'all'));
 $filterUser = trim(getGet('user', 'all'));
 $filterSearch = trim(getGet('search', ''));
 
-// SMART CONFLICT RESOLUTION: If both date and month are provided,
-// and date falls within the selected month, prioritize MONTH filter
-// (user likely just forgot to clear the date field)
-if (!empty($filterDate) && !empty($filterMonth)) {
-    if (substr($filterDate, 0, 7) === $filterMonth) {
-        // Date is within the selected month - use month filter
-        $filterDate = '';
-    }
-    // If date is from a different month, use date (user explicitly picked it)
+$filterDate = '';
+$filterMonth = '';
+$activePeriodType = 'all';
+
+if (!empty($rawFilterMonth) && preg_match('/^\d{4}-\d{2}$/', $rawFilterMonth)) {
+    $filterMonth = $rawFilterMonth;
+    $activePeriodType = 'month';
+} elseif (!empty($rawFilterDate) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $rawFilterDate)) {
+    $filterDate = $rawFilterDate;
+    $activePeriodType = 'date';
+} elseif (!$isCQC && !isset($_GET['date']) && !isset($_GET['month']) && !isset($_GET['type'])) {
+    $filterMonth = date('Y-m');
+    $activePeriodType = 'month';
 }
 
-// Default month to current if no filters provided at all
-// For CQC, default to no month filter to show all transactions
-if (empty($filterDate) && empty($filterMonth) && !isset($_GET['date']) && !isset($_GET['type'])) {
-    if (!$isCQC) {
-        $filterMonth = date('Y-m');
-    }
-    // CQC: no default filter, show all transactions
-}
-
-// Validate month format (YYYY-MM) - fix for browsers that don't support type="month"
-if (!empty($filterMonth) && !preg_match('/^\d{4}-\d{2}$/', $filterMonth)) {
-    $filterMonth = date('Y-m'); // fallback to current month
+// If a month is selected, ignore any date value completely.
+// This makes period filtering deterministic and prevents stale date inputs
+// from narrowing the result set when the user meant to view a full month.
+if ($activePeriodType === 'month') {
+    $filterDate = '';
+} elseif ($activePeriodType === 'date') {
+    $filterMonth = '';
 }
 
 // Build query with filters
 $whereClauses = [];
 $params = [];
 
-// If date is specified, filter by specific date
-if (!empty($filterDate)) {
+// Filter by the active period only
+if ($activePeriodType === 'date' && !empty($filterDate)) {
     $whereClauses[] = "cb.transaction_date = :date";
     $params['date'] = $filterDate;
 }
-// Otherwise, filter by month
-elseif (!empty($filterMonth)) {
+elseif ($activePeriodType === 'month' && !empty($filterMonth)) {
     $whereClauses[] = "DATE_FORMAT(cb.transaction_date, '%Y-%m') = :month";
     $params['month'] = $filterMonth;
 }
@@ -1676,7 +1674,9 @@ echo getPrintCSS();
 <div style="display: none;" id="printSection" class="print-content">
     <?php
     // Build dynamic period text
-    $periodText = !empty($filterMonth) ? date('F Y', strtotime($filterMonth . '-01')) : (!empty($filterDate) ? formatDate($filterDate) : 'Semua Periode');
+    $periodText = $activePeriodType === 'month'
+        ? date('F Y', strtotime($filterMonth . '-01'))
+        : ($activePeriodType === 'date' ? formatDate($filterDate) : 'Semua Periode');
 
     // Build dynamic title based on active filters
     $printTitle = 'LAPORAN BUKU KAS BESAR';
