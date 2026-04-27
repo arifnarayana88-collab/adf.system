@@ -1579,123 +1579,226 @@ try {
         /* Breakfast */
         .bf-order {
             padding: 12px;
-            border-bottom: 1px solid var(--border);
-            transition: background .15s;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            margin-bottom: 10px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 6px 16px rgba(15, 23, 42, .05);
+            transition: transform .15s, box-shadow .15s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bf-order::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: #94a3b8;
         }
 
         .bf-order:last-child {
-            border-bottom: none;
+            margin-bottom: 0;
         }
 
         .bf-order:hover {
-            background: #f8fafc;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(15, 23, 42, .08);
+        }
+
+        .bf-order.status-pending::before {
+            background: #f59e0b;
+        }
+
+        .bf-order.status-preparing::before {
+            background: #6366f1;
+        }
+
+        .bf-order.status-served::before {
+            background: #10b981;
+        }
+
+        .bf-order.status-completed::before {
+            background: #64748b;
         }
 
         .bf-order-hdr {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
-            margin-bottom: 4px;
+            gap: 8px;
+            margin-bottom: 8px;
         }
 
-        .bf-time {
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--blue);
-            background: #eff6ff;
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-
-        .bf-pax {
-            font-size: 9px;
-            font-weight: 600;
-            color: var(--muted);
-            background: var(--bg);
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-
-        .bf-status {
-            font-size: 9px;
-            font-weight: 700;
-            padding: 2px 8px;
-            border-radius: 10px;
-            text-transform: uppercase;
-            letter-spacing: .3px;
-        }
-
-        .bf-st-pending {
-            background: rgba(245, 158, 11, .12);
-            color: #d97706;
-        }
-
-        .bf-st-prep {
-            background: rgba(99, 102, 241, .12);
-            color: #6366f1;
-        }
-
-        .bf-st-served {
-            background: rgba(16, 185, 129, .12);
-            color: #059669;
-        }
-
-        .bf-st-done {
-            background: rgba(107, 114, 128, .12);
-            color: #6b7280;
+        .bf-head-left {
+            min-width: 0;
         }
 
         .bf-guest {
             font-size: 13px;
-            font-weight: 700;
-            color: var(--navy);
-            margin-bottom: 2px;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.25;
+            margin-bottom: 3px;
+            word-break: break-word;
         }
 
-        .bf-room {
+        .bf-subline {
             font-size: 10px;
-            color: var(--muted);
-            margin-bottom: 5px;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .bf-subdot {
+            width: 4px;
+            height: 4px;
+            border-radius: 999px;
+            background: #94a3b8;
+        }
+
+        .bf-status {
+            font-size: 10px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+            white-space: nowrap;
+        }
+
+        .bf-st-pending {
+            background: rgba(245, 158, 11, .14);
+            color: #b45309;
+        }
+
+        .bf-st-prep {
+            background: rgba(99, 102, 241, .14);
+            color: #4338ca;
+        }
+
+        .bf-st-served {
+            background: rgba(16, 185, 129, .14);
+            color: #047857;
+        }
+
+        .bf-st-done {
+            background: rgba(100, 116, 139, .16);
+            color: #475569;
+        }
+
+        .bf-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .bf-chip {
+            font-size: 10px;
+            font-weight: 700;
+            color: #334155;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            padding: 3px 8px;
         }
 
         .bf-menus {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
             gap: 4px;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 8px;
         }
 
-        .bf-tag {
-            font-size: 9px;
-            padding: 2px 6px;
-            background: rgba(139, 92, 246, .1);
-            color: #7c3aed;
-            border-radius: 4px;
+        .bf-menu-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 10px;
+        }
+
+        .bf-menu-name {
+            color: #1e293b;
+            font-weight: 700;
+            line-height: 1.25;
+            word-break: break-word;
+        }
+
+        .bf-menu-qty {
+            font-size: 10px;
             font-weight: 600;
+            color: #4f46e5;
+            background: #eef2ff;
+            border-radius: 999px;
+            padding: 2px 7px;
+            white-space: nowrap;
+        }
+
+        .bf-special {
+            font-size: 10px;
+            color: #7c3aed;
+            background: #f5f3ff;
+            border: 1px solid #ddd6fe;
+            border-radius: 8px;
+            padding: 6px 8px;
+            margin-bottom: 8px;
         }
 
         .bf-foot {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
 
         .bf-price {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 800;
             color: #059669;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .bf-empty {
+            text-align: center;
+            padding: 26px 12px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+        .bf-empty-emoji {
+            font-size: 36px;
+            margin-bottom: 6px;
+        }
+
+        .bf-empty-text {
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
         }
 
         .bf-complete-btn {
             margin-left: auto;
             border: none;
             border-radius: 8px;
-            padding: 5px 10px;
+            padding: 6px 12px;
             font-size: 10px;
-            font-weight: 700;
+            font-weight: 800;
+            letter-spacing: .2px;
             color: #fff;
             background: linear-gradient(135deg, #16a34a, #15803d);
             cursor: pointer;
+            box-shadow: 0 4px 10px rgba(22, 163, 74, .22);
         }
 
         .bf-complete-btn:disabled {
@@ -3312,9 +3415,9 @@ try {
                 // Order list
                 if (orders.length === 0) {
                     document.getElementById('bfOrderList').innerHTML = `
-                <div style="text-align:center;padding:30px 10px;">
-                    <div style="font-size:40px;margin-bottom:8px;">🍳</div>
-                    <div style="font-size:13px;font-weight:600;color:var(--muted);">Belum ada pesanan breakfast hari ini</div>
+                <div class="bf-empty">
+                    <div class="bf-empty-emoji">🍳</div>
+                    <div class="bf-empty-text">Belum ada pesanan breakfast hari ini</div>
                 </div>`;
                     return;
                 }
@@ -3342,41 +3445,51 @@ try {
                         'served': 'Served',
                         'completed': 'Done'
                     } [o.order_status] || o.order_status;
+                    const statusClass = (o.order_status || 'pending').toString().toLowerCase();
 
-                    // Menu tags
-                    let menuTags = '';
+                    // Menu list
+                    let menuRows = '';
                     const items = o.menu_items || [];
                     if (items.length > 0) {
                         items.forEach(m => {
-                            const qty = (m.quantity || 1) > 1 ? ' ×' + m.quantity : '';
-                            menuTags += `<span class="bf-tag">${m.menu_name||'?'}${qty}</span>`;
+                            const qty = parseInt(m.quantity || 1, 10) || 1;
+                            menuRows += `<div class="bf-menu-row"><span class="bf-menu-name">${m.menu_name||'Menu'}</span><span class="bf-menu-qty">x${qty}</span></div>`;
                         });
                     } else {
-                        menuTags = '<span class="bf-tag">' + (o.menu_name || 'Menu?') + '</span>';
+                        menuRows = `<div class="bf-menu-row"><span class="bf-menu-name">${o.menu_name || 'Menu belum diisi'}</span><span class="bf-menu-qty">x1</span></div>`;
                     }
 
                     const price = parseFloat(o.total_price || 0);
                     const priceStr = price > 0 ? 'Rp ' + price.toLocaleString('id-ID') : 'Free';
-                    const req = o.special_requests ? `<div style="font-size:9px;color:#a855f7;margin-top:4px;">💬 ${o.special_requests}</div>` : '';
+                    const req = o.special_requests ? `<div class="bf-special">💬 ${o.special_requests}</div>` : '';
                     const canComplete = orderId > 0 && o.order_status !== 'completed';
                     const completeBtn = canComplete
                         ? `<button class="bf-complete-btn" onclick="markBreakfastCompleted(${orderId}, this)">✔ Complete</button>`
                         : `<button class="bf-complete-btn" disabled>Completed</button>`;
 
                     html += `
-            <div class="bf-order">
+            <div class="bf-order status-${statusClass}">
                 <div class="bf-order-hdr">
-                    <div style="display:flex;align-items:center;gap:6px;">
-                        <span class="bf-time">🕐 ${time}</span>
-                        <span class="bf-pax">${pax} pax</span>
+                    <div class="bf-head-left">
+                        <div class="bf-guest">${o.guest_name||'Guest'}</div>
+                        <div class="bf-subline">
+                            <span>#${orderId}</span>
+                            <span class="bf-subdot"></span>
+                            <span>${time}</span>
+                        </div>
                     </div>
                     <span class="bf-status ${statusCls}">${statusTxt}</span>
                 </div>
-                <div class="bf-guest">${o.guest_name||'Guest'}</div>
-                <div class="bf-room">🛏️ Room ${room} ${loc ? '&nbsp;&nbsp;' + loc : ''}</div>
-                <div class="bf-menus">${menuTags}</div>
+
+                <div class="bf-meta">
+                    <span class="bf-chip">🛏️ Room ${room}</span>
+                    <span class="bf-chip">👥 ${pax} pax</span>
+                    ${loc ? `<span class="bf-chip">${loc}</span>` : ''}
+                </div>
+
+                <div class="bf-menus">${menuRows}</div>
                 <div class="bf-foot">
-                    <span class="bf-price">${priceStr}</span>
+                    <span class="bf-price">💳 ${priceStr}</span>
                     ${completeBtn}
                 </div>
                 ${req}
