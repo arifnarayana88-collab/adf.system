@@ -234,6 +234,12 @@ function getHotelDate()
     return (int)date('H') < 12 ? date('Y-m-d', strtotime('-1 day')) : date('Y-m-d');
 }
 
+// Breakfast operational date: day changes at 10:00 (aligned with frontdesk breakfast module)
+function getBreakfastHotelDate()
+{
+    return (int)date('H') < 10 ? date('Y-m-d', strtotime('-1 day')) : date('Y-m-d');
+}
+
 // ══════════════════════════════════════
 // LOGOUT
 // ══════════════════════════════════════
@@ -380,7 +386,7 @@ if ($action === 'breakfast_menu') {
 
 if ($action === 'breakfast_submit') {
     $menuId = (int)($_POST['menu_id'] ?? 0);
-    $date = $_POST['date'] ?? getHotelDate();
+    $date = $_POST['date'] ?? getBreakfastHotelDate();
     $staffName = $_SESSION['staff_name'] ?? 'Staff';
 
     if ($menuId <= 0) {
@@ -413,7 +419,7 @@ if ($action === 'breakfast_submit') {
 }
 
 if ($action === 'breakfast_today') {
-    $hotelDate = getHotelDate();
+    $hotelDate = getBreakfastHotelDate();
     $staffName = $_SESSION['staff_name'] ?? '';
     $order = $db->fetchOne("SELECT * FROM breakfast_orders WHERE guest_name = ? AND breakfast_date = ?", [$staffName, $hotelDate]);
     echo json_encode(['success' => true, 'data' => $order]);
@@ -423,7 +429,7 @@ if ($action === 'breakfast_today') {
 // ── ALL TODAY'S BREAKFAST ORDERS (Staff Monitor) ──
 if ($action === 'breakfast_orders') {
     // Keep this aligned with frontdesk breakfast page and export-daily-report PDF.
-    $today = date('Y-m-d');
+    $today = getBreakfastHotelDate();
     try {
         $hasMenuNameColumn = false;
         try {
