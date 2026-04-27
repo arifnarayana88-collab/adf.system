@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Hotel Services — Multi-item Invoice
  * Motor Rental, Laundry, Service, Airport Drop, Harbor Drop
@@ -56,15 +57,28 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS hotel_invoices (
 try {
     $pdo->query("SELECT cashbook_synced FROM hotel_invoices LIMIT 1");
 } catch (\Throwable $e) {
-    try { $pdo->exec("ALTER TABLE hotel_invoices ADD COLUMN cashbook_synced TINYINT(1) NOT NULL DEFAULT 0"); } catch (\Throwable $e2) {}
+    try {
+        $pdo->exec("ALTER TABLE hotel_invoices ADD COLUMN cashbook_synced TINYINT(1) NOT NULL DEFAULT 0");
+    } catch (\Throwable $e2) {
+    }
 }
 // Add tax columns to existing tables
-try { $pdo->query("SELECT tax_rate FROM hotel_invoices LIMIT 1"); } catch (\Throwable $e) {
-    try { $pdo->exec("ALTER TABLE hotel_invoices ADD COLUMN tax_rate DECIMAL(5,2) NOT NULL DEFAULT 0, ADD COLUMN tax_amount DECIMAL(15,2) NOT NULL DEFAULT 0"); } catch (\Throwable $e2) {}
+try {
+    $pdo->query("SELECT tax_rate FROM hotel_invoices LIMIT 1");
+} catch (\Throwable $e) {
+    try {
+        $pdo->exec("ALTER TABLE hotel_invoices ADD COLUMN tax_rate DECIMAL(5,2) NOT NULL DEFAULT 0, ADD COLUMN tax_amount DECIMAL(15,2) NOT NULL DEFAULT 0");
+    } catch (\Throwable $e2) {
+    }
 }
 // Add service_charge & discount columns to existing tables
-try { $pdo->query("SELECT service_charge_rate FROM hotel_invoices LIMIT 1"); } catch (\Throwable $e) {
-    try { $pdo->exec("ALTER TABLE hotel_invoices ADD COLUMN service_charge_rate DECIMAL(5,2) NOT NULL DEFAULT 0, ADD COLUMN service_charge_amount DECIMAL(15,2) NOT NULL DEFAULT 0, ADD COLUMN discount_rate DECIMAL(5,2) NOT NULL DEFAULT 0, ADD COLUMN discount_amount DECIMAL(15,2) NOT NULL DEFAULT 0"); } catch (\Throwable $e2) {}
+try {
+    $pdo->query("SELECT service_charge_rate FROM hotel_invoices LIMIT 1");
+} catch (\Throwable $e) {
+    try {
+        $pdo->exec("ALTER TABLE hotel_invoices ADD COLUMN service_charge_rate DECIMAL(5,2) NOT NULL DEFAULT 0, ADD COLUMN service_charge_amount DECIMAL(15,2) NOT NULL DEFAULT 0, ADD COLUMN discount_rate DECIMAL(5,2) NOT NULL DEFAULT 0, ADD COLUMN discount_amount DECIMAL(15,2) NOT NULL DEFAULT 0");
+    } catch (\Throwable $e2) {
+    }
 }
 
 // Migrate service_type from ENUM to VARCHAR for dynamic types
@@ -73,13 +87,15 @@ try {
     if ($colInfo && strpos($colInfo['Type'], 'enum') === 0) {
         $pdo->exec("ALTER TABLE hotel_invoice_items MODIFY service_type VARCHAR(50) NOT NULL");
     }
-} catch (\Throwable $e) {}
+} catch (\Throwable $e) {
+}
 try {
     $colInfo2 = $pdo->query("SHOW COLUMNS FROM hotel_service_catalog LIKE 'service_type'")->fetch(PDO::FETCH_ASSOC);
     if ($colInfo2 && strpos($colInfo2['Type'], 'enum') === 0) {
         $pdo->exec("ALTER TABLE hotel_service_catalog MODIFY service_type VARCHAR(50) NOT NULL");
     }
-} catch (\Throwable $e) {}
+} catch (\Throwable $e) {
+}
 
 $pdo->exec("CREATE TABLE IF NOT EXISTS hotel_invoice_items (
     id              INT AUTO_INCREMENT PRIMARY KEY,
@@ -139,7 +155,8 @@ try {
             $seedStmt->execute([$businessId, $d[0], $d[1], $d[2], $d[3]]);
         }
     }
-} catch (\Throwable $e) {}
+} catch (\Throwable $e) {
+}
 
 // ── Load service types from DB ─────────────────────────────────────────────────
 $serviceTypes = [];
@@ -149,7 +166,8 @@ try {
     foreach ($stStmt->fetchAll(PDO::FETCH_ASSOC) as $st) {
         $serviceTypes[$st['type_key']] = ['label' => $st['type_label'], 'icon' => $st['type_icon']];
     }
-} catch (\Throwable $e) {}
+} catch (\Throwable $e) {
+}
 // Fallback if DB is empty
 if (empty($serviceTypes)) {
     $serviceTypes = [
@@ -163,11 +181,12 @@ if (empty($serviceTypes)) {
     ];
 }
 
-$statusColors    = ['pending'=>'#b45309','confirmed'=>'#1d4ed8','completed'=>'#047857','cancelled'=>'#b91c1c'];
-$payStatusColors = ['unpaid'=>'#b91c1c','partial'=>'#b45309','paid'=>'#047857'];
+$statusColors    = ['pending' => '#b45309', 'confirmed' => '#1d4ed8', 'completed' => '#047857', 'cancelled' => '#b91c1c'];
+$payStatusColors = ['unpaid' => '#b91c1c', 'partial' => '#b45309', 'paid' => '#047857'];
 
 // ── Helper: find/create division by service type ──────────────────────────────
-function getDivisionForService(PDO $pdo, string $serviceType): int {
+function getDivisionForService(PDO $pdo, string $serviceType): int
+{
     static $cache = [];
     if (isset($cache[$serviceType])) return $cache[$serviceType];
 
@@ -175,7 +194,7 @@ function getDivisionForService(PDO $pdo, string $serviceType): int {
     $nameMap = [
         'motor_rental'  => ['Motor Rental',  'MOTOR_RENTAL',  'Motor'],
         'laundry'       => ['Laundry',        'LAUNDRY',       'Housekeeping'],
-        'service'       => ['General Service','GEN_SERVICE',   'Hotel'],
+        'service'       => ['General Service', 'GEN_SERVICE',   'Hotel'],
         'airport_drop'  => ['Airport Drop',   'AIRPORT_DROP',  'Hotel'],
         'harbor_drop'   => ['Harbor Drop',    'HARBOR_DROP',   'Hotel'],
         'narayana_trip' => ['Narayana Trip',  'NARAYANA_TRIP', 'Hotel'],
@@ -186,7 +205,7 @@ function getDivisionForService(PDO $pdo, string $serviceType): int {
     $prefCode = $entry[1]; // code to use when inserting
     $fallback = $entry[2]; // fallback name if preferred doesn't exist
 
-    $resolve = function(string $name) use ($pdo): ?int {
+    $resolve = function (string $name) use ($pdo): ?int {
         $stmt = $pdo->prepare("SELECT id FROM divisions WHERE LOWER(division_name) = LOWER(?) LIMIT 1");
         $stmt->execute([$name]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -215,7 +234,8 @@ function getDivisionForService(PDO $pdo, string $serviceType): int {
             $stmt->execute([$prefName, $prefCode]);
             $id = (int)$pdo->lastInsertId();
             if (!$id) $id = $resolve($prefName); // IGNORE may have hit a race condition
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+        }
     }
 
     // 5. Absolute fallback: first income division, then first any division
@@ -224,7 +244,9 @@ function getDivisionForService(PDO $pdo, string $serviceType): int {
             $row = $pdo->query("SELECT id FROM divisions WHERE division_type IN ('income','both') ORDER BY id LIMIT 1")->fetch(PDO::FETCH_ASSOC);
             if (!$row) $row = $pdo->query("SELECT id FROM divisions ORDER BY id LIMIT 1")->fetch(PDO::FETCH_ASSOC);
             $id = (int)($row['id'] ?? 1);
-        } catch (\Throwable $e) { $id = 1; }
+        } catch (\Throwable $e) {
+            $id = 1;
+        }
     }
 
     $cache[$serviceType] = $id;
@@ -232,14 +254,16 @@ function getDivisionForService(PDO $pdo, string $serviceType): int {
 }
 
 // ── Helper: find/create 'Hotel Service' income category ───────────────────────
-function getHotelServiceCategoryId(PDO $pdo): int {
+function getHotelServiceCategoryId(PDO $pdo): int
+{
     // 1. Exact match (case-insensitive)
     try {
         $row = $pdo->query("SELECT id FROM categories WHERE LOWER(category_name) = 'hotel service' LIMIT 1")->fetch(PDO::FETCH_ASSOC);
         if ($row) return (int)$row['id'];
         $row = $pdo->query("SELECT id FROM categories WHERE LOWER(category_name) LIKE '%hotel service%' LIMIT 1")->fetch(PDO::FETCH_ASSOC);
         if ($row) return (int)$row['id'];
-    } catch (\Throwable $e1) {}
+    } catch (\Throwable $e1) {
+    }
 
     // 2. Find a valid division_id (required by some schemas)
     $divId = null;
@@ -249,7 +273,8 @@ function getHotelServiceCategoryId(PDO $pdo): int {
         if (!$dRow) $dRow = $pdo->query("SELECT id FROM divisions WHERE division_type IN ('income','both') ORDER BY id LIMIT 1")->fetch(PDO::FETCH_ASSOC);
         if (!$dRow) $dRow = $pdo->query("SELECT id FROM divisions ORDER BY id LIMIT 1")->fetch(PDO::FETCH_ASSOC);
         if ($dRow) $divId = (int)$dRow['id'];
-    } catch (\Throwable $ed) {}
+    } catch (\Throwable $ed) {
+    }
 
     // 3. Try INSERT with division_id + category_type
     if ($divId !== null) {
@@ -260,7 +285,8 @@ function getHotelServiceCategoryId(PDO $pdo): int {
             if ($newId > 0) return $newId;
             $row = $pdo->query("SELECT id FROM categories WHERE LOWER(category_name) = 'hotel service' LIMIT 1")->fetch(PDO::FETCH_ASSOC);
             if ($row) return (int)$row['id'];
-        } catch (\Throwable $e2) {}
+        } catch (\Throwable $e2) {
+        }
     }
 
     // 4. Try INSERT without division_id (older schema without FK constraint)
@@ -270,7 +296,8 @@ function getHotelServiceCategoryId(PDO $pdo): int {
         if ($newId > 0) return $newId;
         $row = $pdo->query("SELECT id FROM categories WHERE LOWER(category_name) = 'hotel service' LIMIT 1")->fetch(PDO::FETCH_ASSOC);
         if ($row) return (int)$row['id'];
-    } catch (\Throwable $e3) {}
+    } catch (\Throwable $e3) {
+    }
 
     // 5. Try INSERT without category_type (even older schema)
     try {
@@ -284,7 +311,8 @@ function getHotelServiceCategoryId(PDO $pdo): int {
         if ($newId > 0) return $newId;
         $row = $pdo->query("SELECT id FROM categories WHERE LOWER(category_name) = 'hotel service' LIMIT 1")->fetch(PDO::FETCH_ASSOC);
         if ($row) return (int)$row['id'];
-    } catch (\Throwable $e4) {}
+    } catch (\Throwable $e4) {
+    }
 
     // 6. Absolute fallback: first income category
     try {
@@ -292,12 +320,14 @@ function getHotelServiceCategoryId(PDO $pdo): int {
         if ($row) return (int)$row['id'];
         $row = $pdo->query("SELECT id FROM categories ORDER BY id LIMIT 1")->fetch(PDO::FETCH_ASSOC);
         if ($row) return (int)$row['id'];
-    } catch (\Throwable $e5) {}
+    } catch (\Throwable $e5) {
+    }
     return 1;
 }
 
 // ── Helper: sync invoice payment to cashbook (called from process_invoice) ─────
-function syncInvoiceToCashbook($db, $businessId, $userId, array $invRow, array $itemGroups, array $serviceTypes): bool {
+function syncInvoiceToCashbook($db, $businessId, $userId, array $invRow, array $itemGroups, array $serviceTypes): bool
+{
     try {
         require_once '../../includes/CashbookHelper.php';
         $helper  = new CashbookHelper($db, $businessId, $userId);
@@ -353,7 +383,9 @@ function syncInvoiceToCashbook($db, $businessId, $userId, array $invRow, array $
             if ($masterDbName && $totalInserted > 0) {
                 $mPdo = new PDO(
                     "mysql:host=" . DB_HOST . ";dbname={$masterDbName};charset=" . DB_CHARSET,
-                    DB_USER, DB_PASS, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+                    DB_USER,
+                    DB_PASS,
+                    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
                 );
                 $masterDesc = "Hotel Services [{$invNo}] {$guest}";
                 $hasTxCol = (bool)$mPdo->query("SHOW COLUMNS FROM cash_account_transactions LIKE 'transaction_id'")->fetch();
@@ -443,11 +475,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
                  tax_rate, tax_amount, service_charge_rate, service_charge_amount,
                  discount_rate, discount_amount, created_by, created_at)
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())")
-                ->execute([$businessId, $invNo, $bookingId, $guestName, $guestPhone ?: null,
-                    $roomNumber ?: null, $total, $paidAmount, $payStatus, $payMethod,
-                    'confirmed', $notes ?: null, $taxRate, $taxAmount,
-                    $serviceChargeRate, $serviceChargeAmount, $discountRate, $discountAmount,
-                    $currentUser['id'] ?? null]);
+                ->execute([
+                    $businessId,
+                    $invNo,
+                    $bookingId,
+                    $guestName,
+                    $guestPhone ?: null,
+                    $roomNumber ?: null,
+                    $total,
+                    $paidAmount,
+                    $payStatus,
+                    $payMethod,
+                    'confirmed',
+                    $notes ?: null,
+                    $taxRate,
+                    $taxAmount,
+                    $serviceChargeRate,
+                    $serviceChargeAmount,
+                    $discountRate,
+                    $discountAmount,
+                    $currentUser['id'] ?? null
+                ]);
             $invId = (int)$pdo->lastInsertId();
 
             $iStmt = $pdo->prepare("INSERT INTO hotel_invoice_items
@@ -456,9 +504,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
             $svcLabels = [];
             foreach ($items as $item) {
                 $iStmt->execute([
-                    $invId, $item['service_type'], $item['description'] ?: null,
-                    $item['qty'], $item['unit_price'], $item['total'],
-                    $item['start_dt'] ?: null, $item['end_dt'] ?: null,
+                    $invId,
+                    $item['service_type'],
+                    $item['description'] ?: null,
+                    $item['qty'],
+                    $item['unit_price'],
+                    $item['total'],
+                    $item['start_dt'] ?: null,
+                    $item['end_dt'] ?: null,
                 ]);
                 $svcLabels[] = $serviceTypes[$item['service_type']]['label'];
             }
@@ -523,8 +576,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
 
             $cbOk = false;
             if ((float)$invRow['paid_amount'] > 0 && !empty($itemGroups)) {
-                $cbOk = syncInvoiceToCashbook($db, $businessId, $currentUser['id'] ?? 1,
-                    $invRow, $itemGroups, $serviceTypes);
+                $cbOk = syncInvoiceToCashbook(
+                    $db,
+                    $businessId,
+                    $currentUser['id'] ?? 1,
+                    $invRow,
+                    $itemGroups,
+                    $serviceTypes
+                );
             }
 
             // Only mark as synced if cashbook sync actually succeeded (or no payment to sync)
@@ -540,13 +599,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
         // ── UPDATE STATUS ────────────────────────────────────────────────────────
         if ($action === 'update_status' || $action === 'update_invoice') {
             if (!$auth->canEdit('frontdesk')) {
-                echo json_encode(['success'=>false,'message'=>'⛔ Anda tidak memiliki izin untuk mengedit.']);
+                echo json_encode(['success' => false, 'message' => '⛔ Anda tidak memiliki izin untuk mengedit.']);
                 exit;
             }
         }
         if ($action === 'delete') {
             if (!$auth->canDelete('frontdesk')) {
-                echo json_encode(['success'=>false,'message'=>'⛔ Anda tidak memiliki izin untuk menghapus.']);
+                echo json_encode(['success' => false, 'message' => '⛔ Anda tidak memiliki izin untuk menghapus.']);
                 exit;
             }
         }
@@ -554,7 +613,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
         if ($action === 'update_status') {
             $id     = (int)($_POST['id'] ?? 0);
             $status = $_POST['status'] ?? '';
-            $allowed = ['pending','confirmed','completed','cancelled'];
+            $allowed = ['pending', 'confirmed', 'completed', 'cancelled'];
             if (!$id || !in_array($status, $allowed)) throw new Exception('Invalid');
             $pdo->prepare("UPDATE hotel_invoices SET status=?, updated_at=NOW() WHERE id=? AND business_id=?")
                 ->execute([$status, $id, $businessId]);
@@ -576,8 +635,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
 
         // ── SAVE HOTEL SETTINGS (لوغو + detail perusahaan) ───────────────────────────
         if ($action === 'save_hs_settings') {
-            $allowed = ['company_name','company_address','company_phone','company_email','company_website','company_logo',
-                        'payment_info_bank','payment_info_account','payment_info_name','payment_info_note'];
+            $allowed = [
+                'company_name',
+                'company_address',
+                'company_phone',
+                'company_email',
+                'company_website',
+                'company_logo',
+                'payment_info_bank',
+                'payment_info_account',
+                'payment_info_name',
+                'payment_info_note'
+            ];
             $saved = 0;
             foreach ($allowed as $key) {
                 if (isset($_POST[$key])) {
@@ -595,7 +664,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
             // Handle logo upload
             if (!empty($_FILES['logo_file']['tmp_name'])) {
                 $ext  = strtolower(pathinfo($_FILES['logo_file']['name'], PATHINFO_EXTENSION));
-                $allowed_ext = ['jpg','jpeg','png','gif','svg','webp'];
+                $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'];
                 if (!in_array($ext, $allowed_ext)) throw new Exception('Invalid logo file type');
                 $fname = 'logo_hotel_svc_' . uniqid() . '.' . $ext;
                 $cloudinary = CloudinaryHelper::getInstance();
@@ -772,11 +841,19 @@ $search       = trim($_GET['q'] ?? '');
 
 $where  = ["hi.business_id = ?"];
 $params = [$businessId];
-if ($filterStatus) { $where[] = 'hi.status = ?';           $params[] = $filterStatus; }
-if ($filterDate)   { $where[] = 'DATE(hi.created_at) = ?'; $params[] = $filterDate; }
+if ($filterStatus) {
+    $where[] = 'hi.status = ?';
+    $params[] = $filterStatus;
+}
+if ($filterDate) {
+    $where[] = 'DATE(hi.created_at) = ?';
+    $params[] = $filterDate;
+}
 if ($search) {
     $where[] = '(hi.guest_name LIKE ? OR hi.invoice_number LIKE ? OR hi.room_number LIKE ?)';
-    $params[] = "%$search%"; $params[] = "%$search%"; $params[] = "%$search%";
+    $params[] = "%$search%";
+    $params[] = "%$search%";
+    $params[] = "%$search%";
 }
 
 $stmt = $pdo->prepare("SELECT hi.*,
@@ -824,7 +901,9 @@ try {
         WHERE b.status = 'checked_in'
         ORDER BY r.room_number ASC LIMIT 100")
         ->fetchAll(PDO::FETCH_ASSOC);
-} catch (\Throwable $e) { $inHouseGuests = []; }
+} catch (\Throwable $e) {
+    $inHouseGuests = [];
+}
 
 // ── GET: load invoice for edit modal ─────────────────────────────────────────
 if (isset($_GET['get_invoice']) && isset($_GET['id'])) {
@@ -851,120 +930,533 @@ try {
     $catalogItems = $pdo->prepare("SELECT * FROM hotel_service_catalog WHERE business_id=? AND is_active=1 ORDER BY service_type, sort_order, item_name");
     $catalogItems->execute([$businessId]);
     $catalogRows = $catalogItems->fetchAll(PDO::FETCH_ASSOC);
-} catch (\Throwable $e) { $catalogRows = []; }
+} catch (\Throwable $e) {
+    $catalogRows = [];
+}
 
 // Load current settings for settings modal
 $hsSettings = [];
 try {
     $settingsRows = $pdo->query("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'company_%'")->fetchAll(PDO::FETCH_ASSOC);
-    foreach ($settingsRows as $r) { $hsSettings[$r['setting_key']] = $r['setting_value']; }
-} catch (\Throwable $e) {}
+    foreach ($settingsRows as $r) {
+        $hsSettings[$r['setting_key']] = $r['setting_value'];
+    }
+} catch (\Throwable $e) {
+}
 
 include '../../includes/header.php';
 ?>
 <style>
-.hs-page { padding: 1.25rem; }
-.hs-topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.75rem; }
-.hs-topbar h2 { font-size:1.2rem; font-weight:700; color:var(--text-primary); margin:0; }
-.hs-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:0.75rem; margin-bottom:1.25rem; }
-.hs-stat { background:white; border-radius:10px; padding:0.85rem 1rem; box-shadow:0 1px 4px rgba(0,0,0,0.07); border-top:3px solid var(--c); }
-.hs-stat .val { font-size:1.25rem; font-weight:800; color:var(--c); }
-.hs-stat .lbl { font-size:0.72rem; color:var(--text-secondary); margin-top:0.15rem; }
-.hs-filters { background:white; border-radius:10px; padding:0.85rem 1rem; box-shadow:0 1px 4px rgba(0,0,0,0.07); margin-bottom:1rem; display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center; }
-.hs-filters input, .hs-filters select { padding:0.4rem 0.6rem; border:1px solid #e2e8f0; border-radius:6px; font-size:0.8rem; background:white; color:var(--text-primary); }
-.hs-table-wrap { background:white; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,0.07); overflow:hidden; }
-.hs-table { width:100%; border-collapse:collapse; font-size:0.8rem; }
-.hs-table th { background:#f8fafc; padding:0.65rem 0.85rem; text-align:left; font-weight:600; color:var(--text-secondary); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.03em; border-bottom:1px solid #e2e8f0; }
-.hs-table td { padding:0.65rem 0.85rem; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
-.hs-table tr:last-child td { border-bottom:none; }
-.hs-table tr:hover td { background:#fafbff; }
-.hs-badge {
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    min-width:78px;
-    padding:0.28rem 0.72rem;
-    border-radius:999px;
-    font-size:0.66rem;
-    font-weight:700;
-    letter-spacing:0.06em;
-    text-transform:uppercase;
-    color:#ffffff !important;
-    border:1px solid rgba(255,255,255,0.22);
-    box-shadow:0 2px 8px rgba(15,23,42,0.18);
-    line-height:1;
-    white-space:nowrap;
-    position:relative;
-    isolation:isolate;
-    overflow:hidden;
-}
-.hs-badge::before {
-    content:'';
-    position:absolute;
-    inset:0;
-    background:linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0));
-    z-index:1;
-}
-.hs-badge-text {
-    position:relative;
-    z-index:2;
-    color:#ffffff !important;
-    -webkit-text-fill-color:#ffffff !important;
-    text-shadow:0 1px 1px rgba(0,0,0,0.28);
-}
-.hs-svc-pill { display:inline-block; padding:0.15rem 0.45rem; border-radius:12px; font-size:0.68rem; font-weight:600; background:#ede9fe; color:#5b21b6; margin:0.1rem 0.1rem 0 0; white-space:nowrap; }
-.hs-action-btn { padding:0.25rem 0.55rem; border:none; border-radius:5px; cursor:pointer; font-size:0.72rem; font-weight:600; transition:opacity 0.2s; }
-.hs-action-btn:hover { opacity:0.8; }
-/* Modal */
-.hs-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:99999; align-items:center; justify-content:center; padding:1rem; }
-.hs-modal-overlay.open { display:flex; }
-.hs-modal { background:white; border-radius:14px; padding:1.5rem; width:100%; max-width:660px; max-height:92vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
-.hs-modal h3 { margin:0 0 1rem; font-size:1.05rem; font-weight:700; }
-.hs-form-row { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:0.75rem; }
-.hs-form-row.full { grid-template-columns:1fr; }
-.hs-field label { display:block; font-size:0.75rem; font-weight:600; color:var(--text-secondary); margin-bottom:0.3rem; }
-.hs-field input, .hs-field select, .hs-field textarea { width:100%; padding:0.5rem 0.65rem; border:1px solid #e2e8f0; border-radius:7px; font-size:0.85rem; color:var(--text-primary); background:white; box-sizing:border-box; }
-.hs-field textarea { resize:vertical; min-height:55px; }
-.hs-field input:focus, .hs-field select:focus, .hs-field textarea:focus { outline:none; border-color:#6366f1; box-shadow:0 0 0 2px rgba(99,102,241,0.15); }
-/* Guest toggle */
-.guest-toggle { display:flex; gap:0.4rem; margin-bottom:0.6rem; }
-.guest-toggle button { flex:1; padding:0.4rem 0.6rem; border:2px solid #e2e8f0; border-radius:7px; background:white; font-size:0.78rem; font-weight:600; cursor:pointer; transition:all 0.15s; color:#374151; }
-.guest-toggle button.active { border-color:#6366f1; background:#ede9fe; color:#4c1d95; }
-/* Items table */
-.items-tbl { width:100%; border-collapse:collapse; margin-bottom:0.5rem; font-size:0.8rem; }
-.items-tbl th { background:#f8fafc; padding:0.45rem 0.5rem; font-size:0.7rem; font-weight:600; color:var(--text-secondary); text-transform:uppercase; border-bottom:1px solid #e2e8f0; white-space:nowrap; }
-.items-tbl td { padding:0.35rem 0.3rem; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
-.items-tbl td input, .items-tbl td select { padding:0.35rem 0.4rem; border:1px solid #e2e8f0; border-radius:5px; font-size:0.78rem; background:white; box-sizing:border-box; width:100%; }
-.items-tbl td input:focus, .items-tbl td select:focus { outline:none; border-color:#6366f1; }
-.btn-add-item { background:#f0f4ff; color:#4338ca; border:1px dashed #6366f1; border-radius:7px; padding:0.4rem 0.8rem; font-size:0.78rem; font-weight:600; cursor:pointer; width:100%; margin-bottom:0.75rem; }
-.btn-add-item:hover { background:#ede9fe; }
-.btn-del-row { background:#fee2e2; color:#b91c1c; border:none; border-radius:4px; padding:0.25rem 0.45rem; cursor:pointer; font-size:0.78rem; font-weight:700; }
-.hs-total-preview { background:linear-gradient(135deg,#f0f4ff,#e8edff); border-radius:8px; padding:0.75rem 1rem; text-align:center; margin:0.75rem 0; font-size:1.1rem; font-weight:700; color:#4338ca; }
-.hs-modal-footer { display:flex; justify-content:flex-end; gap:0.6rem; margin-top:1rem; }
-.btn-hs { padding:0.5rem 1.25rem; border:none; border-radius:8px; font-weight:600; cursor:pointer; font-size:0.85rem; }
-.btn-hs-primary { background:var(--primary,#6366f1); color:white; }
-.btn-hs-secondary { background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; }
-.hs-empty { text-align:center; padding:3rem 1rem; color:var(--text-secondary); }
-.hs-empty .em-icon { font-size:2.5rem; margin-bottom:0.5rem; }
-.sect-label { font-size:0.75rem; font-weight:700; color:var(--text-secondary); margin-bottom:0.4rem; display:block; text-transform:uppercase; letter-spacing:0.04em; }
-/* Tabs */
-.hs-tabs { display:flex; border-bottom:2px solid #e2e8f0; margin-bottom:1rem; gap:0; }
-.hs-tab { padding:0.5rem 1rem; font-size:0.82rem; font-weight:600; cursor:pointer; color:#64748b; border-bottom:2px solid transparent; margin-bottom:-2px; background:none; border-top:none; border-left:none; border-right:none; }
-.hs-tab.active { color:#4338ca; border-bottom-color:#6366f1; }
-.hs-tab-pane { display:none; }
-.hs-tab-pane.active { display:block; }
-/* Catalog table */
-.cat-tbl { width:100%; border-collapse:collapse; font-size:0.8rem; }
-.cat-tbl th { background:#f8fafc; padding:0.4rem 0.5rem; font-size:0.7rem; font-weight:700; color:#64748b; text-transform:uppercase; border-bottom:2px solid #e2e8f0; text-align:left; }
-.cat-tbl td { padding:0.4rem 0.5rem; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
-.cat-tbl td input, .cat-tbl td select { width:100%; padding:0.3rem 0.4rem; border:1px solid #e2e8f0; border-radius:5px; font-size:0.78rem; background:white; box-sizing:border-box; }
-.cat-tbl .btn-cat-del { background:#fee2e2; color:#b91c1c; border:none; border-radius:4px; padding:0.25rem 0.5rem; cursor:pointer; font-size:0.75rem; }
-.cat-tbl .btn-cat-save { background:#dcfce7; color:#15803d; border:none; border-radius:4px; padding:0.25rem 0.5rem; cursor:pointer; font-size:0.75rem; }
-.logo-preview { max-height:60px; border-radius:6px; margin-top:0.4rem; display:block; }
-@media(max-width:580px) {
-    .hs-form-row { grid-template-columns:1fr; }
-    .hs-stats { grid-template-columns:repeat(2,1fr); }
-}
+    .hs-page {
+        padding: 1.25rem;
+    }
+
+    .hs-topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.25rem;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .hs-topbar h2 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .hs-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .hs-stat {
+        background: white;
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+        border-top: 3px solid var(--c);
+    }
+
+    .hs-stat .val {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--c);
+    }
+
+    .hs-stat .lbl {
+        font-size: 0.72rem;
+        color: var(--text-secondary);
+        margin-top: 0.15rem;
+    }
+
+    .hs-filters {
+        background: white;
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+        margin-bottom: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        align-items: center;
+    }
+
+    .hs-filters input,
+    .hs-filters select {
+        padding: 0.4rem 0.6rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        background: white;
+        color: var(--text-primary);
+    }
+
+    .hs-table-wrap {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+        overflow: hidden;
+    }
+
+    .hs-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8rem;
+    }
+
+    .hs-table th {
+        background: #f8fafc;
+        padding: 0.65rem 0.85rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .hs-table td {
+        padding: 0.65rem 0.85rem;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .hs-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .hs-table tr:hover td {
+        background: #fafbff;
+    }
+
+    .hs-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 78px;
+        padding: 0.28rem 0.72rem;
+        border-radius: 999px;
+        font-size: 0.66rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+        line-height: 1;
+        white-space: nowrap;
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+    }
+
+    .hs-badge::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0));
+        z-index: 1;
+    }
+
+    .hs-badge-text {
+        position: relative;
+        z-index: 2;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.28);
+    }
+
+    .hs-svc-pill {
+        display: inline-block;
+        padding: 0.15rem 0.45rem;
+        border-radius: 12px;
+        font-size: 0.68rem;
+        font-weight: 600;
+        background: #ede9fe;
+        color: #5b21b6;
+        margin: 0.1rem 0.1rem 0 0;
+        white-space: nowrap;
+    }
+
+    .hs-action-btn {
+        padding: 0.25rem 0.55rem;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.72rem;
+        font-weight: 600;
+        transition: opacity 0.2s;
+    }
+
+    .hs-action-btn:hover {
+        opacity: 0.8;
+    }
+
+    /* Modal */
+    .hs-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        z-index: 99999;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .hs-modal-overlay.open {
+        display: flex;
+    }
+
+    .hs-modal {
+        background: white;
+        border-radius: 14px;
+        padding: 1.5rem;
+        width: 100%;
+        max-width: 660px;
+        max-height: 92vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .hs-modal h3 {
+        margin: 0 0 1rem;
+        font-size: 1.05rem;
+        font-weight: 700;
+    }
+
+    .hs-form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .hs-form-row.full {
+        grid-template-columns: 1fr;
+    }
+
+    .hs-field label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 0.3rem;
+    }
+
+    .hs-field input,
+    .hs-field select,
+    .hs-field textarea {
+        width: 100%;
+        padding: 0.5rem 0.65rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 7px;
+        font-size: 0.85rem;
+        color: var(--text-primary);
+        background: white;
+        box-sizing: border-box;
+    }
+
+    .hs-field textarea {
+        resize: vertical;
+        min-height: 55px;
+    }
+
+    .hs-field input:focus,
+    .hs-field select:focus,
+    .hs-field textarea:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+    }
+
+    /* Guest toggle */
+    .guest-toggle {
+        display: flex;
+        gap: 0.4rem;
+        margin-bottom: 0.6rem;
+    }
+
+    .guest-toggle button {
+        flex: 1;
+        padding: 0.4rem 0.6rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 7px;
+        background: white;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        color: #374151;
+    }
+
+    .guest-toggle button.active {
+        border-color: #6366f1;
+        background: #ede9fe;
+        color: #4c1d95;
+    }
+
+    /* Items table */
+    .items-tbl {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .items-tbl th {
+        background: #f8fafc;
+        padding: 0.45rem 0.5rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        border-bottom: 1px solid #e2e8f0;
+        white-space: nowrap;
+    }
+
+    .items-tbl td {
+        padding: 0.35rem 0.3rem;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .items-tbl td input,
+    .items-tbl td select {
+        padding: 0.35rem 0.4rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 5px;
+        font-size: 0.78rem;
+        background: white;
+        box-sizing: border-box;
+        width: 100%;
+    }
+
+    .items-tbl td input:focus,
+    .items-tbl td select:focus {
+        outline: none;
+        border-color: #6366f1;
+    }
+
+    .btn-add-item {
+        background: #f0f4ff;
+        color: #4338ca;
+        border: 1px dashed #6366f1;
+        border-radius: 7px;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        margin-bottom: 0.75rem;
+    }
+
+    .btn-add-item:hover {
+        background: #ede9fe;
+    }
+
+    .btn-del-row {
+        background: #fee2e2;
+        color: #b91c1c;
+        border: none;
+        border-radius: 4px;
+        padding: 0.25rem 0.45rem;
+        cursor: pointer;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .hs-total-preview {
+        background: linear-gradient(135deg, #f0f4ff, #e8edff);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        text-align: center;
+        margin: 0.75rem 0;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #4338ca;
+    }
+
+    .hs-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.6rem;
+        margin-top: 1rem;
+    }
+
+    .btn-hs {
+        padding: 0.5rem 1.25rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.85rem;
+    }
+
+    .btn-hs-primary {
+        background: var(--primary, #6366f1);
+        color: white;
+    }
+
+    .btn-hs-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #e5e7eb;
+    }
+
+    .hs-empty {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-secondary);
+    }
+
+    .hs-empty .em-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .sect-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-secondary);
+        margin-bottom: 0.4rem;
+        display: block;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    /* Tabs */
+    .hs-tabs {
+        display: flex;
+        border-bottom: 2px solid #e2e8f0;
+        margin-bottom: 1rem;
+        gap: 0;
+    }
+
+    .hs-tab {
+        padding: 0.5rem 1rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        color: #64748b;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        background: none;
+        border-top: none;
+        border-left: none;
+        border-right: none;
+    }
+
+    .hs-tab.active {
+        color: #4338ca;
+        border-bottom-color: #6366f1;
+    }
+
+    .hs-tab-pane {
+        display: none;
+    }
+
+    .hs-tab-pane.active {
+        display: block;
+    }
+
+    /* Catalog table */
+    .cat-tbl {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8rem;
+    }
+
+    .cat-tbl th {
+        background: #f8fafc;
+        padding: 0.4rem 0.5rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        border-bottom: 2px solid #e2e8f0;
+        text-align: left;
+    }
+
+    .cat-tbl td {
+        padding: 0.4rem 0.5rem;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .cat-tbl td input,
+    .cat-tbl td select {
+        width: 100%;
+        padding: 0.3rem 0.4rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 5px;
+        font-size: 0.78rem;
+        background: white;
+        box-sizing: border-box;
+    }
+
+    .cat-tbl .btn-cat-del {
+        background: #fee2e2;
+        color: #b91c1c;
+        border: none;
+        border-radius: 4px;
+        padding: 0.25rem 0.5rem;
+        cursor: pointer;
+        font-size: 0.75rem;
+    }
+
+    .cat-tbl .btn-cat-save {
+        background: #dcfce7;
+        color: #15803d;
+        border: none;
+        border-radius: 4px;
+        padding: 0.25rem 0.5rem;
+        cursor: pointer;
+        font-size: 0.75rem;
+    }
+
+    .logo-preview {
+        max-height: 60px;
+        border-radius: 6px;
+        margin-top: 0.4rem;
+        display: block;
+    }
+
+    @media(max-width:580px) {
+        .hs-form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .hs-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
 </style>
 
 <div class="hs-page">
@@ -982,35 +1474,50 @@ include '../../includes/header.php';
 
     <!-- Stats -->
     <div class="hs-stats">
-        <div class="hs-stat" style="--c:#6366f1"><div class="val"><?php echo $today['total']; ?></div><div class="lbl">Invoices Today</div></div>
-        <div class="hs-stat" style="--c:#10b981"><div class="val">Rp <?php echo number_format($today['revenue'],0,',','.'); ?></div><div class="lbl">Revenue Today</div></div>
-        <div class="hs-stat" style="--c:#3b82f6"><div class="val">Rp <?php echo number_format($today['collected'],0,',','.'); ?></div><div class="lbl">Collected</div></div>
-        <div class="hs-stat" style="--c:#ef4444"><div class="val"><?php echo $today['unpaid']; ?></div><div class="lbl">Unpaid</div></div>
-        <div class="hs-stat" style="--c:#8b5cf6"><div class="val"><?php echo $today['completed']; ?></div><div class="lbl">Completed</div></div>
+        <div class="hs-stat" style="--c:#6366f1">
+            <div class="val"><?php echo $today['total']; ?></div>
+            <div class="lbl">Invoices Today</div>
+        </div>
+        <div class="hs-stat" style="--c:#10b981">
+            <div class="val">Rp <?php echo number_format($today['revenue'], 0, ',', '.'); ?></div>
+            <div class="lbl">Revenue Today</div>
+        </div>
+        <div class="hs-stat" style="--c:#3b82f6">
+            <div class="val">Rp <?php echo number_format($today['collected'], 0, ',', '.'); ?></div>
+            <div class="lbl">Collected</div>
+        </div>
+        <div class="hs-stat" style="--c:#ef4444">
+            <div class="val"><?php echo $today['unpaid']; ?></div>
+            <div class="lbl">Unpaid</div>
+        </div>
+        <div class="hs-stat" style="--c:#8b5cf6">
+            <div class="val"><?php echo $today['completed']; ?></div>
+            <div class="lbl">Completed</div>
+        </div>
     </div>
 
     <!-- Revenue per Service Type (this month) -->
     <?php if (!empty($svcRevStats)): ?>
-    <div style="background:white;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.07);padding:0.85rem 1rem;margin-bottom:1rem;">
-        <div style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.65rem;">
-            📊 Revenue per Service — This Month
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:0.6rem;">
-            <?php
-            $svcColors = ['motor_rental'=>'#f59e0b','laundry'=>'#3b82f6','service'=>'#10b981','airport_drop'=>'#8b5cf6','harbor_drop'=>'#06b6d4','narayana_trip'=>'#ec4899','lain_lain'=>'#78716c'];
-            foreach ($svcRevStats as $sr):
-                $svcKey  = $sr['service_type'];
-                $svcInfo = $serviceTypes[$svcKey] ?? ['label'=>$svcKey,'icon'=>'🔹'];
-                $color   = $svcColors[$svcKey] ?? '#6366f1';
-            ?>
-            <div style="flex:1;min-width:130px;border-left:3px solid <?php echo $color; ?>;padding:0.5rem 0.75rem;background:#fafbff;border-radius:0 7px 7px 0;">
-                <div style="font-size:0.8rem;font-weight:700;color:<?php echo $color; ?>"><?php echo $svcInfo['icon']; ?> <?php echo htmlspecialchars($svcInfo['label']); ?></div>
-                <div style="font-size:0.95rem;font-weight:800;color:#1e293b;margin-top:0.15rem">Rp <?php echo number_format($sr['total_revenue'],0,',','.'); ?></div>
-                <div style="font-size:0.68rem;color:var(--text-secondary)"><?php echo $sr['invoice_count']; ?> invoice<?php echo $sr['invoice_count']!=1?'s':''; ?></div>
+        <div style="background:white;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.07);padding:0.85rem 1rem;margin-bottom:1rem;">
+            <div style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.65rem;">
+                📊 Revenue per Service — This Month
             </div>
-            <?php endforeach; ?>
+            <div style="display:flex;flex-wrap:wrap;gap:0.6rem;">
+                <?php
+                $svcColors = ['motor_rental' => '#f59e0b', 'laundry' => '#3b82f6', 'service' => '#10b981', 'airport_drop' => '#8b5cf6', 'harbor_drop' => '#06b6d4', 'narayana_trip' => '#ec4899', 'lain_lain' => '#78716c'];
+                foreach ($svcRevStats as $sr):
+                    $svcKey  = $sr['service_type'];
+                    $svcInfo = $serviceTypes[$svcKey] ?? ['label' => $svcKey, 'icon' => '🔹'];
+                    $color   = $svcColors[$svcKey] ?? '#6366f1';
+                ?>
+                    <div style="flex:1;min-width:130px;border-left:3px solid <?php echo $color; ?>;padding:0.5rem 0.75rem;background:#fafbff;border-radius:0 7px 7px 0;">
+                        <div style="font-size:0.8rem;font-weight:700;color:<?php echo $color; ?>"><?php echo $svcInfo['icon']; ?> <?php echo htmlspecialchars($svcInfo['label']); ?></div>
+                        <div style="font-size:0.95rem;font-weight:800;color:#1e293b;margin-top:0.15rem">Rp <?php echo number_format($sr['total_revenue'], 0, ',', '.'); ?></div>
+                        <div style="font-size:0.68rem;color:var(--text-secondary)"><?php echo $sr['invoice_count']; ?> invoice<?php echo $sr['invoice_count'] != 1 ? 's' : ''; ?></div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         </div>
-    </div>
     <?php endif; ?>
 
     <!-- Filters -->
@@ -1018,1049 +1525,1244 @@ include '../../includes/header.php';
         <input type="text" name="q" placeholder="🔍 Guest / Invoice..." value="<?php echo htmlspecialchars($search); ?>">
         <select name="status">
             <option value="">All Status</option>
-            <?php foreach (['pending','confirmed','completed','cancelled'] as $s): ?>
-            <option value="<?php echo $s; ?>" <?php echo $filterStatus===$s?'selected':''; ?>><?php echo ucfirst($s); ?></option>
+            <?php foreach (['pending', 'confirmed', 'completed', 'cancelled'] as $s): ?>
+                <option value="<?php echo $s; ?>" <?php echo $filterStatus === $s ? 'selected' : ''; ?>><?php echo ucfirst($s); ?></option>
             <?php endforeach; ?>
         </select>
         <input type="date" name="date" value="<?php echo htmlspecialchars($filterDate); ?>">
         <button type="submit" class="btn-hs btn-hs-primary" style="padding:0.4rem 0.9rem;font-size:0.8rem">Filter</button>
-        <?php if ($filterStatus||$filterDate||$search): ?>
-        <a href="hotel-services.php" class="btn-hs btn-hs-secondary" style="padding:0.4rem 0.9rem;font-size:0.8rem;text-decoration:none">Clear</a>
+        <?php if ($filterStatus || $filterDate || $search): ?>
+            <a href="hotel-services.php" class="btn-hs btn-hs-secondary" style="padding:0.4rem 0.9rem;font-size:0.8rem;text-decoration:none">Clear</a>
         <?php endif; ?>
     </form>
 
     <!-- Table -->
     <div class="hs-table-wrap">
         <?php if (empty($invoices)): ?>
-        <div class="hs-empty">
-            <div class="em-icon">🛎️</div>
-            <div style="font-weight:600;margin-bottom:0.25rem">No service invoices yet</div>
-            <div style="font-size:0.8rem">Click "+ New Invoice" to create your first one</div>
-        </div>
+            <div class="hs-empty">
+                <div class="em-icon">🛎️</div>
+                <div style="font-weight:600;margin-bottom:0.25rem">No service invoices yet</div>
+                <div style="font-size:0.8rem">Click "+ New Invoice" to create your first one</div>
+            </div>
         <?php else: ?>
-        <table class="hs-table">
-            <thead>
-                <tr>
-                    <th>Invoice #</th><th>Guest</th><th>Room</th><th>Services</th>
-                    <th>Total</th><th>Paid</th><th>Pay Status</th><th>Status</th><th>Date</th><th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($invoices as $inv):
-                $svcList = array_filter(explode(',', $inv['service_types'] ?? '')); ?>
-            <tr>
-                <td style="font-weight:700;color:#4338ca;white-space:nowrap"><?php echo htmlspecialchars($inv['invoice_number']); ?></td>
-                <td>
-                    <div style="font-weight:600"><?php echo htmlspecialchars($inv['guest_name']); ?></div>
-                    <?php if ($inv['guest_phone']): ?><div style="font-size:0.7rem;color:var(--text-secondary)"><?php echo htmlspecialchars($inv['guest_phone']); ?></div><?php endif; ?>
-                </td>
-                <td><?php echo $inv['room_number'] ? htmlspecialchars($inv['room_number']) : '<span style="color:#d1d5db">—</span>'; ?></td>
-                <td>
-                    <?php foreach (array_unique($svcList) as $svc): ?>
-                    <span class="hs-svc-pill"><?php echo $serviceTypes[$svc]['icon'] ?? ''; ?> <?php echo $serviceTypes[$svc]['label'] ?? $svc; ?></span>
+            <table class="hs-table">
+                <thead>
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Guest</th>
+                        <th>Room</th>
+                        <th>Services</th>
+                        <th>Total</th>
+                        <th>Paid</th>
+                        <th>Pay Status</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($invoices as $inv):
+                        $svcList = array_filter(explode(',', $inv['service_types'] ?? '')); ?>
+                        <tr>
+                            <td style="font-weight:700;color:#4338ca;white-space:nowrap"><?php echo htmlspecialchars($inv['invoice_number']); ?></td>
+                            <td>
+                                <div style="font-weight:600"><?php echo htmlspecialchars($inv['guest_name']); ?></div>
+                                <?php if ($inv['guest_phone']): ?><div style="font-size:0.7rem;color:var(--text-secondary)"><?php echo htmlspecialchars($inv['guest_phone']); ?></div><?php endif; ?>
+                            </td>
+                            <td><?php echo $inv['room_number'] ? htmlspecialchars($inv['room_number']) : '<span style="color:#d1d5db">—</span>'; ?></td>
+                            <td>
+                                <?php foreach (array_unique($svcList) as $svc): ?>
+                                    <span class="hs-svc-pill"><?php echo $serviceTypes[$svc]['icon'] ?? ''; ?> <?php echo $serviceTypes[$svc]['label'] ?? $svc; ?></span>
+                                <?php endforeach; ?>
+                                <?php if ((int)$inv['item_count'] > 1): ?><div style="font-size:0.68rem;color:#6b7280;margin-top:2px"><?php echo $inv['item_count']; ?> items</div><?php endif; ?>
+                            </td>
+                            <td style="font-weight:700;white-space:nowrap">Rp <?php echo number_format($inv['total'], 0, ',', '.'); ?></td>
+                            <td style="color:#10b981;font-weight:600;white-space:nowrap">Rp <?php echo number_format($inv['paid_amount'], 0, ',', '.'); ?></td>
+                            <td><span class="hs-badge" style="background:<?php echo $payStatusColors[$inv['payment_status']]; ?>"><span class="hs-badge-text"><?php echo strtoupper($inv['payment_status']); ?></span></span></td>
+                            <td><span class="hs-badge" style="background:<?php echo $statusColors[$inv['status']]; ?>"><span class="hs-badge-text"><?php echo strtoupper($inv['status']); ?></span></span></td>
+                            <td style="font-size:0.72rem;color:var(--text-secondary);white-space:nowrap"><?php echo date('d M Y', strtotime($inv['created_at'])); ?></td>
+                            <td>
+                                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;min-width:160px">
+                                    <?php if ($auth->canEdit('frontdesk')): ?>
+                                        <button class="hs-action-btn" style="background:#e0f2fe;color:#0277bd;text-decoration:none" onclick="openEditModal(<?php echo $inv['id']; ?>)">✏️ Edit</button>
+                                    <?php endif; ?>
+                                    <a href="hotel-service-invoice.php?id=<?php echo $inv['id']; ?>" target="_blank" class="hs-action-btn" style="background:#e0f2fe;color:#0277bd;text-decoration:none">🖨️ Invoice</a>
+                                    <?php if ($inv['payment_status'] !== 'paid'): ?>
+                                        <button class="hs-action-btn" style="background:#dcfce7;color:#15803d"
+                                            onclick="openPayModal(<?php echo $inv['id']; ?>,<?php echo $inv['total'] - $inv['paid_amount']; ?>,'<?php echo htmlspecialchars($inv['invoice_number'], ENT_QUOTES); ?>')">💳 Pay</button>
+                                    <?php endif; ?>
+                                    <?php if ($auth->canEdit('frontdesk')): ?>
+                                        <select class="hs-action-btn" style="background:#f3f4f6;color:#374151"
+                                            onchange="updateStatus(<?php echo $inv['id']; ?>,this.value);this.blur()">
+                                            <?php foreach (['pending', 'confirmed', 'completed', 'cancelled'] as $s): ?>
+                                                <option value="<?php echo $s; ?>" <?php echo $inv['status'] === $s ? 'selected' : ''; ?>><?php echo ucfirst($s); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    <?php endif; ?>
+                                    <?php if ($auth->canDelete('frontdesk')): ?>
+                                        <button class="hs-action-btn" style="background:#fee2e2;color:#b91c1c"
+                                            onclick="deleteInvoice(<?php echo $inv['id']; ?>,'<?php echo htmlspecialchars($inv['invoice_number'], ENT_QUOTES); ?>')">✕</button>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                        </tr>
                     <?php endforeach; ?>
-                    <?php if ((int)$inv['item_count'] > 1): ?><div style="font-size:0.68rem;color:#6b7280;margin-top:2px"><?php echo $inv['item_count']; ?> items</div><?php endif; ?>
-                </td>
-                <td style="font-weight:700;white-space:nowrap">Rp <?php echo number_format($inv['total'],0,',','.'); ?></td>
-                <td style="color:#10b981;font-weight:600;white-space:nowrap">Rp <?php echo number_format($inv['paid_amount'],0,',','.'); ?></td>
-                <td><span class="hs-badge" style="background:<?php echo $payStatusColors[$inv['payment_status']]; ?>"><span class="hs-badge-text"><?php echo strtoupper($inv['payment_status']); ?></span></span></td>
-                <td><span class="hs-badge" style="background:<?php echo $statusColors[$inv['status']]; ?>"><span class="hs-badge-text"><?php echo strtoupper($inv['status']); ?></span></span></td>
-                <td style="font-size:0.72rem;color:var(--text-secondary);white-space:nowrap"><?php echo date('d M Y', strtotime($inv['created_at'])); ?></td>
-                <td>
-                    <div style="display:flex;gap:0.3rem;flex-wrap:wrap;min-width:160px">
-                        <?php if ($auth->canEdit('frontdesk')): ?>
-                        <button class="hs-action-btn" style="background:#e0f2fe;color:#0277bd;text-decoration:none" onclick="openEditModal(<?php echo $inv['id']; ?>)">✏️ Edit</button>
-                        <?php endif; ?>
-                        <a href="hotel-service-invoice.php?id=<?php echo $inv['id']; ?>" target="_blank" class="hs-action-btn" style="background:#e0f2fe;color:#0277bd;text-decoration:none">🖨️ Invoice</a>
-                        <?php if ($inv['payment_status'] !== 'paid'): ?>
-                        <button class="hs-action-btn" style="background:#dcfce7;color:#15803d"
-                            onclick="openPayModal(<?php echo $inv['id']; ?>,<?php echo $inv['total']-$inv['paid_amount']; ?>,'<?php echo htmlspecialchars($inv['invoice_number'],ENT_QUOTES); ?>')">💳 Pay</button>
-                        <?php endif; ?>
-                        <?php if ($auth->canEdit('frontdesk')): ?>
-                        <select class="hs-action-btn" style="background:#f3f4f6;color:#374151"
-                            onchange="updateStatus(<?php echo $inv['id']; ?>,this.value);this.blur()">
-                            <?php foreach (['pending','confirmed','completed','cancelled'] as $s): ?>
-                            <option value="<?php echo $s; ?>" <?php echo $inv['status']===$s?'selected':''; ?>><?php echo ucfirst($s); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                        <?php endif; ?>
-                        <?php if ($auth->canDelete('frontdesk')): ?>
-                        <button class="hs-action-btn" style="background:#fee2e2;color:#b91c1c"
-                            onclick="deleteInvoice(<?php echo $inv['id']; ?>,'<?php echo htmlspecialchars($inv['invoice_number'],ENT_QUOTES); ?>')">✕</button>
-                        <?php endif; ?>
-                    </div>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
+                </tbody>
+            </table>
         <?php endif; ?>
     </div>
 </div>
 
 <!-- ══ CREATE MODAL ════════════════════════════════════════════════════════════ -->
 <div id="createModal" class="hs-modal-overlay" onclick="if(event.target===this)closeCreateModal()">
- <div class="hs-modal">
-  <h3>🛎️ New Service Invoice</h3>
+    <div class="hs-modal">
+        <h3>🛎️ New Service Invoice</h3>
 
-  <!-- Guest -->
-  <div style="margin-bottom:0.75rem">
-    <span class="sect-label">Guest</span>
-    <div class="guest-toggle">
-      <button type="button" id="btnInhouse" class="active" onclick="setGuestMode('inhouse')">🏨 In-house Guest</button>
-      <button type="button" id="btnManual"  onclick="setGuestMode('manual')">✏️ Enter Manually</button>
-    </div>
-    <div id="inhouseSection">
-      <select id="fGuestSelect" onchange="fillFromInhouse()" style="width:100%;padding:0.5rem 0.65rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.85rem;background:white;box-sizing:border-box">
-        <option value="">— Select in-house guest —</option>
-        <?php foreach ($inHouseGuests as $g): ?>
-        <option value="<?php echo $g['booking_id']; ?>"
-          data-name="<?php echo htmlspecialchars($g['guest_name']??''); ?>"
-          data-room="<?php echo htmlspecialchars($g['room_number']??''); ?>"
-          data-phone="<?php echo htmlspecialchars($g['phone']??''); ?>">
-          Room <?php echo htmlspecialchars($g['room_number']??'?'); ?> — <?php echo htmlspecialchars($g['guest_name']??''); ?>
-        </option>
-        <?php endforeach; ?>
-      </select>
-    </div>
-    <div id="manualSection" style="display:none">
-      <input type="text" id="fGuestName" placeholder="Enter guest name" style="width:100%;padding:0.5rem 0.65rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.85rem;box-sizing:border-box">
-    </div>
-    <input type="hidden" id="fBookingId">
-  </div>
+        <!-- Guest -->
+        <div style="margin-bottom:0.75rem">
+            <span class="sect-label">Guest</span>
+            <div class="guest-toggle">
+                <button type="button" id="btnInhouse" class="active" onclick="setGuestMode('inhouse')">🏨 In-house Guest</button>
+                <button type="button" id="btnManual" onclick="setGuestMode('manual')">✏️ Enter Manually</button>
+            </div>
+            <div id="inhouseSection">
+                <select id="fGuestSelect" onchange="fillFromInhouse()" style="width:100%;padding:0.5rem 0.65rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.85rem;background:white;box-sizing:border-box">
+                    <option value="">— Select in-house guest —</option>
+                    <?php foreach ($inHouseGuests as $g): ?>
+                        <option value="<?php echo $g['booking_id']; ?>"
+                            data-name="<?php echo htmlspecialchars($g['guest_name'] ?? ''); ?>"
+                            data-room="<?php echo htmlspecialchars($g['room_number'] ?? ''); ?>"
+                            data-phone="<?php echo htmlspecialchars($g['phone'] ?? ''); ?>">
+                            Room <?php echo htmlspecialchars($g['room_number'] ?? '?'); ?> — <?php echo htmlspecialchars($g['guest_name'] ?? ''); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div id="manualSection" style="display:none">
+                <input type="text" id="fGuestName" placeholder="Enter guest name" style="width:100%;padding:0.5rem 0.65rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.85rem;box-sizing:border-box">
+            </div>
+            <input type="hidden" id="fBookingId">
+        </div>
 
-  <!-- Phone + Room -->
-  <div class="hs-form-row">
-    <div class="hs-field"><label>Phone</label><input type="text" id="fPhone" placeholder="Optional"></div>
-    <div class="hs-field"><label>Room Number</label><input type="text" id="fRoom" placeholder="e.g. 101"></div>
-  </div>
+        <!-- Phone + Room -->
+        <div class="hs-form-row">
+            <div class="hs-field"><label>Phone</label><input type="text" id="fPhone" placeholder="Optional"></div>
+            <div class="hs-field"><label>Room Number</label><input type="text" id="fRoom" placeholder="e.g. 101"></div>
+        </div>
 
-  <!-- Service items -->
-  <span class="sect-label">Service Items *</span>
-  <div style="overflow-x:auto;margin-bottom:0.4rem">
-    <table class="items-tbl">
-      <thead>
-        <tr>
-          <th style="min-width:140px">Service Type</th>
-          <th style="min-width:160px">Description</th>
-          <th style="width:65px">Qty</th>
-          <th style="width:115px">Unit Price</th>
-          <th style="width:105px;text-align:right">Subtotal</th>
-          <th style="width:34px"></th>
-        </tr>
-      </thead>
-      <tbody id="itemsBody"></tbody>
-    </table>
-  </div>
-  <button type="button" class="btn-add-item" onclick="addItemRow()">+ Add Service Item</button>
+        <!-- Service items -->
+        <span class="sect-label">Service Items *</span>
+        <div style="overflow-x:auto;margin-bottom:0.4rem">
+            <table class="items-tbl">
+                <thead>
+                    <tr>
+                        <th style="min-width:140px">Service Type</th>
+                        <th style="min-width:160px">Description</th>
+                        <th style="width:65px">Qty</th>
+                        <th style="width:115px">Unit Price</th>
+                        <th style="width:105px;text-align:right">Subtotal</th>
+                        <th style="width:34px"></th>
+                    </tr>
+                </thead>
+                <tbody id="itemsBody"></tbody>
+            </table>
+        </div>
+        <button type="button" class="btn-add-item" onclick="addItemRow()">+ Add Service Item</button>
 
-  <!-- Tax, Service Charge, Discount -->
-  <span class="sect-label">Tax, Service Charge & Discount</span>
-  <div class="hs-form-row" style="margin-bottom:0.5rem">
-    <div class="hs-field">
-      <label>Tarif PPN</label>
-      <select id="fTaxRate" onchange="onTaxRateChange()">
-        <option value="0">Tanpa PPN (0%)</option>
-        <option value="5">5%</option>
-        <option value="10">10%</option>
-        <option value="11">11% (Standar)</option>
-        <option value="custom">Custom...</option>
-      </select>
-    </div>
-    <div class="hs-field" id="customTaxWrap" style="display:none">
-      <label>Custom PPN (%)</label>
-      <input type="number" id="fTaxCustom" value="0" min="0" max="100" step="0.5" placeholder="e.g. 5.5" oninput="refreshTotal()">
-    </div>
-  </div>
-  <div class="hs-form-row" style="margin-bottom:0.5rem">
-    <div class="hs-field">
-      <label>Service Charge (%)</label>
-      <input type="number" id="fServiceCharge" value="0" min="0" max="100" step="0.5" oninput="refreshTotal()">
-    </div>
-    <div class="hs-field">
-      <label>Discount (%)</label>
-      <input type="number" id="fDiscount" value="0" min="0" max="100" step="0.5" oninput="refreshTotal()">
-    </div>
-  </div>
+        <!-- Tax, Service Charge, Discount -->
+        <span class="sect-label">Tax, Service Charge & Discount</span>
+        <div class="hs-form-row" style="margin-bottom:0.5rem">
+            <div class="hs-field">
+                <label>Tarif PPN</label>
+                <select id="fTaxRate" onchange="onTaxRateChange()">
+                    <option value="0">Tanpa PPN (0%)</option>
+                    <option value="5">5%</option>
+                    <option value="10">10%</option>
+                    <option value="11">11% (Standar)</option>
+                    <option value="custom">Custom...</option>
+                </select>
+            </div>
+            <div class="hs-field" id="customTaxWrap" style="display:none">
+                <label>Custom PPN (%)</label>
+                <input type="number" id="fTaxCustom" value="0" min="0" max="100" step="0.5" placeholder="e.g. 5.5" oninput="refreshTotal()">
+            </div>
+        </div>
+        <div class="hs-form-row" style="margin-bottom:0.5rem">
+            <div class="hs-field">
+                <label>Service Charge (%)</label>
+                <input type="number" id="fServiceCharge" value="0" min="0" max="100" step="0.5" oninput="refreshTotal()">
+            </div>
+            <div class="hs-field">
+                <label>Discount (%)</label>
+                <input type="number" id="fDiscount" value="0" min="0" max="100" step="0.5" oninput="refreshTotal()">
+            </div>
+        </div>
 
-  <!-- Payment -->
-  <span class="sect-label">Pembayaran / DP</span>
-  <div class="hs-form-row">
-    <div class="hs-field">
-      <label>Metode Bayar</label>
-      <select id="fPayMethod">
-        <option value="cash">Cash</option>
-        <option value="transfer">Transfer</option>
-        <option value="qris">QRIS</option>
-        <option value="card">Card</option>
-      </select>
+        <!-- Payment -->
+        <span class="sect-label">Pembayaran / DP</span>
+        <div class="hs-form-row">
+            <div class="hs-field">
+                <label>Metode Bayar</label>
+                <select id="fPayMethod">
+                    <option value="cash">Cash</option>
+                    <option value="transfer">Transfer</option>
+                    <option value="qris">QRIS</option>
+                    <option value="card">Card</option>
+                </select>
+            </div>
+            <div class="hs-field">
+                <label>DP / Down Payment (Rp)</label>
+                <input type="number" id="fPaid" value="0" min="0" oninput="enforceMaxPaid()" placeholder="0 = belum bayar">
+            </div>
+        </div>
+        <label style="font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:0.4rem;margin-bottom:0.75rem">
+            <input type="checkbox" id="fFullPay" onchange="toggleFullPay(this.checked)"> Bayar Penuh (Lunas)
+        </label>
+
+        <!-- Notes -->
+        <div class="hs-field"><label>Notes</label><textarea id="fNotes" rows="2" placeholder="Special instructions..."></textarea></div>
+
+        <div class="hs-total-preview" id="totalPreview" style="text-align:left;line-height:1.7">
+            <div style="font-size:0.82rem;color:#6b7280">Subtotal: <span id="tpSubtotal">Rp 0</span></div>
+            <div style="font-size:0.82rem;color:#3b82f6" id="tpScRow" style="display:none">Service Charge: <span id="tpSc">Rp 0</span></div>
+            <div style="font-size:0.82rem;color:#ef4444" id="tpDiscRow" style="display:none">Discount: <span id="tpDisc">- Rp 0</span></div>
+            <div style="font-size:0.82rem;color:#f59e0b" id="tpTaxRow" style="display:none">PPN: <span id="tpTax">Rp 0</span></div>
+            <div style="font-size:1.05rem;font-weight:800;color:#4338ca;border-top:1px solid #dde3ff;padding-top:4px;margin-top:2px">Grand Total: <span id="tpGrand">Rp 0</span></div>
+            <div style="font-size:0.82rem;color:#10b981" id="tpDpRow" style="display:none">DP Dibayar: <span id="tpDp">Rp 0</span></div>
+            <div style="font-size:0.82rem;color:#ef4444" id="tpSisaRow" style="display:none">Sisa: <span id="tpSisa">Rp 0</span></div>
+        </div>
+
+        <div class="hs-modal-footer">
+            <button class="btn-hs btn-hs-secondary" onclick="closeCreateModal()">Cancel</button>
+            <button class="btn-hs btn-hs-primary" id="createBtn" onclick="submitCreate()">✅ Create Invoice</button>
+        </div>
     </div>
-    <div class="hs-field">
-      <label>DP / Down Payment (Rp)</label>
-      <input type="number" id="fPaid" value="0" min="0" oninput="enforceMaxPaid()" placeholder="0 = belum bayar">
-    </div>
-  </div>
-  <label style="font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:0.4rem;margin-bottom:0.75rem">
-    <input type="checkbox" id="fFullPay" onchange="toggleFullPay(this.checked)"> Bayar Penuh (Lunas)
-  </label>
-
-  <!-- Notes -->
-  <div class="hs-field"><label>Notes</label><textarea id="fNotes" rows="2" placeholder="Special instructions..."></textarea></div>
-
-  <div class="hs-total-preview" id="totalPreview" style="text-align:left;line-height:1.7">
-    <div style="font-size:0.82rem;color:#6b7280">Subtotal: <span id="tpSubtotal">Rp 0</span></div>
-    <div style="font-size:0.82rem;color:#3b82f6" id="tpScRow" style="display:none">Service Charge: <span id="tpSc">Rp 0</span></div>
-    <div style="font-size:0.82rem;color:#ef4444" id="tpDiscRow" style="display:none">Discount: <span id="tpDisc">- Rp 0</span></div>
-    <div style="font-size:0.82rem;color:#f59e0b" id="tpTaxRow" style="display:none">PPN: <span id="tpTax">Rp 0</span></div>
-    <div style="font-size:1.05rem;font-weight:800;color:#4338ca;border-top:1px solid #dde3ff;padding-top:4px;margin-top:2px">Grand Total: <span id="tpGrand">Rp 0</span></div>
-    <div style="font-size:0.82rem;color:#10b981" id="tpDpRow" style="display:none">DP Dibayar: <span id="tpDp">Rp 0</span></div>
-    <div style="font-size:0.82rem;color:#ef4444" id="tpSisaRow" style="display:none">Sisa: <span id="tpSisa">Rp 0</span></div>
-  </div>
-
-  <div class="hs-modal-footer">
-    <button class="btn-hs btn-hs-secondary" onclick="closeCreateModal()">Cancel</button>
-    <button class="btn-hs btn-hs-primary" id="createBtn" onclick="submitCreate()">✅ Create Invoice</button>
-  </div>
- </div>
 </div>
 
 <!-- ══ PAY MODAL ══════════════════════════════════════════════════════════════ -->
 <div id="payModal" class="hs-modal-overlay" onclick="if(event.target===this)closePayModal()">
- <div class="hs-modal" style="max-width:360px">
-  <h3>💳 Add Payment</h3>
-  <input type="hidden" id="pInvId">
-  <div id="pInvNo" style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.5rem"></div>
-  <div class="hs-field" style="margin-bottom:0.75rem">
-    <label>Remaining Balance</label>
-    <div id="pRemaining" style="font-size:1.2rem;font-weight:700;color:#ef4444;padding:0.4rem 0"></div>
-  </div>
-  <div class="hs-form-row">
-    <div class="hs-field"><label>Amount (Rp)</label><input type="number" id="pAmount" value="0" min="0"></div>
-    <div class="hs-field"><label>Method</label>
-      <select id="pMethod">
-        <option value="cash">Cash</option>
-        <option value="transfer">Transfer</option>
-        <option value="qris">QRIS</option>
-        <option value="card">Card</option>
-      </select>
+    <div class="hs-modal" style="max-width:360px">
+        <h3>💳 Add Payment</h3>
+        <input type="hidden" id="pInvId">
+        <div id="pInvNo" style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.5rem"></div>
+        <div class="hs-field" style="margin-bottom:0.75rem">
+            <label>Remaining Balance</label>
+            <div id="pRemaining" style="font-size:1.2rem;font-weight:700;color:#ef4444;padding:0.4rem 0"></div>
+        </div>
+        <div class="hs-form-row">
+            <div class="hs-field"><label>Amount (Rp)</label><input type="number" id="pAmount" value="0" min="0"></div>
+            <div class="hs-field"><label>Method</label>
+                <select id="pMethod">
+                    <option value="cash">Cash</option>
+                    <option value="transfer">Transfer</option>
+                    <option value="qris">QRIS</option>
+                    <option value="card">Card</option>
+                </select>
+            </div>
+        </div>
+        <div class="hs-modal-footer">
+            <button class="btn-hs btn-hs-secondary" onclick="closePayModal()">Cancel</button>
+            <button class="btn-hs btn-hs-primary" id="payBtn" onclick="submitPay()">💾 Save &amp; Sync to Cashbook</button>
+        </div>
     </div>
-  </div>
-  <div class="hs-modal-footer">
-    <button class="btn-hs btn-hs-secondary" onclick="closePayModal()">Cancel</button>
-    <button class="btn-hs btn-hs-primary" id="payBtn" onclick="submitPay()">💾 Save &amp; Sync to Cashbook</button>
-  </div>
- </div>
 </div>
 
 <!-- ══ SETTINGS MODAL ══════════════════════════════════════════════════════════════════════ -->
 <div id="settingsModal" class="hs-modal-overlay" onclick="if(event.target===this)closeSettingsModal()">
- <div class="hs-modal" style="max-width:700px">
-  <h3>⚙️ Pengaturan Hotel Services</h3>
-  <div class="hs-tabs">
-    <button class="hs-tab active" id="tab-inv"    onclick="switchTab('inv')">   🏨 Invoice &amp; Perusahaan</button>
-    <button class="hs-tab"        id="tab-catalog" onclick="switchTab('catalog')">📂 Katalog Harga</button>
-    <button class="hs-tab"        id="tab-svctype" onclick="switchTab('svctype')">🏷️ Tipe Layanan</button>
-  </div>
+    <div class="hs-modal" style="max-width:700px">
+        <h3>⚙️ Pengaturan Hotel Services</h3>
+        <div class="hs-tabs">
+            <button class="hs-tab active" id="tab-inv" onclick="switchTab('inv')"> 🏨 Invoice &amp; Perusahaan</button>
+            <button class="hs-tab" id="tab-catalog" onclick="switchTab('catalog')">📂 Katalog Harga</button>
+            <button class="hs-tab" id="tab-svctype" onclick="switchTab('svctype')">🏷️ Tipe Layanan</button>
+        </div>
 
-  <!-- TAB 1: Invoice & Company -->
-  <div class="hs-tab-pane active" id="pane-inv">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
-      <div class="hs-field"><label>Nama Perusahaan</label><input type="text" id="sCmpName" value="<?php echo htmlspecialchars($hsSettings['company_name'] ?? 'Narayana Hotel Karimunjawa', ENT_QUOTES); ?>"></div>
-      <div class="hs-field"><label>Website</label><input type="text" id="sCmpWeb" value="<?php echo htmlspecialchars($hsSettings['company_website'] ?? 'www.narayanakarimunjawa.com', ENT_QUOTES); ?>"></div>
-      <div class="hs-field"><label>Telepon</label><input type="text" id="sCmpPhone" value="<?php echo htmlspecialchars($hsSettings['company_phone'] ?? '', ENT_QUOTES); ?>"></div>
-      <div class="hs-field"><label>Email</label><input type="email" id="sCmpEmail" value="<?php echo htmlspecialchars($hsSettings['company_email'] ?? '', ENT_QUOTES); ?>"></div>
-      <div class="hs-field" style="grid-column:1/-1"><label>Alamat</label><textarea id="sCmpAddr" rows="2"><?php echo htmlspecialchars($hsSettings['company_address'] ?? 'Karimunjawa, Jepara, Central Java, Indonesia', ENT_QUOTES); ?></textarea></div>
-    </div>
-    <div class="hs-field" style="margin-top:0.75rem">
-      <label>Logo Perusahaan (upload gambar baru)</label>
-      <input type="file" id="sLogoFile" accept="image/*" onchange="previewLogo(this)">
-      <?php if (!empty($hsSettings['company_logo'])): ?>
-      <img id="logoPreview" src="<?php echo htmlspecialchars($hsSettings['company_logo']); ?>" class="logo-preview">
-      <?php else: ?>
-      <img id="logoPreview" src="" class="logo-preview" style="display:none">
-      <?php endif; ?>
-      <div style="font-size:0.72rem;color:#94a3b8;margin-top:0.25rem">Format: JPG, PNG, SVG, WebP. Logo saat ini: <em><?php echo htmlspecialchars(basename($hsSettings['company_logo'] ?? 'belum diatur')); ?></em></div>
-    </div>
+        <!-- TAB 1: Invoice & Company -->
+        <div class="hs-tab-pane active" id="pane-inv">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+                <div class="hs-field"><label>Nama Perusahaan</label><input type="text" id="sCmpName" value="<?php echo htmlspecialchars($hsSettings['company_name'] ?? 'Narayana Hotel Karimunjawa', ENT_QUOTES); ?>"></div>
+                <div class="hs-field"><label>Website</label><input type="text" id="sCmpWeb" value="<?php echo htmlspecialchars($hsSettings['company_website'] ?? 'www.narayanakarimunjawa.com', ENT_QUOTES); ?>"></div>
+                <div class="hs-field"><label>Telepon</label><input type="text" id="sCmpPhone" value="<?php echo htmlspecialchars($hsSettings['company_phone'] ?? '', ENT_QUOTES); ?>"></div>
+                <div class="hs-field"><label>Email</label><input type="email" id="sCmpEmail" value="<?php echo htmlspecialchars($hsSettings['company_email'] ?? '', ENT_QUOTES); ?>"></div>
+                <div class="hs-field" style="grid-column:1/-1"><label>Alamat</label><textarea id="sCmpAddr" rows="2"><?php echo htmlspecialchars($hsSettings['company_address'] ?? 'Karimunjawa, Jepara, Central Java, Indonesia', ENT_QUOTES); ?></textarea></div>
+            </div>
+            <div class="hs-field" style="margin-top:0.75rem">
+                <label>Logo Perusahaan (upload gambar baru)</label>
+                <input type="file" id="sLogoFile" accept="image/*" onchange="previewLogo(this)">
+                <?php if (!empty($hsSettings['company_logo'])): ?>
+                    <img id="logoPreview" src="<?php echo htmlspecialchars($hsSettings['company_logo']); ?>" class="logo-preview">
+                <?php else: ?>
+                    <img id="logoPreview" src="" class="logo-preview" style="display:none">
+                <?php endif; ?>
+                <div style="font-size:0.72rem;color:#94a3b8;margin-top:0.25rem">Format: JPG, PNG, SVG, WebP. Logo saat ini: <em><?php echo htmlspecialchars(basename($hsSettings['company_logo'] ?? 'belum diatur')); ?></em></div>
+            </div>
 
-    <!-- Payment Info -->
-    <div style="margin-top:1.1rem;padding-top:0.9rem;border-top:2px solid #e2e8f0">
-      <div style="font-size:0.7rem;font-weight:700;color:#1a3457;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.65rem">🏦 Payment Details (shown on invoice)</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
-        <div class="hs-field"><label>Bank Name</label><input type="text" id="sPayBank" placeholder="e.g. BCA / Mandiri / BNI" value="<?php echo htmlspecialchars($hsSettings['payment_info_bank'] ?? '', ENT_QUOTES); ?>"></div>
-        <div class="hs-field"><label>Account Number</label><input type="text" id="sPayAccount" placeholder="e.g. 1234567890" value="<?php echo htmlspecialchars($hsSettings['payment_info_account'] ?? '', ENT_QUOTES); ?>"></div>
-        <div class="hs-field"><label>Account Holder Name</label><input type="text" id="sPayName" placeholder="e.g. Narayana Hotel" value="<?php echo htmlspecialchars($hsSettings['payment_info_name'] ?? '', ENT_QUOTES); ?>"></div>
-        <div class="hs-field"><label>Additional Note</label><input type="text" id="sPayNote" placeholder="e.g. Transfer reference: Invoice No." value="<?php echo htmlspecialchars($hsSettings['payment_info_note'] ?? '', ENT_QUOTES); ?>"></div>
-      </div>
-    </div>
-    <div class="hs-modal-footer">
-      <button class="btn-hs btn-hs-secondary" onclick="closeSettingsModal()">Cancel</button>
-      <button class="btn-hs btn-hs-primary" id="btnSaveSettings" onclick="saveSettings()">💾 Save Settings</button>
-    </div>
-  </div>
+            <!-- Payment Info -->
+            <div style="margin-top:1.1rem;padding-top:0.9rem;border-top:2px solid #e2e8f0">
+                <div style="font-size:0.7rem;font-weight:700;color:#1a3457;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.65rem">🏦 Payment Details (shown on invoice)</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+                    <div class="hs-field"><label>Bank Name</label><input type="text" id="sPayBank" placeholder="e.g. BCA / Mandiri / BNI" value="<?php echo htmlspecialchars($hsSettings['payment_info_bank'] ?? '', ENT_QUOTES); ?>"></div>
+                    <div class="hs-field"><label>Account Number</label><input type="text" id="sPayAccount" placeholder="e.g. 1234567890" value="<?php echo htmlspecialchars($hsSettings['payment_info_account'] ?? '', ENT_QUOTES); ?>"></div>
+                    <div class="hs-field"><label>Account Holder Name</label><input type="text" id="sPayName" placeholder="e.g. Narayana Hotel" value="<?php echo htmlspecialchars($hsSettings['payment_info_name'] ?? '', ENT_QUOTES); ?>"></div>
+                    <div class="hs-field"><label>Additional Note</label><input type="text" id="sPayNote" placeholder="e.g. Transfer reference: Invoice No." value="<?php echo htmlspecialchars($hsSettings['payment_info_note'] ?? '', ENT_QUOTES); ?>"></div>
+                </div>
+            </div>
+            <div class="hs-modal-footer">
+                <button class="btn-hs btn-hs-secondary" onclick="closeSettingsModal()">Cancel</button>
+                <button class="btn-hs btn-hs-primary" id="btnSaveSettings" onclick="saveSettings()">💾 Save Settings</button>
+            </div>
+        </div>
 
-  <!-- TAB 2: Catalog Harga -->
-  <div class="hs-tab-pane" id="pane-catalog">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.65rem">
-      <span style="font-size:0.78rem;color:#64748b">Database item layanan &amp; harga default. Klik item saat tambah invoice untuk isi otomatis.</span>
-      <button class="btn-hs btn-hs-primary" style="font-size:0.78rem;padding:0.35rem 0.85rem" onclick="addCatalogRow()">+ Tambah Item</button>
-    </div>
-    <div style="overflow-x:auto;max-height:55vh;overflow-y:auto">
-      <table class="cat-tbl">
-        <thead><tr>
-          <th style="min-width:130px">Tipe Layanan</th>
-          <th style="min-width:140px">Nama Item</th>
-          <th style="width:110px">Harga Default</th>
-          <th style="width:75px">Satuan</th>
-          <th style="width:50px">Urut</th>
-          <th style="width:80px"></th>
-        </tr></thead>
-        <tbody id="catalogBody"><?php
-        foreach ($catalogRows as $cr): ?>
-        <tr id="ctr<?php echo $cr['id']; ?>">
-          <td><select class="cSType">
-            <?php foreach ($serviceTypes as $sk => $sv): ?>
-            <option value="<?php echo $sk; ?>" <?php echo $cr['service_type']===$sk?'selected':''; ?>><?php echo $sv['icon'].' '.$sv['label']; ?></option>
-            <?php endforeach; ?>
-          </select></td>
-          <td><input type="text" class="cName" value="<?php echo htmlspecialchars($cr['item_name'],ENT_QUOTES); ?>"></td>
-          <td><input type="number" class="cPrice" value="<?php echo $cr['default_price']; ?>" min="0"></td>
-          <td><input type="text" class="cUnit" value="<?php echo htmlspecialchars($cr['unit']??'unit',ENT_QUOTES); ?>"></td>
-          <td><input type="number" class="cSort" value="<?php echo $cr['sort_order']; ?>" style="width:45px"></td>
-          <td style="display:flex;gap:3px">
-            <button class="btn-cat-save" onclick="saveCatalogRow(<?php echo $cr['id']; ?>)">💾</button>
-            <button class="btn-cat-del" onclick="deleteCatalogRow(<?php echo $cr['id']; ?>)">✕</button>
-          </td>
-        </tr>
-        <?php endforeach; ?></tbody>
-      </table>
-    </div>
-  </div>
+        <!-- TAB 2: Catalog Harga -->
+        <div class="hs-tab-pane" id="pane-catalog">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.65rem">
+                <span style="font-size:0.78rem;color:#64748b">Database item layanan &amp; harga default. Klik item saat tambah invoice untuk isi otomatis.</span>
+                <button class="btn-hs btn-hs-primary" style="font-size:0.78rem;padding:0.35rem 0.85rem" onclick="addCatalogRow()">+ Tambah Item</button>
+            </div>
+            <div style="overflow-x:auto;max-height:55vh;overflow-y:auto">
+                <table class="cat-tbl">
+                    <thead>
+                        <tr>
+                            <th style="min-width:130px">Tipe Layanan</th>
+                            <th style="min-width:140px">Nama Item</th>
+                            <th style="width:110px">Harga Default</th>
+                            <th style="width:75px">Satuan</th>
+                            <th style="width:50px">Urut</th>
+                            <th style="width:80px"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="catalogBody"><?php
+                                            foreach ($catalogRows as $cr): ?>
+                            <tr id="ctr<?php echo $cr['id']; ?>">
+                                <td><select class="cSType">
+                                        <?php foreach ($serviceTypes as $sk => $sv): ?>
+                                            <option value="<?php echo $sk; ?>" <?php echo $cr['service_type'] === $sk ? 'selected' : ''; ?>><?php echo $sv['icon'] . ' ' . $sv['label']; ?></option>
+                                        <?php endforeach; ?>
+                                    </select></td>
+                                <td><input type="text" class="cName" value="<?php echo htmlspecialchars($cr['item_name'], ENT_QUOTES); ?>"></td>
+                                <td><input type="number" class="cPrice" value="<?php echo $cr['default_price']; ?>" min="0"></td>
+                                <td><input type="text" class="cUnit" value="<?php echo htmlspecialchars($cr['unit'] ?? 'unit', ENT_QUOTES); ?>"></td>
+                                <td><input type="number" class="cSort" value="<?php echo $cr['sort_order']; ?>" style="width:45px"></td>
+                                <td style="display:flex;gap:3px">
+                                    <button class="btn-cat-save" onclick="saveCatalogRow(<?php echo $cr['id']; ?>)">💾</button>
+                                    <button class="btn-cat-del" onclick="deleteCatalogRow(<?php echo $cr['id']; ?>)">✕</button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-  <!-- TAB 3: Tipe Layanan -->
-  <div class="hs-tab-pane" id="pane-svctype">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.65rem">
-      <span style="font-size:0.78rem;color:#64748b">Kelola tipe layanan yang tersedia di invoice. Key harus unik (huruf kecil, underscore).</span>
-      <button class="btn-hs btn-hs-primary" style="font-size:0.78rem;padding:0.35rem 0.85rem" onclick="addSvcTypeRow()">+ Tambah Tipe</button>
-    </div>
-    <div style="overflow-x:auto;max-height:55vh;overflow-y:auto">
-      <table class="cat-tbl">
-        <thead><tr>
-          <th style="width:40px">Icon</th>
-          <th style="min-width:110px">Key</th>
-          <th style="min-width:140px">Label</th>
-          <th style="width:50px">Urut</th>
-          <th style="width:80px"></th>
-        </tr></thead>
-        <tbody id="svcTypeBody">
-        <?php
-        $allSvcTypes = $pdo->prepare("SELECT * FROM hotel_service_types WHERE business_id=? ORDER BY sort_order, type_label");
-        $allSvcTypes->execute([$businessId]);
-        foreach ($allSvcTypes->fetchAll(PDO::FETCH_ASSOC) as $st): ?>
-        <tr id="str<?php echo $st['id']; ?>">
-          <td><input type="text" class="stIcon" value="<?php echo htmlspecialchars($st['type_icon'],ENT_QUOTES); ?>" style="width:40px;text-align:center"></td>
-          <td><input type="text" class="stKey" value="<?php echo htmlspecialchars($st['type_key'],ENT_QUOTES); ?>"></td>
-          <td><input type="text" class="stLabel" value="<?php echo htmlspecialchars($st['type_label'],ENT_QUOTES); ?>"></td>
-          <td><input type="number" class="stSort" value="<?php echo $st['sort_order']; ?>" style="width:45px"></td>
-          <td style="display:flex;gap:3px">
-            <button class="btn-cat-save" onclick="saveSvcType(<?php echo $st['id']; ?>)">💾</button>
-            <button class="btn-cat-del" onclick="deleteSvcType(<?php echo $st['id']; ?>)">✕</button>
-          </td>
-        </tr>
-        <?php endforeach; ?>
-        </tbody>
-      </table>
-    </div>
-  </div>
+        <!-- TAB 3: Tipe Layanan -->
+        <div class="hs-tab-pane" id="pane-svctype">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.65rem">
+                <span style="font-size:0.78rem;color:#64748b">Kelola tipe layanan yang tersedia di invoice. Key harus unik (huruf kecil, underscore).</span>
+                <button class="btn-hs btn-hs-primary" style="font-size:0.78rem;padding:0.35rem 0.85rem" onclick="addSvcTypeRow()">+ Tambah Tipe</button>
+            </div>
+            <div style="overflow-x:auto;max-height:55vh;overflow-y:auto">
+                <table class="cat-tbl">
+                    <thead>
+                        <tr>
+                            <th style="width:40px">Icon</th>
+                            <th style="min-width:110px">Key</th>
+                            <th style="min-width:140px">Label</th>
+                            <th style="width:50px">Urut</th>
+                            <th style="width:80px"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="svcTypeBody">
+                        <?php
+                        $allSvcTypes = $pdo->prepare("SELECT * FROM hotel_service_types WHERE business_id=? ORDER BY sort_order, type_label");
+                        $allSvcTypes->execute([$businessId]);
+                        foreach ($allSvcTypes->fetchAll(PDO::FETCH_ASSOC) as $st): ?>
+                            <tr id="str<?php echo $st['id']; ?>">
+                                <td><input type="text" class="stIcon" value="<?php echo htmlspecialchars($st['type_icon'], ENT_QUOTES); ?>" style="width:40px;text-align:center"></td>
+                                <td><input type="text" class="stKey" value="<?php echo htmlspecialchars($st['type_key'], ENT_QUOTES); ?>"></td>
+                                <td><input type="text" class="stLabel" value="<?php echo htmlspecialchars($st['type_label'], ENT_QUOTES); ?>"></td>
+                                <td><input type="number" class="stSort" value="<?php echo $st['sort_order']; ?>" style="width:45px"></td>
+                                <td style="display:flex;gap:3px">
+                                    <button class="btn-cat-save" onclick="saveSvcType(<?php echo $st['id']; ?>)">💾</button>
+                                    <button class="btn-cat-del" onclick="deleteSvcType(<?php echo $st['id']; ?>)">✕</button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
- </div>
-</div> 
+    </div>
+</div>
 
 <!-- ══ EDIT INVOICE MODAL ════════════════════════════════════════════════════════════════════ -->
 <div id="editModal" class="hs-modal-overlay" onclick="if(event.target===this)closeEditModal()">
- <div class="hs-modal">
-  <h3>✏️ Edit Invoice</h3>
-  <input type="hidden" id="eInvId">
-  <div id="eInvNo" style="font-size:0.78rem;color:#6366f1;font-weight:700;margin-bottom:0.75rem"></div>
+    <div class="hs-modal">
+        <h3>✏️ Edit Invoice</h3>
+        <input type="hidden" id="eInvId">
+        <div id="eInvNo" style="font-size:0.78rem;color:#6366f1;font-weight:700;margin-bottom:0.75rem"></div>
 
-  <div class="hs-form-row">
-    <div class="hs-field"><label>Nama Tamu</label><input type="text" id="eGuestName"></div>
-    <div class="hs-field"><label>Telepon</label><input type="text" id="ePhone"></div>
-  </div>
-  <div class="hs-field" style="margin-bottom:0.75rem"><label>Nomor Kamar</label><input type="text" id="eRoom" style="width:200px"></div>
+        <div class="hs-form-row">
+            <div class="hs-field"><label>Nama Tamu</label><input type="text" id="eGuestName"></div>
+            <div class="hs-field"><label>Telepon</label><input type="text" id="ePhone"></div>
+        </div>
+        <div class="hs-field" style="margin-bottom:0.75rem"><label>Nomor Kamar</label><input type="text" id="eRoom" style="width:200px"></div>
 
-  <span class="sect-label">Service Items *</span>
-  <div style="overflow-x:auto;margin-bottom:0.4rem">
-    <table class="items-tbl">
-      <thead><tr>
-        <th style="min-width:140px">Tipe Layanan</th>
-        <th style="min-width:160px">Deskripsi</th>
-        <th style="width:65px">Qty</th>
-        <th style="width:115px">Harga Satuan</th>
-        <th style="width:105px;text-align:right">Subtotal</th>
-        <th style="width:34px"></th>
-      </tr></thead>
-      <tbody id="eItemsBody"></tbody>
-    </table>
-  </div>
-  <button type="button" class="btn-add-item" onclick="eAddItemRow()">+ Tambah Item</button>
+        <span class="sect-label">Service Items *</span>
+        <div style="overflow-x:auto;margin-bottom:0.4rem">
+            <table class="items-tbl">
+                <thead>
+                    <tr>
+                        <th style="min-width:140px">Tipe Layanan</th>
+                        <th style="min-width:160px">Deskripsi</th>
+                        <th style="width:65px">Qty</th>
+                        <th style="width:115px">Harga Satuan</th>
+                        <th style="width:105px;text-align:right">Subtotal</th>
+                        <th style="width:34px"></th>
+                    </tr>
+                </thead>
+                <tbody id="eItemsBody"></tbody>
+            </table>
+        </div>
+        <button type="button" class="btn-add-item" onclick="eAddItemRow()">+ Tambah Item</button>
 
-  <span class="sect-label">Tax, Service Charge & Discount</span>
-  <div class="hs-form-row" style="margin-bottom:0.5rem">
-    <div class="hs-field">
-      <label>Tarif PPN</label>
-      <select id="eTaxRate" onchange="eOnTaxRateChange()">
-        <option value="0">Tanpa PPN (0%)</option>
-        <option value="5">5%</option>
-        <option value="10">10%</option>
-        <option value="11">11% (Standar)</option>
-        <option value="custom">Custom...</option>
-      </select>
-    </div>
-    <div class="hs-field" id="eCustomTaxWrap" style="display:none">
-      <label>Custom PPN (%)</label>
-      <input type="number" id="eTaxCustom" value="0" min="0" max="100" step="0.5" oninput="eRefreshTotal()">
-    </div>
-  </div>
-  <div class="hs-form-row" style="margin-bottom:0.5rem">
-    <div class="hs-field">
-      <label>Service Charge (%)</label>
-      <input type="number" id="eServiceCharge" value="0" min="0" max="100" step="0.5" oninput="eRefreshTotal()">
-    </div>
-    <div class="hs-field">
-      <label>Discount (%)</label>
-      <input type="number" id="eDiscount" value="0" min="0" max="100" step="0.5" oninput="eRefreshTotal()">
-    </div>
-  </div>
+        <span class="sect-label">Tax, Service Charge & Discount</span>
+        <div class="hs-form-row" style="margin-bottom:0.5rem">
+            <div class="hs-field">
+                <label>Tarif PPN</label>
+                <select id="eTaxRate" onchange="eOnTaxRateChange()">
+                    <option value="0">Tanpa PPN (0%)</option>
+                    <option value="5">5%</option>
+                    <option value="10">10%</option>
+                    <option value="11">11% (Standar)</option>
+                    <option value="custom">Custom...</option>
+                </select>
+            </div>
+            <div class="hs-field" id="eCustomTaxWrap" style="display:none">
+                <label>Custom PPN (%)</label>
+                <input type="number" id="eTaxCustom" value="0" min="0" max="100" step="0.5" oninput="eRefreshTotal()">
+            </div>
+        </div>
+        <div class="hs-form-row" style="margin-bottom:0.5rem">
+            <div class="hs-field">
+                <label>Service Charge (%)</label>
+                <input type="number" id="eServiceCharge" value="0" min="0" max="100" step="0.5" oninput="eRefreshTotal()">
+            </div>
+            <div class="hs-field">
+                <label>Discount (%)</label>
+                <input type="number" id="eDiscount" value="0" min="0" max="100" step="0.5" oninput="eRefreshTotal()">
+            </div>
+        </div>
 
-  <span class="sect-label">Pembayaran / DP</span>
-  <div class="hs-form-row">
-    <div class="hs-field"><label>Metode Bayar</label>
-      <select id="ePayMethod">
-        <option value="cash">Cash</option>
-        <option value="transfer">Transfer</option>
-        <option value="qris">QRIS</option>
-        <option value="card">Card</option>
-      </select>
-    </div>
-    <div class="hs-field"><label>DP / Down Payment (Rp)</label>
-      <input type="number" id="ePaid" value="0" min="0" oninput="eRefreshTotal()">
-    </div>
-  </div>
-  <div class="hs-field" style="margin-bottom:0.75rem"><label>Catatan</label><textarea id="eNotes" rows="2"></textarea></div>
+        <span class="sect-label">Pembayaran / DP</span>
+        <div class="hs-form-row">
+            <div class="hs-field"><label>Metode Bayar</label>
+                <select id="ePayMethod">
+                    <option value="cash">Cash</option>
+                    <option value="transfer">Transfer</option>
+                    <option value="qris">QRIS</option>
+                    <option value="card">Card</option>
+                </select>
+            </div>
+            <div class="hs-field"><label>DP / Down Payment (Rp)</label>
+                <input type="number" id="ePaid" value="0" min="0" oninput="eRefreshTotal()">
+            </div>
+        </div>
+        <div class="hs-field" style="margin-bottom:0.75rem"><label>Catatan</label><textarea id="eNotes" rows="2"></textarea></div>
 
-  <div class="hs-total-preview" id="eTotalPreview" style="text-align:left;line-height:1.7">
-    <div style="font-size:0.82rem;color:#6b7280">Subtotal: <span id="etpSub">Rp 0</span></div>
-    <div style="font-size:0.82rem;color:#3b82f6" id="etpScRow" style="display:none">Service Charge: <span id="etpSc">Rp 0</span></div>
-    <div style="font-size:0.82rem;color:#ef4444" id="etpDiscRow" style="display:none">Discount: <span id="etpDisc">- Rp 0</span></div>
-    <div style="font-size:0.82rem;color:#f59e0b" id="etpTaxRow">PPN: <span id="etpTax">Rp 0</span></div>
-    <div style="font-size:1.05rem;font-weight:800;color:#4338ca;border-top:1px solid #dde3ff;padding-top:4px">Grand Total: <span id="etpGrand">Rp 0</span></div>
-  </div>
+        <div class="hs-total-preview" id="eTotalPreview" style="text-align:left;line-height:1.7">
+            <div style="font-size:0.82rem;color:#6b7280">Subtotal: <span id="etpSub">Rp 0</span></div>
+            <div style="font-size:0.82rem;color:#3b82f6" id="etpScRow" style="display:none">Service Charge: <span id="etpSc">Rp 0</span></div>
+            <div style="font-size:0.82rem;color:#ef4444" id="etpDiscRow" style="display:none">Discount: <span id="etpDisc">- Rp 0</span></div>
+            <div style="font-size:0.82rem;color:#f59e0b" id="etpTaxRow">PPN: <span id="etpTax">Rp 0</span></div>
+            <div style="font-size:1.05rem;font-weight:800;color:#4338ca;border-top:1px solid #dde3ff;padding-top:4px">Grand Total: <span id="etpGrand">Rp 0</span></div>
+        </div>
 
-  <div class="hs-modal-footer">
-    <button class="btn-hs btn-hs-secondary" onclick="closeEditModal()">Batal</button>
-    <button class="btn-hs btn-hs-primary" id="editBtn" onclick="submitEdit()">💾 Simpan Perubahan</button>
-  </div>
- </div>
+        <div class="hs-modal-footer">
+            <button class="btn-hs btn-hs-secondary" onclick="closeEditModal()">Batal</button>
+            <button class="btn-hs btn-hs-primary" id="editBtn" onclick="submitEdit()">💾 Simpan Perubahan</button>
+        </div>
+    </div>
 </div>
 
 <script>
-const SVC_KEYS   = <?php echo json_encode(array_keys($serviceTypes)); ?>;
-const SVC_LABELS = <?php echo json_encode(array_values(array_map(fn($v) => $v['icon'].' '.$v['label'], $serviceTypes))); ?>;
-// Catalog data grouped by service_type: { motor_rental: [{name,price,unit}, ...], ... }
-const CATALOG_DATA = <?php
-    $catalogByType = [];
-    foreach ($catalogRows as $cr) {
-        $catalogByType[$cr['service_type']][] = [
-            'name'  => $cr['item_name'],
-            'price' => (float)$cr['default_price'],
-            'unit'  => $cr['unit'] ?? 'unit',
-        ];
+    const SVC_KEYS = <?php echo json_encode(array_keys($serviceTypes)); ?>;
+    const SVC_LABELS = <?php echo json_encode(array_values(array_map(fn($v) => $v['icon'] . ' ' . $v['label'], $serviceTypes))); ?>;
+    // Catalog data grouped by service_type: { motor_rental: [{name,price,unit}, ...], ... }
+    const CATALOG_DATA = <?php
+                            $catalogByType = [];
+                            foreach ($catalogRows as $cr) {
+                                $catalogByType[$cr['service_type']][] = [
+                                    'name'  => $cr['item_name'],
+                                    'price' => (float)$cr['default_price'],
+                                    'unit'  => $cr['unit'] ?? 'unit',
+                                ];
+                            }
+                            echo json_encode($catalogByType);
+                            ?>;
+
+    // ── Guest mode ────────────────────────────────────────────────────────────────
+    function setGuestMode(mode) {
+        const ih = mode === 'inhouse';
+        document.getElementById('inhouseSection').style.display = ih ? '' : 'none';
+        document.getElementById('manualSection').style.display = ih ? 'none' : '';
+        document.getElementById('btnInhouse').classList.toggle('active', ih);
+        document.getElementById('btnManual').classList.toggle('active', !ih);
+        if (!ih) {
+            document.getElementById('fBookingId').value = '';
+        }
     }
-    echo json_encode($catalogByType);
-?>;
 
-// ── Guest mode ────────────────────────────────────────────────────────────────
-function setGuestMode(mode) {
-    const ih = mode === 'inhouse';
-    document.getElementById('inhouseSection').style.display = ih ? '' : 'none';
-    document.getElementById('manualSection').style.display  = ih ? 'none' : '';
-    document.getElementById('btnInhouse').classList.toggle('active', ih);
-    document.getElementById('btnManual').classList.toggle('active', !ih);
-    if (!ih) { document.getElementById('fBookingId').value = ''; }
-}
-
-function fillFromInhouse() {
-    const sel = document.getElementById('fGuestSelect');
-    const opt = sel.options[sel.selectedIndex];
-    document.getElementById('fBookingId').value = opt.value || '';
-    document.getElementById('fPhone').value     = opt.dataset.phone || '';
-    document.getElementById('fRoom').value      = opt.dataset.room  || '';
-}
-
-function getGuestName() {
-    const ih = document.getElementById('inhouseSection').style.display !== 'none';
-    if (ih) {
+    function fillFromInhouse() {
         const sel = document.getElementById('fGuestSelect');
-        return sel.options[sel.selectedIndex].dataset.name || '';
+        const opt = sel.options[sel.selectedIndex];
+        document.getElementById('fBookingId').value = opt.value || '';
+        document.getElementById('fPhone').value = opt.dataset.phone || '';
+        document.getElementById('fRoom').value = opt.dataset.room || '';
     }
-    return document.getElementById('fGuestName').value.trim();
-}
 
-// ── Items ─────────────────────────────────────────────────────────────────────
-let rowCnt = 0;
-
-function buildSvcOpts(selected) {
-    return SVC_KEYS.map((k, i) =>
-        `<option value="${k}" ${k===selected?'selected':''}>${SVC_LABELS[i]}</option>`
-    ).join('');
-}
-
-function addItemRow(svc, desc, qty, price) {
-    rowCnt++;
-    const id = 'r' + rowCnt;
-    const tr = document.createElement('tr');
-    tr.id = id;
-    tr.innerHTML =
-        `<td><select class="iSvc" onchange="onSvcChange('${id}')">${buildSvcOpts(svc||'')}</select></td>`+
-        `<td><input type="text" class="iDesc" placeholder="e.g. Honda Beat 2 days" value="${desc||''}"></td>`+
-        `<td><input type="number" class="iQty" value="${qty||1}" min="0.5" step="0.5" style="width:60px" oninput="rcalc('${id}')"></td>`+
-        `<td><input type="number" class="iPrice" value="${price||0}" min="0" style="width:105px" oninput="rcalc('${id}')"></td>`+
-        `<td style="font-weight:700;color:#4338ca;text-align:right;white-space:nowrap" class="iTotal">Rp 0</td>`+
-        `<td><button type="button" class="btn-del-row" onclick="delRow('${id}')">✕</button></td>`;
-    document.getElementById('itemsBody').appendChild(tr);
-    // If no price given and catalog has entries for this service type, auto-fill
-    if (!price) onSvcChange(id, true);
-    else rcalc(id);
-}
-
-function onSvcChange(id, isNew) {
-    const tr = document.getElementById(id);
-    if (!tr) return;
-    const svc = tr.querySelector('.iSvc').value;
-    const priceInput = tr.querySelector('.iPrice');
-    const descInput  = tr.querySelector('.iDesc');
-    const items = CATALOG_DATA[svc];
-    if (items && items.length > 0) {
-        // On new row: fill only if still empty/zero
-        // On manual service-type change: always sync from catalog
-        if (isNew) {
-            if (parseFloat(priceInput.value) === 0) priceInput.value = items[0].price;
-            if (!descInput.value.trim())            descInput.value  = items[0].name;
-        } else {
-            // User switched type → always update price & description from catalog
-            priceInput.value = items[0].price;
-            descInput.value  = items[0].name;
+    function getGuestName() {
+        const ih = document.getElementById('inhouseSection').style.display !== 'none';
+        if (ih) {
+            const sel = document.getElementById('fGuestSelect');
+            return sel.options[sel.selectedIndex].dataset.name || '';
         }
-    } else if (!isNew) {
-        // Switched to a type with no catalog entry — clear price so user must enter manually
-        priceInput.value = 0;
+        return document.getElementById('fGuestName').value.trim();
     }
-    rcalc(id);
-}
 
-function delRow(id) {
-    const el = document.getElementById(id);
-    if (el) el.remove();
-    refreshTotal();
-}
+    // ── Items ─────────────────────────────────────────────────────────────────────
+    let rowCnt = 0;
 
-function rcalc(id) {
-    const tr = document.getElementById(id);
-    if (!tr) return;
-    const t = (parseFloat(tr.querySelector('.iQty').value)||0) * (parseFloat(tr.querySelector('.iPrice').value)||0);
-    tr.querySelector('.iTotal').textContent = 'Rp ' + Math.round(t).toLocaleString('id-ID');
-    refreshTotal();
-}
+    function buildSvcOpts(selected) {
+        return SVC_KEYS.map((k, i) =>
+            `<option value="${k}" ${k===selected?'selected':''}>${SVC_LABELS[i]}</option>`
+        ).join('');
+    }
 
-function subtotal() {
-    let t = 0;
-    document.querySelectorAll('#itemsBody tr').forEach(tr => {
-        t += (parseFloat(tr.querySelector('.iQty')?.value)||0) * (parseFloat(tr.querySelector('.iPrice')?.value)||0);
-    });
-    return t;
-}
+    function addItemRow(svc, desc, qty, price) {
+        rowCnt++;
+        const id = 'r' + rowCnt;
+        const tr = document.createElement('tr');
+        tr.id = id;
+        tr.innerHTML =
+            `<td><select class="iSvc" onchange="onSvcChange('${id}')">${buildSvcOpts(svc||'')}</select></td>` +
+            `<td><input type="text" class="iDesc" placeholder="e.g. Honda Beat 2 days" value="${desc||''}"></td>` +
+            `<td><input type="number" class="iQty" value="${qty||1}" min="0.5" step="0.5" style="width:60px" oninput="rcalc('${id}')"></td>` +
+            `<td><input type="number" class="iPrice" value="${price||0}" min="0" style="width:105px" oninput="rcalc('${id}')"></td>` +
+            `<td style="font-weight:700;color:#4338ca;text-align:right;white-space:nowrap" class="iTotal">Rp 0</td>` +
+            `<td><button type="button" class="btn-del-row" onclick="delRow('${id}')">✕</button></td>`;
+        document.getElementById('itemsBody').appendChild(tr);
+        // If no price given and catalog has entries for this service type, auto-fill
+        if (!price) onSvcChange(id, true);
+        else rcalc(id);
+    }
 
-function getTaxRate() {
-    const sel = document.getElementById('fTaxRate');
-    if (!sel) return 0;
-    if (sel.value === 'custom') return parseFloat(document.getElementById('fTaxCustom')?.value) || 0;
-    return parseFloat(sel.value) || 0;
-}
-
-function grandTotal() {
-    const sub = subtotal();
-    const scRate = parseFloat(document.getElementById('fServiceCharge')?.value) || 0;
-    const discRate = parseFloat(document.getElementById('fDiscount')?.value) || 0;
-    const sc = sub * (scRate / 100);
-    const disc = sub * (discRate / 100);
-    const afterCD = sub + sc - disc;
-    const rate = getTaxRate();
-    return afterCD + afterCD * (rate / 100);
-}
-
-function onTaxRateChange() {
-    const sel = document.getElementById('fTaxRate');
-    document.getElementById('customTaxWrap').style.display = sel.value === 'custom' ? '' : 'none';
-    refreshTotal();
-}
-
-function refreshTotal() {
-    const sub  = subtotal();
-    const rate = getTaxRate();
-    const scRate = parseFloat(document.getElementById('fServiceCharge')?.value) || 0;
-    const discRate = parseFloat(document.getElementById('fDiscount')?.value) || 0;
-    const sc   = sub * (scRate / 100);
-    const disc = sub * (discRate / 100);
-    const afterCD = sub + sc - disc;
-    const tax  = afterCD * (rate / 100);
-    const tot  = afterCD + tax;
-    const dp   = parseFloat(document.getElementById('fPaid')?.value) || 0;
-    const sisa = Math.max(0, tot - dp);
-    const fmt  = v => 'Rp ' + Math.round(v).toLocaleString('id-ID');
-
-    document.getElementById('tpSubtotal').textContent = fmt(sub);
-    document.getElementById('tpGrand').textContent    = fmt(tot);
-
-    const scRow = document.getElementById('tpScRow');
-    scRow.style.display = scRate > 0 ? '' : 'none';
-    document.getElementById('tpSc').textContent = `${fmt(sc)} (${scRate}%)`;
-
-    const discRow = document.getElementById('tpDiscRow');
-    discRow.style.display = discRate > 0 ? '' : 'none';
-    document.getElementById('tpDisc').textContent = `- ${fmt(disc)} (${discRate}%)`;
-
-    const taxRow = document.getElementById('tpTaxRow');
-    taxRow.style.display = rate > 0 ? '' : 'none';
-    document.getElementById('tpTax').textContent = `${fmt(tax)} (${rate}%)`;
-
-    const dpEl = document.getElementById('fPaid');
-    const hasDp = dpEl && parseFloat(dpEl.value) > 0;
-    document.getElementById('tpDpRow').style.display  = hasDp ? '' : 'none';
-    document.getElementById('tpSisaRow').style.display = (hasDp && sisa > 0) ? '' : 'none';
-    document.getElementById('tpDp').textContent   = fmt(dp);
-    document.getElementById('tpSisa').textContent = fmt(sisa);
-
-    enforceMaxPaid();
-    if (document.getElementById('fFullPay').checked)
-        document.getElementById('fPaid').value = Math.round(tot);
-}
-
-function enforceMaxPaid() {
-    const mx = grandTotal(), inp = document.getElementById('fPaid');
-    if (parseFloat(inp.value) > mx) inp.value = Math.round(mx);
-}
-
-function toggleFullPay(checked) {
-    document.getElementById('fPaid').value = checked ? Math.round(grandTotal()) : 0;
-    refreshTotal();
-}
-
-// ── Open/Close ────────────────────────────────────────────────────────────────
-function openCreateModal() {
-    document.getElementById('createModal').classList.add('open');
-    ['fGuestName','fPhone','fRoom','fNotes'].forEach(id => { const e=document.getElementById(id); if(e) e.value=''; });
-    document.getElementById('fGuestSelect').value = '';
-    document.getElementById('fBookingId').value   = '';
-    document.getElementById('fPaid').value        = 0;
-    document.getElementById('fFullPay').checked   = false;
-    document.getElementById('fTaxRate').value     = '0';
-    document.getElementById('customTaxWrap').style.display = 'none';
-    if (document.getElementById('fTaxCustom')) document.getElementById('fTaxCustom').value = 0;
-    document.getElementById('fServiceCharge').value = 0;
-    document.getElementById('fDiscount').value = 0;
-    document.getElementById('itemsBody').innerHTML = '';
-    rowCnt = 0;
-    setGuestMode('inhouse');
-    addItemRow();
-    refreshTotal();
-}
-function closeCreateModal() { document.getElementById('createModal').classList.remove('open'); }
-
-// ── Submit create ─────────────────────────────────────────────────────────────
-function submitCreate() {
-    const guestName = getGuestName();
-    if (!guestName) { alert('Please select or enter a guest name'); return; }
-
-    const rows = document.querySelectorAll('#itemsBody tr');
-    if (!rows.length) { alert('Add at least one service item'); return; }
-
-    const items = [];
-    for (const tr of rows) {
+    function onSvcChange(id, isNew) {
+        const tr = document.getElementById(id);
+        if (!tr) return;
         const svc = tr.querySelector('.iSvc').value;
-        if (!svc) { alert('Select service type for all rows'); return; }
-        items.push({
-            service_type: svc,
-            description:  tr.querySelector('.iDesc').value.trim(),
-            qty:          parseFloat(tr.querySelector('.iQty').value) || 1,
-            unit_price:   parseFloat(tr.querySelector('.iPrice').value) || 0
-        });
-    }
-
-    const btn = document.getElementById('createBtn');
-    btn.disabled = true; btn.textContent = 'Creating...';
-
-    const fd = new FormData();
-    fd.append('action',         'create');
-    fd.append('guest_name',     guestName);
-    fd.append('guest_phone',    document.getElementById('fPhone').value.trim());
-    fd.append('room_number',    document.getElementById('fRoom').value.trim());
-    fd.append('booking_id',     document.getElementById('fBookingId').value || '');
-    fd.append('items',          JSON.stringify(items));
-    fd.append('payment_method', document.getElementById('fPayMethod').value);
-    fd.append('paid_amount',    document.getElementById('fPaid').value || 0);
-    fd.append('tax_rate',       getTaxRate());
-    fd.append('service_charge_rate', document.getElementById('fServiceCharge').value || 0);
-    fd.append('discount_rate',  document.getElementById('fDiscount').value || 0);
-    fd.append('notes',          document.getElementById('fNotes').value.trim());
-
-    fetch('hotel-services.php', {method:'POST',body:fd,credentials:'include'})
-        .then(r => r.json())
-        .then(res => {
-            if (res.success) {
-                closeCreateModal();
-                const cbMsg = res.cashbook ? '\n✅ Tercatat di Buku Kas' : '';
-                alert('Invoice ' + res.invoice_number + ' created!' + cbMsg);
-                location.reload();
+        const priceInput = tr.querySelector('.iPrice');
+        const descInput = tr.querySelector('.iDesc');
+        const items = CATALOG_DATA[svc];
+        if (items && items.length > 0) {
+            // On new row: fill only if still empty/zero
+            // On manual service-type change: always sync from catalog
+            if (isNew) {
+                if (parseFloat(priceInput.value) === 0) priceInput.value = items[0].price;
+                if (!descInput.value.trim()) descInput.value = items[0].name;
             } else {
-                alert('Error: ' + (res.message || 'Unknown'));
-                btn.disabled = false; btn.textContent = '✅ Create Invoice';
+                // User switched type → always update price & description from catalog
+                priceInput.value = items[0].price;
+                descInput.value = items[0].name;
             }
-        })
-        .catch(() => { alert('Network error'); btn.disabled = false; btn.textContent = '✅ Create Invoice'; });
-}
-
-// ── Status ────────────────────────────────────────────────────────────────────
-function updateStatus(id, status) {
-    const fd = new FormData();
-    fd.append('action','update_status'); fd.append('id',id); fd.append('status',status);
-    fetch('hotel-services.php', {method:'POST',body:fd,credentials:'include'})
-        .then(r=>r.json()).then(res=>{ if(!res.success) alert('Failed to update status'); });
-}
-
-// ── Delete ────────────────────────────────────────────────────────────────────
-function deleteInvoice(id, code) {
-    if (!confirm('Delete invoice ' + code + '? Cannot be undone.')) return;
-    const fd = new FormData();
-    fd.append('action','delete'); fd.append('id',id);
-    fetch('hotel-services.php', {method:'POST',body:fd,credentials:'include'})
-        .then(r=>r.json()).then(res=>{ if(res.success) location.reload(); else alert('Delete failed'); });
-}
-
-// ── Pay modal ─────────────────────────────────────────────────────────────────
-function openPayModal(id, remaining, invNo) {
-    document.getElementById('pInvId').value = id;
-    document.getElementById('pInvNo').textContent = 'Invoice: ' + invNo;
-    document.getElementById('pRemaining').textContent = 'Rp ' + Math.round(remaining).toLocaleString('id-ID');
-    document.getElementById('pAmount').value = Math.round(remaining);
-    document.getElementById('payModal').classList.add('open');
-}
-function closePayModal() { document.getElementById('payModal').classList.remove('open'); }
-
-function submitPay() {
-    const id = document.getElementById('pInvId').value;
-    const amount = document.getElementById('pAmount').value;
-    if (!amount || parseFloat(amount) <= 0) { alert('Enter valid amount'); return; }
-    const btn = document.getElementById('payBtn');
-    btn.disabled = true; btn.textContent = 'Saving...';
-    const fd = new FormData();
-    fd.append('action','add_payment'); fd.append('id',id);
-    fd.append('amount',amount); fd.append('method',document.getElementById('pMethod').value);
-    fetch('hotel-services.php', {method:'POST',body:fd,credentials:'include'})
-        .then(r=>r.json())
-        .then(res=>{
-            if (res.success) {
-                closePayModal();
-                alert('Payment saved! ' + (res.cashbook ? '✅ Tercatat di Buku Kas' : '⚠️ Gagal sync ke Buku Kas'));
-                location.reload();
-            } else {
-                alert('Error: ' + (res.message||'Unknown'));
-                btn.disabled = false; btn.textContent = '💾 Save & Sync to Cashbook';
-            }
-        });
-}
-
-// ── SETTINGS ─────────────────────────────────────────────────────────────────
-function openSettingsModal() { document.getElementById('settingsModal').classList.add('open'); switchTab('inv'); }
-function closeSettingsModal() { document.getElementById('settingsModal').classList.remove('open'); }
-function switchTab(t) {
-    ['inv','catalog','svctype'].forEach(id => {
-        document.getElementById('tab-'+id).classList.toggle('active', id===t);
-        document.getElementById('pane-'+id).classList.toggle('active', id===t);
-    });
-}
-function previewLogo(inp) {
-    const prev = document.getElementById('logoPreview');
-    if (inp.files && inp.files[0]) {
-        const reader = new FileReader();
-        reader.onload = e => { prev.src = e.target.result; prev.style.display='block'; };
-        reader.readAsDataURL(inp.files[0]);
-    }
-}
-function saveSettings() {
-    const btn = document.getElementById('btnSaveSettings');
-    btn.disabled = true; btn.textContent = 'Saving...';
-    const fd = new FormData();
-    fd.append('action',               'save_hs_settings');
-    fd.append('company_name',         document.getElementById('sCmpName').value.trim());
-    fd.append('company_website',      document.getElementById('sCmpWeb').value.trim());
-    fd.append('company_phone',        document.getElementById('sCmpPhone').value.trim());
-    fd.append('company_email',        document.getElementById('sCmpEmail').value.trim());
-    fd.append('company_address',      document.getElementById('sCmpAddr').value.trim());
-    fd.append('payment_info_bank',    document.getElementById('sPayBank').value.trim());
-    fd.append('payment_info_account', document.getElementById('sPayAccount').value.trim());
-    fd.append('payment_info_name',    document.getElementById('sPayName').value.trim());
-    fd.append('payment_info_note',    document.getElementById('sPayNote').value.trim());
-    const logoFile = document.getElementById('sLogoFile').files[0];
-    if (logoFile) fd.append('logo_file', logoFile);
-    fetch('hotel-services.php', {method:'POST', body:fd, credentials:'include'})
-        .then(r=>r.json())
-        .then(res=>{
-            if (res.success) { alert('✅ Settings saved!'); closeSettingsModal(); location.reload(); }
-            else { alert('Error: ' + (res.message||'unknown')); }
-            btn.disabled=false; btn.textContent='💾 Save Settings';
-        }).catch(()=>{ alert('Network error'); btn.disabled=false; btn.textContent='💾 Save Settings'; });
-}
-
-// ── CATALOG ───────────────────────────────────────────────────────────────────
-let catRowCnt = 0;
-const SVC_OPTIONS = <?php echo json_encode(array_map(fn($k,$v) => ['val'=>$k,'lbl'=>$v['icon'].' '.$v['label']], array_keys($serviceTypes), $serviceTypes)); ?>;
-
-function buildSvcOptsFor(selected='') {
-    return SVC_OPTIONS.map(o=>`<option value="${o.val}" ${o.val===selected?'selected':''}>${o.lbl}</option>`).join('');
-}
-
-function addCatalogRow() {
-    catRowCnt++;
-    const id = 'new_' + catRowCnt;
-    const tr = document.createElement('tr');
-    tr.id = 'ctr' + id;
-    tr.innerHTML =
-        `<td><select class="cSType">${buildSvcOptsFor()}</select></td>`+
-        `<td><input type="text" class="cName" placeholder="ex: Honda Beat 1 Hari"></td>`+
-        `<td><input type="number" class="cPrice" value="0" min="0"></td>`+
-        `<td><input type="text" class="cUnit" value="unit"></td>`+
-        `<td><input type="number" class="cSort" value="0" style="width:45px"></td>`+
-        `<td style="display:flex;gap:3px">`+
-        `<button class="btn-cat-save" onclick="saveCatalogRow('${id}')">💾</button>`+
-        `<button class="btn-cat-del" onclick="document.getElementById('ctr${id}').remove()">✕</button>`+
-        `</td>`;
-    document.getElementById('catalogBody').prepend(tr);
-}
-
-function saveCatalogRow(cid) {
-    const tr = document.getElementById('ctr'+cid);
-    if (!tr) return;
-    const fd = new FormData();
-    fd.append('action',       'save_catalog_item');
-    fd.append('cid',          isNaN(cid) ? 0 : cid);
-    fd.append('service_type', tr.querySelector('.cSType').value);
-    fd.append('item_name',    tr.querySelector('.cName').value.trim());
-    fd.append('default_price',tr.querySelector('.cPrice').value);
-    fd.append('unit',         tr.querySelector('.cUnit').value.trim() || 'unit');
-    fd.append('sort_order',   tr.querySelector('.cSort').value);
-    fetch('hotel-services.php', {method:'POST', body:fd, credentials:'include'})
-        .then(r=>r.json())
-        .then(res=>{
-            if (res.success) {
-                tr.id = 'ctr' + res.id;
-                tr.querySelectorAll('button')[0].setAttribute('onclick','saveCatalogRow('+res.id+')');
-                tr.querySelectorAll('button')[1].setAttribute('onclick','deleteCatalogRow('+res.id+')');
-                tr.style.background='#f0fdf4'; setTimeout(()=>tr.style.background='',1500);
-            } else { alert('Error: '+(res.message||'failed')); }
-        });
-}
-
-function deleteCatalogRow(cid) {
-    if (!confirm('Hapus item ini dari katalog?')) return;
-    const fd = new FormData();
-    fd.append('action','delete_catalog_item'); fd.append('cid',cid);
-    fetch('hotel-services.php', {method:'POST', body:fd, credentials:'include'})
-        .then(r=>r.json())
-        .then(res=>{ if (res.success) { const el=document.getElementById('ctr'+cid); if(el)el.remove(); } else alert('Error'); });
-}
-
-const CATALOG = <?php echo json_encode(array_map(fn($r)=>['stype'=>$r['service_type'],'name'=>$r['item_name'],'price'=>(float)$r['default_price'],'unit'=>$r['unit']], $catalogRows)); ?>;
-
-// ── EDIT INVOICE ──────────────────────────────────────────────────────────────
-let eRowCnt = 0;
-
-function openEditModal(id) {
-    fetch('hotel-services.php?get_invoice=1&id='+id, {credentials:'include'})
-        .then(r=>r.json())
-        .then(inv=>{
-            if (!inv.success) { alert(inv.message||'Cannot load invoice'); return; }
-            document.getElementById('eInvId').value = inv.id;
-            document.getElementById('eInvNo').textContent = 'Invoice: ' + inv.invoice_number;
-            document.getElementById('eGuestName').value = inv.guest_name||'';
-            document.getElementById('ePhone').value     = inv.guest_phone||'';
-            document.getElementById('eRoom').value      = inv.room_number||'';
-            document.getElementById('ePayMethod').value = inv.payment_method||'cash';
-            document.getElementById('ePaid').value      = inv.paid_amount||0;
-            document.getElementById('eNotes').value     = inv.notes||'';
-            const tr2 = parseFloat(inv.tax_rate)||0;
-            const taxSel = document.getElementById('eTaxRate');
-            if (['0','5','10','11'].includes(String(tr2))) { taxSel.value = String(tr2); document.getElementById('eCustomTaxWrap').style.display='none'; }
-            else { taxSel.value='custom'; document.getElementById('eCustomTaxWrap').style.display=''; document.getElementById('eTaxCustom').value=tr2; }
-            document.getElementById('eServiceCharge').value = parseFloat(inv.service_charge_rate)||0;
-            document.getElementById('eDiscount').value = parseFloat(inv.discount_rate)||0;
-            document.getElementById('eItemsBody').innerHTML='';
-            eRowCnt = 0;
-            (inv.items||[]).forEach(it => eAddItemRow(it.service_type, it.description, it.quantity, it.unit_price));
-            eRefreshTotal();
-            document.getElementById('editModal').classList.add('open');
-        })
-        .catch(()=>alert('Network error loading invoice'));
-}
-function closeEditModal() { document.getElementById('editModal').classList.remove('open'); }
-
-function eAddItemRow(svc, desc, qty, price) {
-    eRowCnt++;
-    const id2 = 'er'+eRowCnt;
-    const tr3 = document.createElement('tr');
-    tr3.id = id2;
-    tr3.innerHTML =
-        `<td><select class="iSvc" onchange="eOnSvcChange('${id2}')">${buildSvcOpts(svc||'')}</select></td>`+
-        `<td><input type="text" class="iDesc" value="${(desc||'').replace(/"/g,'&quot;')}" placeholder="Description"></td>`+
-        `<td><input type="number" class="iQty" value="${qty||1}" min="0.5" step="0.5" style="width:60px" oninput="ercalc('${id2}')"></td>`+
-        `<td><input type="number" class="iPrice" value="${price||0}" min="0" style="width:105px" oninput="ercalc('${id2}')"></td>`+
-        `<td style="font-weight:700;color:#4338ca;text-align:right;white-space:nowrap" class="iTotal">Rp 0</td>`+
-        `<td><button type="button" class="btn-del-row" onclick="eDelRow('${id2}')">✕</button></td>`;
-    document.getElementById('eItemsBody').appendChild(tr3);
-    if (!price) eOnSvcChange(id2, true);
-    else ercalc(id2);
-}
-
-function eOnSvcChange(id2, isNew) {
-    const tr3 = document.getElementById(id2);
-    if (!tr3) return;
-    const svc = tr3.querySelector('.iSvc').value;
-    const priceInput = tr3.querySelector('.iPrice');
-    const descInput  = tr3.querySelector('.iDesc');
-    const items = CATALOG_DATA[svc];
-    if (items && items.length > 0) {
-        if (isNew) {
-            if (parseFloat(priceInput.value) === 0) priceInput.value = items[0].price;
-            if (!descInput.value.trim())            descInput.value  = items[0].name;
-        } else {
-            priceInput.value = items[0].price;
-            descInput.value  = items[0].name;
+        } else if (!isNew) {
+            // Switched to a type with no catalog entry — clear price so user must enter manually
+            priceInput.value = 0;
         }
-    } else if (!isNew) {
-        priceInput.value = 0;
+        rcalc(id);
     }
-    ercalc(id2);
-}
-function eDelRow(id) { const el=document.getElementById(id); if(el)el.remove(); eRefreshTotal(); }
-function ercalc(id) {
-    const tr=document.getElementById(id); if(!tr)return;
-    const t=(parseFloat(tr.querySelector('.iQty').value)||0)*(parseFloat(tr.querySelector('.iPrice').value)||0);
-    tr.querySelector('.iTotal').textContent='Rp '+Math.round(t).toLocaleString('id-ID'); eRefreshTotal();
-}
-function eOnTaxRateChange() {
-    const sel=document.getElementById('eTaxRate');
-    document.getElementById('eCustomTaxWrap').style.display=sel.value==='custom'?'':'none'; eRefreshTotal();
-}
-function eRefreshTotal() {
-    let s=0;
-    document.querySelectorAll('#eItemsBody tr').forEach(tr=>{ s+=(parseFloat(tr.querySelector('.iQty')?.value)||0)*(parseFloat(tr.querySelector('.iPrice')?.value)||0); });
-    const sel=document.getElementById('eTaxRate');
-    let r=sel?((sel.value==='custom'?(parseFloat(document.getElementById('eTaxCustom')?.value)||0):(parseFloat(sel.value)||0))):0;
-    const scRate=parseFloat(document.getElementById('eServiceCharge')?.value)||0;
-    const discRate=parseFloat(document.getElementById('eDiscount')?.value)||0;
-    const sc=s*(scRate/100), disc=s*(discRate/100);
-    const afterCD=s+sc-disc;
-    const tax=afterCD*(r/100), tot=afterCD+tax;
-    const fmt=v=>'Rp '+Math.round(v).toLocaleString('id-ID');
-    document.getElementById('etpSub').textContent=fmt(s);
-    document.getElementById('etpGrand').textContent=fmt(tot);
-    document.getElementById('etpScRow').style.display=scRate>0?'':'none';
-    document.getElementById('etpSc').textContent=fmt(sc)+' ('+scRate+'%)';
-    document.getElementById('etpDiscRow').style.display=discRate>0?'':'none';
-    document.getElementById('etpDisc').textContent='- '+fmt(disc)+' ('+discRate+'%)';
-    document.getElementById('etpTaxRow').style.display=r>0?'':'none';
-    document.getElementById('etpTax').textContent=fmt(tax)+' ('+r+'%)';
-}
-function submitEdit() {
-    const id=document.getElementById('eInvId').value;
-    const guestName=document.getElementById('eGuestName').value.trim();
-    if(!guestName){alert('Nama tamu wajib diisi');return;}
-    const rows=document.querySelectorAll('#eItemsBody tr');
-    if(!rows.length){alert('Minimal 1 item layanan');return;}
-    const items=[];
-    for(const tr of rows){
-        items.push({service_type:tr.querySelector('.iSvc').value,description:tr.querySelector('.iDesc').value.trim(),qty:parseFloat(tr.querySelector('.iQty').value)||1,unit_price:parseFloat(tr.querySelector('.iPrice').value)||0});
-    }
-    const sel=document.getElementById('eTaxRate');
-    const taxR=sel.value==='custom'?(parseFloat(document.getElementById('eTaxCustom')?.value)||0):(parseFloat(sel.value)||0);
-    const btn=document.getElementById('editBtn'); btn.disabled=true; btn.textContent='Menyimpan...';
-    const fd=new FormData();
-    fd.append('action','update_invoice'); fd.append('id',id);
-    fd.append('guest_name',guestName);
-    fd.append('guest_phone',document.getElementById('ePhone').value.trim());
-    fd.append('room_number',document.getElementById('eRoom').value.trim());
-    fd.append('payment_method',document.getElementById('ePayMethod').value);
-    fd.append('paid_amount',document.getElementById('ePaid').value||0);
-    fd.append('tax_rate',taxR);
-    fd.append('service_charge_rate',document.getElementById('eServiceCharge').value||0);
-    fd.append('discount_rate',document.getElementById('eDiscount').value||0);
-    fd.append('notes',document.getElementById('eNotes').value.trim());
-    fd.append('items',JSON.stringify(items));
-    fetch('hotel-services.php',{method:'POST',body:fd,credentials:'include'})
-        .then(r=>r.json())
-        .then(res=>{
-            if(res.success){closeEditModal();location.reload();}
-            else{alert('Error: '+(res.message||'Unknown'));btn.disabled=false;btn.textContent='💾 Simpan Perubahan';}
-        }).catch(()=>{alert('Network error');btn.disabled=false;btn.textContent='💾 Simpan Perubahan';});
-}
 
-// ── SERVICE TYPE MANAGEMENT ──────────────────────────────────────────────────
-let stRowCnt = 0;
-function addSvcTypeRow() {
-    stRowCnt++;
-    const id = 'new_' + stRowCnt;
-    const tr = document.createElement('tr');
-    tr.id = 'str' + id;
-    tr.innerHTML =
-        `<td><input type="text" class="stIcon" value="🔹" style="width:40px;text-align:center"></td>`+
-        `<td><input type="text" class="stKey" placeholder="e.g. spa_treatment"></td>`+
-        `<td><input type="text" class="stLabel" placeholder="e.g. Spa Treatment"></td>`+
-        `<td><input type="number" class="stSort" value="0" style="width:45px"></td>`+
-        `<td style="display:flex;gap:3px">`+
-        `<button class="btn-cat-save" onclick="saveSvcType('${id}')">💾</button>`+
-        `<button class="btn-cat-del" onclick="document.getElementById('str${id}').remove()">✕</button>`+
-        `</td>`;
-    document.getElementById('svcTypeBody').prepend(tr);
-}
-function saveSvcType(stId) {
-    const tr = document.getElementById('str'+stId);
-    if (!tr) return;
-    const fd = new FormData();
-    fd.append('action','save_service_type');
-    fd.append('st_id', isNaN(stId) ? 0 : stId);
-    fd.append('type_icon', tr.querySelector('.stIcon').value.trim() || '🔹');
-    fd.append('type_key', tr.querySelector('.stKey').value.trim());
-    fd.append('type_label', tr.querySelector('.stLabel').value.trim());
-    fd.append('sort_order', tr.querySelector('.stSort').value || 0);
-    fetch('hotel-services.php', {method:'POST', body:fd, credentials:'include'})
-        .then(r=>r.json())
-        .then(res=>{
-            if (res.success) {
-                tr.id = 'str' + res.id;
-                tr.querySelectorAll('button')[0].setAttribute('onclick','saveSvcType('+res.id+')');
-                tr.querySelectorAll('button')[1].setAttribute('onclick','deleteSvcType('+res.id+')');
-                tr.style.background='#f0fdf4'; setTimeout(()=>tr.style.background='',1500);
-                alert('✅ Tipe layanan tersimpan! Refresh halaman untuk melihat perubahan di dropdown.');
-            } else { alert('Error: '+(res.message||'failed')); }
+    function delRow(id) {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+        refreshTotal();
+    }
+
+    function rcalc(id) {
+        const tr = document.getElementById(id);
+        if (!tr) return;
+        const t = (parseFloat(tr.querySelector('.iQty').value) || 0) * (parseFloat(tr.querySelector('.iPrice').value) || 0);
+        tr.querySelector('.iTotal').textContent = 'Rp ' + Math.round(t).toLocaleString('id-ID');
+        refreshTotal();
+    }
+
+    function subtotal() {
+        let t = 0;
+        document.querySelectorAll('#itemsBody tr').forEach(tr => {
+            t += (parseFloat(tr.querySelector('.iQty')?.value) || 0) * (parseFloat(tr.querySelector('.iPrice')?.value) || 0);
         });
-}
-function deleteSvcType(stId) {
-    if (!confirm('Hapus tipe layanan ini?')) return;
-    const fd = new FormData();
-    fd.append('action','delete_service_type'); fd.append('st_id',stId);
-    fetch('hotel-services.php', {method:'POST', body:fd, credentials:'include'})
-        .then(r=>r.json())
-        .then(res=>{ if (res.success) { const el=document.getElementById('str'+stId); if(el)el.remove(); } else alert('Error: '+(res.message||'Cannot delete')); });
-}
+        return t;
+    }
+
+    function getTaxRate() {
+        const sel = document.getElementById('fTaxRate');
+        if (!sel) return 0;
+        if (sel.value === 'custom') return parseFloat(document.getElementById('fTaxCustom')?.value) || 0;
+        return parseFloat(sel.value) || 0;
+    }
+
+    function grandTotal() {
+        const sub = subtotal();
+        const scRate = parseFloat(document.getElementById('fServiceCharge')?.value) || 0;
+        const discRate = parseFloat(document.getElementById('fDiscount')?.value) || 0;
+        const sc = sub * (scRate / 100);
+        const disc = sub * (discRate / 100);
+        const afterCD = sub + sc - disc;
+        const rate = getTaxRate();
+        return afterCD + afterCD * (rate / 100);
+    }
+
+    function onTaxRateChange() {
+        const sel = document.getElementById('fTaxRate');
+        document.getElementById('customTaxWrap').style.display = sel.value === 'custom' ? '' : 'none';
+        refreshTotal();
+    }
+
+    function refreshTotal() {
+        const sub = subtotal();
+        const rate = getTaxRate();
+        const scRate = parseFloat(document.getElementById('fServiceCharge')?.value) || 0;
+        const discRate = parseFloat(document.getElementById('fDiscount')?.value) || 0;
+        const sc = sub * (scRate / 100);
+        const disc = sub * (discRate / 100);
+        const afterCD = sub + sc - disc;
+        const tax = afterCD * (rate / 100);
+        const tot = afterCD + tax;
+        const dp = parseFloat(document.getElementById('fPaid')?.value) || 0;
+        const sisa = Math.max(0, tot - dp);
+        const fmt = v => 'Rp ' + Math.round(v).toLocaleString('id-ID');
+
+        document.getElementById('tpSubtotal').textContent = fmt(sub);
+        document.getElementById('tpGrand').textContent = fmt(tot);
+
+        const scRow = document.getElementById('tpScRow');
+        scRow.style.display = scRate > 0 ? '' : 'none';
+        document.getElementById('tpSc').textContent = `${fmt(sc)} (${scRate}%)`;
+
+        const discRow = document.getElementById('tpDiscRow');
+        discRow.style.display = discRate > 0 ? '' : 'none';
+        document.getElementById('tpDisc').textContent = `- ${fmt(disc)} (${discRate}%)`;
+
+        const taxRow = document.getElementById('tpTaxRow');
+        taxRow.style.display = rate > 0 ? '' : 'none';
+        document.getElementById('tpTax').textContent = `${fmt(tax)} (${rate}%)`;
+
+        const dpEl = document.getElementById('fPaid');
+        const hasDp = dpEl && parseFloat(dpEl.value) > 0;
+        document.getElementById('tpDpRow').style.display = hasDp ? '' : 'none';
+        document.getElementById('tpSisaRow').style.display = (hasDp && sisa > 0) ? '' : 'none';
+        document.getElementById('tpDp').textContent = fmt(dp);
+        document.getElementById('tpSisa').textContent = fmt(sisa);
+
+        enforceMaxPaid();
+        if (document.getElementById('fFullPay').checked)
+            document.getElementById('fPaid').value = Math.round(tot);
+    }
+
+    function enforceMaxPaid() {
+        const mx = grandTotal(),
+            inp = document.getElementById('fPaid');
+        if (parseFloat(inp.value) > mx) inp.value = Math.round(mx);
+    }
+
+    function toggleFullPay(checked) {
+        document.getElementById('fPaid').value = checked ? Math.round(grandTotal()) : 0;
+        refreshTotal();
+    }
+
+    // ── Open/Close ────────────────────────────────────────────────────────────────
+    function openCreateModal() {
+        document.getElementById('createModal').classList.add('open');
+        ['fGuestName', 'fPhone', 'fRoom', 'fNotes'].forEach(id => {
+            const e = document.getElementById(id);
+            if (e) e.value = '';
+        });
+        document.getElementById('fGuestSelect').value = '';
+        document.getElementById('fBookingId').value = '';
+        document.getElementById('fPaid').value = 0;
+        document.getElementById('fFullPay').checked = false;
+        document.getElementById('fTaxRate').value = '0';
+        document.getElementById('customTaxWrap').style.display = 'none';
+        if (document.getElementById('fTaxCustom')) document.getElementById('fTaxCustom').value = 0;
+        document.getElementById('fServiceCharge').value = 0;
+        document.getElementById('fDiscount').value = 0;
+        document.getElementById('itemsBody').innerHTML = '';
+        rowCnt = 0;
+        setGuestMode('inhouse');
+        addItemRow();
+        refreshTotal();
+    }
+
+    function closeCreateModal() {
+        document.getElementById('createModal').classList.remove('open');
+    }
+
+    // ── Submit create ─────────────────────────────────────────────────────────────
+    function submitCreate() {
+        const guestName = getGuestName();
+        if (!guestName) {
+            alert('Please select or enter a guest name');
+            return;
+        }
+
+        const rows = document.querySelectorAll('#itemsBody tr');
+        if (!rows.length) {
+            alert('Add at least one service item');
+            return;
+        }
+
+        const items = [];
+        for (const tr of rows) {
+            const svc = tr.querySelector('.iSvc').value;
+            if (!svc) {
+                alert('Select service type for all rows');
+                return;
+            }
+            items.push({
+                service_type: svc,
+                description: tr.querySelector('.iDesc').value.trim(),
+                qty: parseFloat(tr.querySelector('.iQty').value) || 1,
+                unit_price: parseFloat(tr.querySelector('.iPrice').value) || 0
+            });
+        }
+
+        const btn = document.getElementById('createBtn');
+        btn.disabled = true;
+        btn.textContent = 'Creating...';
+
+        const fd = new FormData();
+        fd.append('action', 'create');
+        fd.append('guest_name', guestName);
+        fd.append('guest_phone', document.getElementById('fPhone').value.trim());
+        fd.append('room_number', document.getElementById('fRoom').value.trim());
+        fd.append('booking_id', document.getElementById('fBookingId').value || '');
+        fd.append('items', JSON.stringify(items));
+        fd.append('payment_method', document.getElementById('fPayMethod').value);
+        fd.append('paid_amount', document.getElementById('fPaid').value || 0);
+        fd.append('tax_rate', getTaxRate());
+        fd.append('service_charge_rate', document.getElementById('fServiceCharge').value || 0);
+        fd.append('discount_rate', document.getElementById('fDiscount').value || 0);
+        fd.append('notes', document.getElementById('fNotes').value.trim());
+
+        fetch('hotel-services.php', {
+                method: 'POST',
+                body: fd,
+                credentials: 'include'
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    closeCreateModal();
+                    const cbMsg = res.cashbook ? '\n✅ Tercatat di Buku Kas' : '';
+                    alert('Invoice ' + res.invoice_number + ' created!' + cbMsg);
+                    location.reload();
+                } else {
+                    alert('Error: ' + (res.message || 'Unknown'));
+                    btn.disabled = false;
+                    btn.textContent = '✅ Create Invoice';
+                }
+            })
+            .catch(() => {
+                alert('Network error');
+                btn.disabled = false;
+                btn.textContent = '✅ Create Invoice';
+            });
+    }
+
+    // ── Status ────────────────────────────────────────────────────────────────────
+    function updateStatus(id, status) {
+        const fd = new FormData();
+        fd.append('action', 'update_status');
+        fd.append('id', id);
+        fd.append('status', status);
+        fetch('hotel-services.php', {
+                method: 'POST',
+                body: fd,
+                credentials: 'include'
+            })
+            .then(r => r.json()).then(res => {
+                if (!res.success) alert('Failed to update status');
+            });
+    }
+
+    // ── Delete ────────────────────────────────────────────────────────────────────
+    function deleteInvoice(id, code) {
+        if (!confirm('Delete invoice ' + code + '? Cannot be undone.')) return;
+        const fd = new FormData();
+        fd.append('action', 'delete');
+        fd.append('id', id);
+        fetch('hotel-services.php', {
+                method: 'POST',
+                body: fd,
+                credentials: 'include'
+            })
+            .then(r => r.json()).then(res => {
+                if (res.success) location.reload();
+                else alert('Delete failed');
+            });
+    }
+
+    // ── Pay modal ─────────────────────────────────────────────────────────────────
+    function openPayModal(id, remaining, invNo) {
+        document.getElementById('pInvId').value = id;
+        document.getElementById('pInvNo').textContent = 'Invoice: ' + invNo;
+        document.getElementById('pRemaining').textContent = 'Rp ' + Math.round(remaining).toLocaleString('id-ID');
+        document.getElementById('pAmount').value = Math.round(remaining);
+        document.getElementById('payModal').classList.add('open');
+    }
+
+    function closePayModal() {
+        document.getElementById('payModal').classList.remove('open');
+    }
+
+    function submitPay() {
+        const id = document.getElementById('pInvId').value;
+        const amount = document.getElementById('pAmount').value;
+        if (!amount || parseFloat(amount) <= 0) {
+            alert('Enter valid amount');
+            return;
+        }
+        const btn = document.getElementById('payBtn');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        const fd = new FormData();
+        fd.append('action', 'add_payment');
+        fd.append('id', id);
+        fd.append('amount', amount);
+        fd.append('method', document.getElementById('pMethod').value);
+        fetch('hotel-services.php', {
+                method: 'POST',
+                body: fd,
+                credentials: 'include'
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    closePayModal();
+                    alert('Payment saved! ' + (res.cashbook ? '✅ Tercatat di Buku Kas' : '⚠️ Gagal sync ke Buku Kas'));
+                    location.reload();
+                } else {
+                    alert('Error: ' + (res.message || 'Unknown'));
+                    btn.disabled = false;
+                    btn.textContent = '💾 Save & Sync to Cashbook';
+                }
+            });
+    }
+
+    // ── SETTINGS ─────────────────────────────────────────────────────────────────
+    function openSettingsModal() {
+        document.getElementById('settingsModal').classList.add('open');
+        switchTab('inv');
+    }
+
+    function closeSettingsModal() {
+        document.getElementById('settingsModal').classList.remove('open');
+    }
+
+    function switchTab(t) {
+        ['inv', 'catalog', 'svctype'].forEach(id => {
+            document.getElementById('tab-' + id).classList.toggle('active', id === t);
+            document.getElementById('pane-' + id).classList.toggle('active', id === t);
+        });
+    }
+
+    function previewLogo(inp) {
+        const prev = document.getElementById('logoPreview');
+        if (inp.files && inp.files[0]) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                prev.src = e.target.result;
+                prev.style.display = 'block';
+            };
+            reader.readAsDataURL(inp.files[0]);
+        }
+    }
+
+    function saveSettings() {
+        const btn = document.getElementById('btnSaveSettings');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        const fd = new FormData();
+        fd.append('action', 'save_hs_settings');
+        fd.append('company_name', document.getElementById('sCmpName').value.trim());
+        fd.append('company_website', document.getElementById('sCmpWeb').value.trim());
+        fd.append('company_phone', document.getElementById('sCmpPhone').value.trim());
+        fd.append('company_email', document.getElementById('sCmpEmail').value.trim());
+        fd.append('company_address', document.getElementById('sCmpAddr').value.trim());
+        fd.append('payment_info_bank', document.getElementById('sPayBank').value.trim());
+        fd.append('payment_info_account', document.getElementById('sPayAccount').value.trim());
+        fd.append('payment_info_name', document.getElementById('sPayName').value.trim());
+        fd.append('payment_info_note', document.getElementById('sPayNote').value.trim());
+        const logoFile = document.getElementById('sLogoFile').files[0];
+        if (logoFile) fd.append('logo_file', logoFile);
+        fetch('hotel-services.php', {
+                method: 'POST',
+                body: fd,
+                credentials: 'include'
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    alert('✅ Settings saved!');
+                    closeSettingsModal();
+                    location.reload();
+                } else {
+                    alert('Error: ' + (res.message || 'unknown'));
+                }
+                btn.disabled = false;
+                btn.textContent = '💾 Save Settings';
+            }).catch(() => {
+                alert('Network error');
+                btn.disabled = false;
+                btn.textContent = '💾 Save Settings';
+            });
+    }
+
+    // ── CATALOG ───────────────────────────────────────────────────────────────────
+    let catRowCnt = 0;
+    const SVC_OPTIONS = <?php echo json_encode(array_map(fn($k, $v) => ['val' => $k, 'lbl' => $v['icon'] . ' ' . $v['label']], array_keys($serviceTypes), $serviceTypes)); ?>;
+
+    function buildSvcOptsFor(selected = '') {
+        return SVC_OPTIONS.map(o => `<option value="${o.val}" ${o.val===selected?'selected':''}>${o.lbl}</option>`).join('');
+    }
+
+    function addCatalogRow() {
+        catRowCnt++;
+        const id = 'new_' + catRowCnt;
+        const tr = document.createElement('tr');
+        tr.id = 'ctr' + id;
+        tr.innerHTML =
+            `<td><select class="cSType">${buildSvcOptsFor()}</select></td>` +
+            `<td><input type="text" class="cName" placeholder="ex: Honda Beat 1 Hari"></td>` +
+            `<td><input type="number" class="cPrice" value="0" min="0"></td>` +
+            `<td><input type="text" class="cUnit" value="unit"></td>` +
+            `<td><input type="number" class="cSort" value="0" style="width:45px"></td>` +
+            `<td style="display:flex;gap:3px">` +
+            `<button class="btn-cat-save" onclick="saveCatalogRow('${id}')">💾</button>` +
+            `<button class="btn-cat-del" onclick="document.getElementById('ctr${id}').remove()">✕</button>` +
+            `</td>`;
+        document.getElementById('catalogBody').prepend(tr);
+    }
+
+    function saveCatalogRow(cid) {
+        const tr = document.getElementById('ctr' + cid);
+        if (!tr) return;
+        const fd = new FormData();
+        fd.append('action', 'save_catalog_item');
+        fd.append('cid', isNaN(cid) ? 0 : cid);
+        fd.append('service_type', tr.querySelector('.cSType').value);
+        fd.append('item_name', tr.querySelector('.cName').value.trim());
+        fd.append('default_price', tr.querySelector('.cPrice').value);
+        fd.append('unit', tr.querySelector('.cUnit').value.trim() || 'unit');
+        fd.append('sort_order', tr.querySelector('.cSort').value);
+        fetch('hotel-services.php', {
+                method: 'POST',
+                body: fd,
+                credentials: 'include'
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    tr.id = 'ctr' + res.id;
+                    tr.querySelectorAll('button')[0].setAttribute('onclick', 'saveCatalogRow(' + res.id + ')');
+                    tr.querySelectorAll('button')[1].setAttribute('onclick', 'deleteCatalogRow(' + res.id + ')');
+                    tr.style.background = '#f0fdf4';
+                    setTimeout(() => tr.style.background = '', 1500);
+                } else {
+                    alert('Error: ' + (res.message || 'failed'));
+                }
+            });
+    }
+
+    function deleteCatalogRow(cid) {
+        if (!confirm('Hapus item ini dari katalog?')) return;
+        const fd = new FormData();
+        fd.append('action', 'delete_catalog_item');
+        fd.append('cid', cid);
+        fetch('hotel-services.php', {
+                method: 'POST',
+                body: fd,
+                credentials: 'include'
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    const el = document.getElementById('ctr' + cid);
+                    if (el) el.remove();
+                } else alert('Error');
+            });
+    }
+
+    const CATALOG = <?php echo json_encode(array_map(fn($r) => ['stype' => $r['service_type'], 'name' => $r['item_name'], 'price' => (float)$r['default_price'], 'unit' => $r['unit']], $catalogRows)); ?>;
+
+    // ── EDIT INVOICE ──────────────────────────────────────────────────────────────
+    let eRowCnt = 0;
+
+    function openEditModal(id) {
+        fetch('hotel-services.php?get_invoice=1&id=' + id, {
+                credentials: 'include'
+            })
+            .then(r => r.json())
+            .then(inv => {
+                if (!inv.success) {
+                    alert(inv.message || 'Cannot load invoice');
+                    return;
+                }
+                document.getElementById('eInvId').value = inv.id;
+                document.getElementById('eInvNo').textContent = 'Invoice: ' + inv.invoice_number;
+                document.getElementById('eGuestName').value = inv.guest_name || '';
+                document.getElementById('ePhone').value = inv.guest_phone || '';
+                document.getElementById('eRoom').value = inv.room_number || '';
+                document.getElementById('ePayMethod').value = inv.payment_method || 'cash';
+                document.getElementById('ePaid').value = inv.paid_amount || 0;
+                document.getElementById('eNotes').value = inv.notes || '';
+                const tr2 = parseFloat(inv.tax_rate) || 0;
+                const taxSel = document.getElementById('eTaxRate');
+                if (['0', '5', '10', '11'].includes(String(tr2))) {
+                    taxSel.value = String(tr2);
+                    document.getElementById('eCustomTaxWrap').style.display = 'none';
+                } else {
+                    taxSel.value = 'custom';
+                    document.getElementById('eCustomTaxWrap').style.display = '';
+                    document.getElementById('eTaxCustom').value = tr2;
+                }
+                document.getElementById('eServiceCharge').value = parseFloat(inv.service_charge_rate) || 0;
+                document.getElementById('eDiscount').value = parseFloat(inv.discount_rate) || 0;
+                document.getElementById('eItemsBody').innerHTML = '';
+                eRowCnt = 0;
+                (inv.items || []).forEach(it => eAddItemRow(it.service_type, it.description, it.quantity, it.unit_price));
+                eRefreshTotal();
+                document.getElementById('editModal').classList.add('open');
+            })
+            .catch(() => alert('Network error loading invoice'));
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.remove('open');
+    }
+
+    function eAddItemRow(svc, desc, qty, price) {
+        eRowCnt++;
+        const id2 = 'er' + eRowCnt;
+        const tr3 = document.createElement('tr');
+        tr3.id = id2;
+        tr3.innerHTML =
+            `<td><select class="iSvc" onchange="eOnSvcChange('${id2}')">${buildSvcOpts(svc||'')}</select></td>` +
+            `<td><input type="text" class="iDesc" value="${(desc||'').replace(/"/g,'&quot;')}" placeholder="Description"></td>` +
+            `<td><input type="number" class="iQty" value="${qty||1}" min="0.5" step="0.5" style="width:60px" oninput="ercalc('${id2}')"></td>` +
+            `<td><input type="number" class="iPrice" value="${price||0}" min="0" style="width:105px" oninput="ercalc('${id2}')"></td>` +
+            `<td style="font-weight:700;color:#4338ca;text-align:right;white-space:nowrap" class="iTotal">Rp 0</td>` +
+            `<td><button type="button" class="btn-del-row" onclick="eDelRow('${id2}')">✕</button></td>`;
+        document.getElementById('eItemsBody').appendChild(tr3);
+        if (!price) eOnSvcChange(id2, true);
+        else ercalc(id2);
+    }
+
+    function eOnSvcChange(id2, isNew) {
+        const tr3 = document.getElementById(id2);
+        if (!tr3) return;
+        const svc = tr3.querySelector('.iSvc').value;
+        const priceInput = tr3.querySelector('.iPrice');
+        const descInput = tr3.querySelector('.iDesc');
+        const items = CATALOG_DATA[svc];
+        if (items && items.length > 0) {
+            if (isNew) {
+                if (parseFloat(priceInput.value) === 0) priceInput.value = items[0].price;
+                if (!descInput.value.trim()) descInput.value = items[0].name;
+            } else {
+                priceInput.value = items[0].price;
+                descInput.value = items[0].name;
+            }
+        } else if (!isNew) {
+            priceInput.value = 0;
+        }
+        ercalc(id2);
+    }
+
+    function eDelRow(id) {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+        eRefreshTotal();
+    }
+
+    function ercalc(id) {
+        const tr = document.getElementById(id);
+        if (!tr) return;
+        const t = (parseFloat(tr.querySelector('.iQty').value) || 0) * (parseFloat(tr.querySelector('.iPrice').value) || 0);
+        tr.querySelector('.iTotal').textContent = 'Rp ' + Math.round(t).toLocaleString('id-ID');
+        eRefreshTotal();
+    }
+
+    function eOnTaxRateChange() {
+        const sel = document.getElementById('eTaxRate');
+        document.getElementById('eCustomTaxWrap').style.display = sel.value === 'custom' ? '' : 'none';
+        eRefreshTotal();
+    }
+
+    function eRefreshTotal() {
+        let s = 0;
+        document.querySelectorAll('#eItemsBody tr').forEach(tr => {
+            s += (parseFloat(tr.querySelector('.iQty')?.value) || 0) * (parseFloat(tr.querySelector('.iPrice')?.value) || 0);
+        });
+        const sel = document.getElementById('eTaxRate');
+        let r = sel ? ((sel.value === 'custom' ? (parseFloat(document.getElementById('eTaxCustom')?.value) || 0) : (parseFloat(sel.value) || 0))) : 0;
+        const scRate = parseFloat(document.getElementById('eServiceCharge')?.value) || 0;
+        const discRate = parseFloat(document.getElementById('eDiscount')?.value) || 0;
+        const sc = s * (scRate / 100),
+            disc = s * (discRate / 100);
+        const afterCD = s + sc - disc;
+        const tax = afterCD * (r / 100),
+            tot = afterCD + tax;
+        const fmt = v => 'Rp ' + Math.round(v).toLocaleString('id-ID');
+        document.getElementById('etpSub').textContent = fmt(s);
+        document.getElementById('etpGrand').textContent = fmt(tot);
+        document.getElementById('etpScRow').style.display = scRate > 0 ? '' : 'none';
+        document.getElementById('etpSc').textContent = fmt(sc) + ' (' + scRate + '%)';
+        document.getElementById('etpDiscRow').style.display = discRate > 0 ? '' : 'none';
+        document.getElementById('etpDisc').textContent = '- ' + fmt(disc) + ' (' + discRate + '%)';
+        document.getElementById('etpTaxRow').style.display = r > 0 ? '' : 'none';
+        document.getElementById('etpTax').textContent = fmt(tax) + ' (' + r + '%)';
+    }
+
+    function submitEdit() {
+        const id = document.getElementById('eInvId').value;
+        const guestName = document.getElementById('eGuestName').value.trim();
+        if (!guestName) {
+            alert('Nama tamu wajib diisi');
+            return;
+        }
+        const rows = document.querySelectorAll('#eItemsBody tr');
+        if (!rows.length) {
+            alert('Minimal 1 item layanan');
+            return;
+        }
+        const items = [];
+        for (const tr of rows) {
+            items.push({
+                service_type: tr.querySelector('.iSvc').value,
+                description: tr.querySelector('.iDesc').value.trim(),
+                qty: parseFloat(tr.querySelector('.iQty').value) || 1,
+                unit_price: parseFloat(tr.querySelector('.iPrice').value) || 0
+            });
+        }
+        const sel = document.getElementById('eTaxRate');
+        const taxR = sel.value === 'custom' ? (parseFloat(document.getElementById('eTaxCustom')?.value) || 0) : (parseFloat(sel.value) || 0);
+        const btn = document.getElementById('editBtn');
+        btn.disabled = true;
+        btn.textContent = 'Menyimpan...';
+        const fd = new FormData();
+        fd.append('action', 'update_invoice');
+        fd.append('id', id);
+        fd.append('guest_name', guestName);
+        fd.append('guest_phone', document.getElementById('ePhone').value.trim());
+        fd.append('room_number', document.getElementById('eRoom').value.trim());
+        fd.append('payment_method', document.getElementById('ePayMethod').value);
+        fd.append('paid_amount', document.getElementById('ePaid').value || 0);
+        fd.append('tax_rate', taxR);
+        fd.append('service_charge_rate', document.getElementById('eServiceCharge').value || 0);
+        fd.append('discount_rate', document.getElementById('eDiscount').value || 0);
+        fd.append('notes', document.getElementById('eNotes').value.trim());
+        fd.append('items', JSON.stringify(items));
+        fetch('hotel-services.php', {
+                method: 'POST',
+                body: fd,
+                credentials: 'include'
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    closeEditModal();
+                    location.reload();
+                } else {
+                    alert('Error: ' + (res.message || 'Unknown'));
+                    btn.disabled = false;
+                    btn.textContent = '💾 Simpan Perubahan';
+                }
+            }).catch(() => {
+                alert('Network error');
+                btn.disabled = false;
+                btn.textContent = '💾 Simpan Perubahan';
+            });
+    }
+
+    // ── SERVICE TYPE MANAGEMENT ──────────────────────────────────────────────────
+    let stRowCnt = 0;
+
+    function addSvcTypeRow() {
+        stRowCnt++;
+        const id = 'new_' + stRowCnt;
+        const tr = document.createElement('tr');
+        tr.id = 'str' + id;
+        tr.innerHTML =
+            `<td><input type="text" class="stIcon" value="🔹" style="width:40px;text-align:center"></td>` +
+            `<td><input type="text" class="stKey" placeholder="e.g. spa_treatment"></td>` +
+            `<td><input type="text" class="stLabel" placeholder="e.g. Spa Treatment"></td>` +
+            `<td><input type="number" class="stSort" value="0" style="width:45px"></td>` +
+            `<td style="display:flex;gap:3px">` +
+            `<button class="btn-cat-save" onclick="saveSvcType('${id}')">💾</button>` +
+            `<button class="btn-cat-del" onclick="document.getElementById('str${id}').remove()">✕</button>` +
+            `</td>`;
+        document.getElementById('svcTypeBody').prepend(tr);
+    }
+
+    function saveSvcType(stId) {
+        const tr = document.getElementById('str' + stId);
+        if (!tr) return;
+        const fd = new FormData();
+        fd.append('action', 'save_service_type');
+        fd.append('st_id', isNaN(stId) ? 0 : stId);
+        fd.append('type_icon', tr.querySelector('.stIcon').value.trim() || '🔹');
+        fd.append('type_key', tr.querySelector('.stKey').value.trim());
+        fd.append('type_label', tr.querySelector('.stLabel').value.trim());
+        fd.append('sort_order', tr.querySelector('.stSort').value || 0);
+        fetch('hotel-services.php', {
+                method: 'POST',
+                body: fd,
+                credentials: 'include'
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    tr.id = 'str' + res.id;
+                    tr.querySelectorAll('button')[0].setAttribute('onclick', 'saveSvcType(' + res.id + ')');
+                    tr.querySelectorAll('button')[1].setAttribute('onclick', 'deleteSvcType(' + res.id + ')');
+                    tr.style.background = '#f0fdf4';
+                    setTimeout(() => tr.style.background = '', 1500);
+                    alert('✅ Tipe layanan tersimpan! Refresh halaman untuk melihat perubahan di dropdown.');
+                } else {
+                    alert('Error: ' + (res.message || 'failed'));
+                }
+            });
+    }
+
+    function deleteSvcType(stId) {
+        if (!confirm('Hapus tipe layanan ini?')) return;
+        const fd = new FormData();
+        fd.append('action', 'delete_service_type');
+        fd.append('st_id', stId);
+        fetch('hotel-services.php', {
+                method: 'POST',
+                body: fd,
+                credentials: 'include'
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    const el = document.getElementById('str' + stId);
+                    if (el) el.remove();
+                } else alert('Error: ' + (res.message || 'Cannot delete'));
+            });
+    }
 </script>
 
 <?php include '../../includes/footer.php'; ?>

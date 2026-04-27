@@ -259,8 +259,13 @@ function auto_submit_on_the_spot_after_midnight($db, $pdo, $link)
 
     $tz = new DateTimeZone('Asia/Jakarta');
     $now = new DateTime('now', $tz);
-    $cutoff = DateTime::createFromFormat('Y-m-d H:i:s', $breakfastDate . ' 00:00:00', $tz);
-    if (!$cutoff || $now < $cutoff) {
+    $breakfastDateTime = DateTime::createFromFormat('Y-m-d', $breakfastDate, $tz);
+    $today = new DateTime('today', $tz);
+
+    // Hanya auto-ON-THE-SPOT kalau breakfast_date adalah tanggal Kemarin atau lebih lama
+    // (berarti sudah melewati tengah malam dari hari sebelumnya)
+    // Jika breakfast_date adalah hari ini atau masa depan, jangan auto-ON-THE-SPOT
+    if ($breakfastDateTime >= $today) {
         return false;
     }
 
