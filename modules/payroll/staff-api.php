@@ -24,6 +24,12 @@ $db = Database::switchDatabase($bizConfig['database']);
 $pdo = $db->getConnection();
 $pdo->exec("SET time_zone = '+07:00'");
 
+try {
+    $pdo->query("SELECT overtime_hours FROM payroll_attendance LIMIT 0");
+} catch (PDOException $e) {
+    $pdo->exec("ALTER TABLE payroll_attendance ADD COLUMN overtime_hours DECIMAL(5,2) DEFAULT NULL AFTER work_hours");
+}
+
 // Auto-create staff_accounts table
 $pdo->exec("CREATE TABLE IF NOT EXISTS `staff_accounts` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -284,7 +290,7 @@ if ($action === 'attendance_today') {
 // ── ATTENDANCE HISTORY (current month) ──
 if ($action === 'attendance_history') {
     $month = $_GET['month'] ?? date('Y-m');
-    $rows = $db->fetchAll("SELECT attendance_date, check_in_time, check_out_time, scan_3, scan_4, work_hours, shift_1_hours, shift_2_hours, status, notes FROM payroll_attendance WHERE employee_id = ? AND DATE_FORMAT(attendance_date, '%Y-%m') = ? ORDER BY attendance_date DESC", [$empId, $month]);
+    $rows = $db->fetchAll("SELECT attendance_date, check_in_time, check_out_time, scan_3, scan_4, work_hours, overtime_hours, shift_1_hours, shift_2_hours, status, notes FROM payroll_attendance WHERE employee_id = ? AND DATE_FORMAT(attendance_date, '%Y-%m') = ? ORDER BY attendance_date DESC", [$empId, $month]);
 
     // Summary
     $totalHours = 0;
@@ -308,21 +314,19 @@ if ($action === 'attendance_history') {
 
     foreach ($rows as $r) {
         $wh = (float)($r['work_hours'] ?? 0);
+        $otManual = (float)($r['overtime_hours'] ?? 0);
         $attDate = (string)($r['attendance_date'] ?? '');
 
-        // If employee did NOT submit overtime for that date, cap counted hours to 8
-        $hasSubmittedOT = !empty($overtimeDates[$attDate]);
-        if ($hasSubmittedOT) {
-            $countedHours = $wh;
-        } else {
-            $countedHours = min($wh, 8);
-        }
+        // Cap regular hours to 8/day; overtime is counted separately.
+        $countedHours = min($wh, 8);
 
         $totalHours += $countedHours;
         $totalRegular += min($countedHours, 8);
 
-        // Only count overtime when there was a submission (pending/approved)
-        if ($hasSubmittedOT && $wh > 8) {
+        // Manual OT from admin edits takes precedence; otherwise count approved OT requests.
+        if ($otManual > 0) {
+            $totalOT += $otManual;
+        } elseif (!empty($overtimeDates[$attDate]) && $wh > 8) {
             $ot = $wh - 8;
             $totalOT += floor($ot / 0.75) * 0.75;
         }
@@ -331,13 +335,13 @@ if ($action === 'attendance_history') {
         if ($r['status'] === 'late') $late++;
     }
 
-    // Adjust rows for portal display: if no APPROVED overtime submitted for that date,
-    // cap displayed `work_hours` to 8 and show as integer to avoid fractional overflow of monthly target.
+    // Adjust rows for portal display: cap displayed `work_hours` to 8 only when no overtime exists.
     foreach ($rows as &$rr) {
         $orig = (float)($rr['work_hours'] ?? 0);
         $attDate = (string)($rr['attendance_date'] ?? '');
+        $manualOT = (float)($rr['overtime_hours'] ?? 0);
         $hasApprovedOT = !empty($overtimeDates[$attDate]);
-        if (!$hasApprovedOT && $orig > 8) {
+        if ($manualOT <= 0 && !$hasApprovedOT && $orig > 8) {
             $rr['work_hours'] = 8; // show integer 8 when capped
         }
     }

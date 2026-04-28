@@ -204,7 +204,7 @@ function getAttendanceHours($db, $empId, $month, $year)
 {
     $monthStr = sprintf('%04d-%02d', $year, $month);
     $rows = $db->fetchAll(
-        "SELECT work_hours, shift_1_hours, shift_2_hours, check_in_time, check_out_time, scan_3, scan_4, attendance_date
+        "SELECT work_hours, overtime_hours, shift_1_hours, shift_2_hours, check_in_time, check_out_time, scan_3, scan_4, attendance_date
          FROM payroll_attendance 
          WHERE employee_id = ? AND DATE_FORMAT(attendance_date, '%Y-%m') = ?
          AND (work_hours > 0 OR check_in_time IS NOT NULL)",
@@ -230,6 +230,7 @@ function getAttendanceHours($db, $empId, $month, $year)
     $daysWorked = 0;
     foreach ($rows as $r) {
         $wh = (float)$r['work_hours'];
+        $manualOT = (float)($r['overtime_hours'] ?? 0);
         // If work_hours not stored, compute from scan timestamps
         if ($wh <= 0) {
             $shift1 = 0;
@@ -254,11 +255,13 @@ function getAttendanceHours($db, $empId, $month, $year)
             if ($wh <= 0) continue; // no usable scan data for this day
         }
         $daysWorked++;
-        $totalHours += $wh;
+        $totalHours += min($wh, 8);
 
-        // Only count overtime if there's an APPROVED overtime request for this date
+        // Manual OT takes precedence; otherwise only count overtime if there's an APPROVED overtime request for this date.
         $attDate = $r['attendance_date'] ?? '';
-        if ($wh > 8 && isset($approvedOTDates[$attDate])) {
+        if ($manualOT > 0) {
+            $totalOvertimeHours += $manualOT;
+        } elseif ($wh > 8 && isset($approvedOTDates[$attDate])) {
             $otRaw = $wh - 8;
             $otUnits = floor($otRaw / 0.75); // per 45-min block
             $totalOvertimeHours += $otUnits * 0.75;

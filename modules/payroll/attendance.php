@@ -113,6 +113,7 @@
         `check_out_distance_m` INT DEFAULT NULL, `check_out_device` VARCHAR(200) DEFAULT NULL,
         `scan_3` TIME DEFAULT NULL, `scan_4` TIME DEFAULT NULL,
         `work_hours` DECIMAL(5,2) DEFAULT NULL,
+        `overtime_hours` DECIMAL(5,2) DEFAULT NULL,
         `shift_1_hours` DECIMAL(5,2) DEFAULT NULL, `shift_2_hours` DECIMAL(5,2) DEFAULT NULL,
         `status` ENUM('present','late','absent','leave','holiday','half_day') NOT NULL DEFAULT 'present',
         `is_outside_radius` TINYINT(1) DEFAULT 0,
@@ -124,7 +125,7 @@
                     }
 
                     // Split shift columns
-                    $shiftCols = ['scan_3' => 'TIME DEFAULT NULL', 'scan_4' => 'TIME DEFAULT NULL', 'shift_1_hours' => 'DECIMAL(5,2) DEFAULT NULL', 'shift_2_hours' => 'DECIMAL(5,2) DEFAULT NULL'];
+                    $shiftCols = ['scan_3' => 'TIME DEFAULT NULL', 'scan_4' => 'TIME DEFAULT NULL', 'shift_1_hours' => 'DECIMAL(5,2) DEFAULT NULL', 'shift_2_hours' => 'DECIMAL(5,2) DEFAULT NULL', 'overtime_hours' => 'DECIMAL(5,2) DEFAULT NULL'];
                     foreach ($shiftCols as $col => $def) {
                         try {
                             $_pdo->query("SELECT `$col` FROM payroll_attendance LIMIT 0");
@@ -778,6 +779,8 @@
                             $s3 = !empty($_POST['scan_3']) ? $_POST['scan_3'] . ':00' : null;
                             $s4 = !empty($_POST['scan_4']) ? $_POST['scan_4'] . ':00' : null;
                             $notes = trim($_POST['notes'] ?? '');
+                            $overtimeHours = trim($_POST['overtime_hours'] ?? '');
+                            $otHours = $overtimeHours === '' ? null : round((float)$overtimeHours, 2);
                             $sh1 = null;
                             $sh2 = null;
                             if ($s1 && $s2) {
@@ -792,8 +795,8 @@
                             }
                             $wh = round(($sh1 ?? 0) + ($sh2 ?? 0), 2) ?: null;
                             $db->query(
-                                "UPDATE payroll_attendance SET status=?, check_in_time=?, check_out_time=?, scan_3=?, scan_4=?, work_hours=?, shift_1_hours=?, shift_2_hours=?, notes=? WHERE id=?",
-                                [$status, $s1, $s2, $s3, $s4, $wh, $sh1, $sh2, $notes, $attId]
+                                "UPDATE payroll_attendance SET status=?, check_in_time=?, check_out_time=?, scan_3=?, scan_4=?, work_hours=?, overtime_hours=?, shift_1_hours=?, shift_2_hours=?, notes=? WHERE id=?",
+                                [$status, $s1, $s2, $s3, $s4, $wh, $otHours, $sh1, $sh2, $notes, $attId]
                             );
                             $msg = 'Data absen diperbarui.';
                             $msgType = 'success';
@@ -1922,11 +1925,10 @@
                                             $s3 = $a && !empty($a['scan_3']) ? substr($a['scan_3'], 0, 5) : null;
                                             $s4 = $a && !empty($a['scan_4']) ? substr($a['scan_4'], 0, 5) : null;
                                             $wh = (float)($a['work_hours'] ?? 0);
+                                            $manualOT = (float)($a['overtime_hours'] ?? 0);
                                             // Only calculate overtime if employee has approved overtime request
                                             $hasApprovedOT = isset($approvedOTEmployees[(int)$emp['id']]);
-                                            $otRaw = ($hasApprovedOT && $wh > 8) ? ($wh - 8) : 0;
-                                            $otUnits = floor($otRaw / 0.75);
-                                            $otCounted = $otUnits * 0.75;
+                                            $otCounted = $manualOT > 0 ? $manualOT : (($hasApprovedOT && $wh > 8) ? floor(($wh - 8) / 0.75) * 0.75 : 0);
                                         ?>
                                             <tr>
                                                 <td>
@@ -3335,6 +3337,7 @@
                                     <div class="fg"><label class="fl">Scan 3 (Masuk)</label><input type="time" name="scan_3" id="editScan3" class="fi"></div>
                                     <div class="fg"><label class="fl">Scan 4 (Pulang)</label><input type="time" name="scan_4" id="editScan4" class="fi"></div>
                                 </div>
+                                    <div class="fg"><label class="fl">Jam Lembur</label><input type="number" name="overtime_hours" id="editOvertimeHours" class="fi" min="0" step="0.25" placeholder="0.00"><div style="font-size:10px;color:var(--muted);margin-top:2px;">Isi jika jam lembur ingin diubah manual.</div></div>
                                 <div class="fg"><label class="fl">Status</label>
                                     <select name="status" id="editStatus" class="fi">
                                         <option value="present">Hadir</option>
@@ -3688,6 +3691,7 @@
                             document.getElementById('editScan2').value = att.check_out_time ? att.check_out_time.substring(0, 5) : '';
                             document.getElementById('editScan3').value = att.scan_3 ? att.scan_3.substring(0, 5) : '';
                             document.getElementById('editScan4').value = att.scan_4 ? att.scan_4.substring(0, 5) : '';
+                            document.getElementById('editOvertimeHours').value = att.overtime_hours ? parseFloat(att.overtime_hours).toFixed(2) : '';
                             document.getElementById('editStatus').value = att.status || 'present';
                             document.getElementById('editNotes').value = att.notes || '';
                             document.getElementById('editModal').classList.add('open');

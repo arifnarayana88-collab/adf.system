@@ -3241,6 +3241,7 @@ try {
                     const s1 = a.check_in_time ? a.check_in_time.substring(0, 5) : '—';
                     const s2 = a.check_out_time ? a.check_out_time.substring(0, 5) : '—';
                     const wh = parseFloat(a.work_hours) || 0;
+                    const ot = parseFloat(a.overtime_hours) || 0;
                     const statusMap = {
                         present: '✅ Hadir',
                         late: '⏰ Terlambat',
@@ -3300,7 +3301,7 @@ try {
                     document.getElementById('todayStatus').innerHTML = `
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
                     <span class="badge ${a.status==='present'?'b-hadir':a.status==='late'?'b-late':'b-absent'}">${statusMap[a.status]||a.status}</span>
-                    <span style="font-size:11px;color:var(--muted);">${wh > 0 ? wh.toFixed(1) + ' jam' : ''}</span>
+                    <span style="font-size:11px;color:var(--muted);">${wh > 0 ? wh.toFixed(1) + ' jam' : ''}${ot > 0 ? ' · OT ' + ot.toFixed(1) + ' jam' : ''}</span>
                 </div>
                 ${scanGrid}`;
                 } else {
@@ -3438,14 +3439,15 @@ try {
                     const s1 = r.check_in_time ? r.check_in_time.substring(0, 5) : '—';
                     const s2 = r.check_out_time ? r.check_out_time.substring(0, 5) : '—';
                     const wh = parseFloat(r.work_hours) || 0;
+                    const ot = parseFloat(r.overtime_hours) || 0;
                     const bc = r.status === 'present' ? 'b-hadir' : r.status === 'late' ? 'b-late' : 'b-absent';
 
                     if (IS_CAFE) {
-                        html += `<tr><td style="white-space:nowrap;">${day}</td><td style="font-weight:600;color:var(--green);">${s1}</td><td style="font-weight:600;color:var(--navy);">${s2}</td><td style="font-weight:700;">${wh>0?wh.toFixed(1)+'j':'—'}</td><td><span class="badge ${bc}">${statusMap[r.status]||r.status}</span></td></tr>`;
+                        html += `<tr><td style="white-space:nowrap;">${day}</td><td style="font-weight:600;color:var(--green);">${s1}</td><td style="font-weight:600;color:var(--navy);">${s2}</td><td style="font-weight:700;">${wh>0?wh.toFixed(1)+'j':''}${ot>0?'<div style="font-size:10px;color:var(--orange);font-weight:700;">OT +'+ot.toFixed(1)+'j</div>':'—'}</td><td><span class="badge ${bc}">${statusMap[r.status]||r.status}</span></td></tr>`;
                     } else {
                         const s3 = r.scan_3 ? r.scan_3.substring(0, 5) : '—';
                         const s4 = r.scan_4 ? r.scan_4.substring(0, 5) : '—';
-                        html += `<tr><td style="white-space:nowrap;">${day}</td><td style="font-weight:600;color:var(--green);">${s1}</td><td>${s2}</td><td style="color:var(--green);">${s3}</td><td>${s4}</td><td style="font-weight:700;">${wh>0?wh.toFixed(1)+'j':'—'}</td><td><span class="badge ${bc}">${statusMap[r.status]||r.status}</span></td></tr>`;
+                        html += `<tr><td style="white-space:nowrap;">${day}</td><td style="font-weight:600;color:var(--green);">${s1}</td><td>${s2}</td><td style="color:var(--green);">${s3}</td><td>${s4}</td><td style="font-weight:700;">${wh>0?wh.toFixed(1)+'j':''}${ot>0?'<div style="font-size:10px;color:var(--orange);font-weight:700;">OT +'+ot.toFixed(1)+'j</div>':'—'}</td><td><span class="badge ${bc}">${statusMap[r.status]||r.status}</span></td></tr>`;
                     }
                 });
                 html += '</tbody></table></div>';
