@@ -1257,12 +1257,12 @@
                         $manualOT = (float)($a['overtime_hours'] ?? 0);
                         $todayStats['total_hours'] += $wh;
                         $todayStats['regular_hours'] += min($wh, 8);
-                        // Manual OT from admin edit takes precedence; otherwise approved request grants 45 minutes.
+                        // Manual OT from admin edit takes precedence; otherwise approved request uses actual time above 8 hours.
                         if ($manualOT > 0) {
                             $todayStats['overtime_hours'] += $manualOT;
                             $todayStats['ot_count']++;
                         } elseif (isset($approvedOTEmployees[(int)$a['employee_id']])) {
-                            $todayStats['overtime_hours'] += 0.75;
+                            $todayStats['overtime_hours'] += max(0, round($wh - 8, 2));
                             $todayStats['ot_count']++;
                         }
                     }
@@ -1929,9 +1929,9 @@
                                             $s4 = $a && !empty($a['scan_4']) ? substr($a['scan_4'], 0, 5) : null;
                                             $wh = (float)($a['work_hours'] ?? 0);
                                             $manualOT = (float)($a['overtime_hours'] ?? 0);
-                                            // Manual OT takes precedence; otherwise approved request shows fixed 45 minutes.
+                                            // Manual OT takes precedence; otherwise approved request shows actual overtime above 8 hours.
                                             $hasApprovedOT = isset($approvedOTEmployees[(int)$emp['id']]);
-                                            $otCounted = $manualOT > 0 ? $manualOT : ($hasApprovedOT ? 0.75 : 0);
+                                            $otCounted = $manualOT > 0 ? $manualOT : ($hasApprovedOT ? max(0, round($wh - 8, 2)) : 0);
                                         ?>
                                             <tr>
                                                 <td>

@@ -287,7 +287,7 @@ if ($action === 'attendance_today') {
             try {
                 $ot = $db->fetchOne("SELECT 1 FROM overtime_requests WHERE employee_id = ? AND overtime_date = ? AND status = 'approved'", [$empId, $today]);
                 if ($ot) {
-                    $att['overtime_hours'] = 0.75;
+                    $att['overtime_hours'] = max(0, round(((float)($att['work_hours'] ?? 0)) - 8, 2));
                 }
             } catch (Exception $e) {
                 // ignore and keep overtime_hours at 0
@@ -340,8 +340,8 @@ if ($action === 'attendance_history') {
             $totalOT += $otManual;
             $otComputed = $otManual;
         } elseif (!empty($overtimeDates[$attDate])) {
-            $totalOT += 0.75;
-            $otComputed = 0.75;
+            $otComputed = max(0, round($wh - 8, 2));
+            $totalOT += $otComputed;
         }
 
         if ($otComputed > 0) {
@@ -362,7 +362,7 @@ if ($action === 'attendance_history') {
             $rr['work_hours'] = 8; // show integer 8 when capped
             $rr['overtime_hours'] = 0;
         } elseif ($manualOT <= 0 && $hasApprovedOT) {
-            $rr['overtime_hours'] = 0.75;
+            $rr['overtime_hours'] = max(0, round($orig - 8, 2));
         }
     }
     unset($rr);
