@@ -294,10 +294,10 @@ if ($action === 'attendance_history') {
     $late = 0;
 
     // Get overtime submissions for this employee in the requested month.
-    // Only overtime with status 'pending' or 'approved' will allow OT counting.
+    // Only overtime with status 'approved' will allow OT counting (pending requests do not grant OT).
     $overtimeDates = [];
     try {
-        $ots = $db->fetchAll("SELECT overtime_date FROM overtime_requests WHERE employee_id = ? AND DATE_FORMAT(overtime_date, '%Y-%m') = ? AND status IN ('pending','approved')", [$empId, $month]) ?: [];
+        $ots = $db->fetchAll("SELECT overtime_date FROM overtime_requests WHERE employee_id = ? AND DATE_FORMAT(overtime_date, '%Y-%m') = ? AND status = 'approved'", [$empId, $month]) ?: [];
         foreach ($ots as $o) {
             $overtimeDates[(string)($o['overtime_date'] ?? '')] = true;
         }
