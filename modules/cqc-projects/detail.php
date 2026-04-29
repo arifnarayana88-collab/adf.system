@@ -75,9 +75,10 @@ if ($isPdfExport) {
     }
 
     header('Content-Type: text/html; charset=UTF-8');
-    ?>
+?>
     <!DOCTYPE html>
     <html lang="id">
+
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -205,6 +206,7 @@ if ($isPdfExport) {
             }
         </style>
     </head>
+
     <body>
         <div class="actions">
             <button onclick="window.print()">Print / Save as PDF</button>
@@ -267,8 +269,9 @@ if ($isPdfExport) {
             }, 200);
         });
     </script>
+
     </html>
-    <?php
+<?php
     exit;
 }
 
@@ -1184,9 +1187,9 @@ include '../../includes/header.php';
                             <span><?php echo $cat['expense_count']; ?> transaksi</span>
                         </div>
                         <?php $categoryRows = $expensesByCategory[$categoryId] ?? []; ?>
-                                <?php if (!empty($categoryRows)): ?>
+                        <?php if (!empty($categoryRows)): ?>
                             <div class="cqc-category-detail-list">
-                                        <?php foreach ($categoryRows as $row): ?>
+                                <?php foreach ($categoryRows as $row): ?>
                                     <div class="cqc-category-detail-row">
                                         <div class="cqc-category-detail-main">
                                             <div class="cqc-category-detail-desc"><?php echo htmlspecialchars($row['description'] ?: 'Tanpa keterangan'); ?></div>

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Database Customer - List & Manage Customers
  */
@@ -109,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (in_array('status', $customerColumns, true)) {
         $data['status'] = $rawIsActive ? 'active' : 'inactive';
     }
-    
+
     try {
         if ($action === 'edit' && isset($_POST['id'])) {
             $id = (int)$_POST['id'];
@@ -148,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($data)) {
                 throw new Exception('Tidak ada kolom yang bisa disimpan pada tabel customers');
             }
-            
+
             $insertedId = $db->insert('customers', $data);
             if (!$insertedId) {
                 throw new Exception('Insert customer gagal dijalankan');
@@ -158,7 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $_SESSION['error'] = 'Gagal menyimpan: ' . $e->getMessage();
     }
-    
+
     header('Location: customers.php');
     exit;
 }
@@ -272,17 +273,19 @@ include '../../includes/header.php';
 </div>
 
 <?php if (isset($_SESSION['success'])): ?>
-    <div class="alert alert-success"><?php echo $_SESSION['success']; unset($_SESSION['success']); ?></div>
+    <div class="alert alert-success"><?php echo $_SESSION['success'];
+                                        unset($_SESSION['success']); ?></div>
 <?php endif; ?>
 <?php if (isset($_SESSION['error'])): ?>
-    <div class="alert alert-danger"><?php echo $_SESSION['error']; unset($_SESSION['error']); ?></div>
+    <div class="alert alert-danger"><?php echo $_SESSION['error'];
+                                    unset($_SESSION['error']); ?></div>
 <?php endif; ?>
 
 <!-- Search -->
 <div class="card" style="margin-bottom: 1.25rem; padding: 1rem;">
     <form method="GET" style="display: flex; gap: 1rem;">
-        <input type="text" name="search" class="form-control" placeholder="Cari nama, kode, perusahaan, atau phone..." 
-               value="<?php echo htmlspecialchars($search); ?>" style="flex: 1;">
+        <input type="text" name="search" class="form-control" placeholder="Cari nama, kode, perusahaan, atau phone..."
+            value="<?php echo htmlspecialchars($search); ?>" style="flex: 1;">
         <select name="type" class="form-control" style="width: 150px;">
             <option value="">Semua Tipe</option>
             <option value="individual" <?php echo $type === 'individual' ? 'selected' : ''; ?>>Individual</option>
@@ -438,13 +441,13 @@ include '../../includes/header.php';
         <form method="POST" id="customerForm">
             <input type="hidden" name="action" id="formAction" value="add">
             <input type="hidden" name="id" id="customerId">
-            
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.5rem;">
                 <div class="form-group" style="grid-column: span 2;">
                     <label class="form-label">Nama Customer <span style="color: red;">*</span></label>
                     <input type="text" name="customer_name" id="customer_name" class="form-control" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label class="form-label">Tipe Customer</label>
                     <select name="customer_type" id="customer_type" class="form-control" onchange="toggleCompanyField()">
@@ -453,65 +456,65 @@ include '../../includes/header.php';
                         <option value="member">Member</option>
                     </select>
                 </div>
-                
+
                 <div class="form-group" id="companyField">
                     <label class="form-label">Nama Perusahaan</label>
                     <input type="text" name="company_name" id="company_name" class="form-control">
                 </div>
-                
+
                 <div class="form-group">
                     <label class="form-label">Contact Person</label>
                     <input type="text" name="contact_person" id="contact_person" class="form-control">
                 </div>
-                
+
                 <div class="form-group">
                     <label class="form-label">Phone</label>
                     <input type="text" name="phone" id="phone" class="form-control">
                 </div>
-                
+
                 <div class="form-group" style="grid-column: span 2;">
                     <label class="form-label">Email</label>
                     <input type="email" name="email" id="email" class="form-control">
                 </div>
-                
+
                 <div class="form-group" style="grid-column: span 2;">
                     <label class="form-label">Alamat</label>
                     <textarea name="address" id="address" class="form-control" rows="2"></textarea>
                 </div>
-                
+
                 <div class="form-group">
                     <label class="form-label">Kota</label>
                     <input type="text" name="city" id="city" class="form-control">
                 </div>
-                
+
                 <div class="form-group">
                     <label class="form-label">Provinsi</label>
                     <input type="text" name="province" id="province" class="form-control">
                 </div>
-                
+
                 <div class="form-group">
                     <label class="form-label">Kode Pos</label>
                     <input type="text" name="postal_code" id="postal_code" class="form-control">
                 </div>
-                
+
                 <div class="form-group">
                     <label class="form-label">NPWP</label>
                     <input type="text" name="npwp" id="npwp" class="form-control">
                 </div>
-                
+
                 <div class="form-group" style="display: flex; align-items: center; padding-top: 0.5rem;">
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                         <input type="checkbox" name="is_active" id="is_active" checked>
                         <span>Aktif</span>
                     </label>
                 </div>
-                
+
                 <div class="form-group" style="grid-column: span 2;">
                     <label class="form-label">Catatan</label>
                     <textarea name="notes" id="notes" class="form-control" rows="2"></textarea>
                 </div>
             </div>
-            
+
             <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem; padding: 1rem 1.5rem; border-top: 1px solid var(--border-color);">
                 <button type="button" class="btn btn-secondary" onclick="hideModal('addModal')">Batal</button>
                 <button type="submit" class="btn btn-primary">Simpan</button>
@@ -521,90 +524,93 @@ include '../../includes/header.php';
 </div>
 
 <style>
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
-.modal-content {
-    background: var(--bg-primary);
-    border-radius: 12px;
-    width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border-color);
-}
-.modal-header h3 {
-    margin: 0;
-    font-size: 1.125rem;
-    font-weight: 600;
-}
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background: var(--bg-primary);
+        border-radius: 12px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 600;
+    }
 </style>
 
 <script>
-feather.replace();
+    feather.replace();
 
-function toggleCompanyField() {
-    const type = document.getElementById('customer_type').value;
-    document.getElementById('companyField').style.display = type === 'company' ? 'block' : 'none';
-}
+    function toggleCompanyField() {
+        const type = document.getElementById('customer_type').value;
+        document.getElementById('companyField').style.display = type === 'company' ? 'block' : 'none';
+    }
 
-function showModal(id) {
-    document.getElementById(id).style.display = 'flex';
-    toggleCompanyField();
-}
+    function showModal(id) {
+        document.getElementById(id).style.display = 'flex';
+        toggleCompanyField();
+    }
 
-function hideModal(id) {
-    document.getElementById(id).style.display = 'none';
-    document.getElementById('customerForm').reset();
-    document.getElementById('formAction').value = 'add';
-    document.getElementById('customerId').value = '';
-    document.getElementById('modalTitle').textContent = 'Tambah Customer';
-    document.getElementById('is_active').checked = true;
-}
+    function hideModal(id) {
+        document.getElementById(id).style.display = 'none';
+        document.getElementById('customerForm').reset();
+        document.getElementById('formAction').value = 'add';
+        document.getElementById('customerId').value = '';
+        document.getElementById('modalTitle').textContent = 'Tambah Customer';
+        document.getElementById('is_active').checked = true;
+    }
 
-function editCustomer(data) {
-    document.getElementById('formAction').value = 'edit';
-    document.getElementById('customerId').value = data.id;
-    document.getElementById('modalTitle').textContent = 'Edit Customer';
-    
-    document.getElementById('customer_name').value = data.customer_name || '';
-    document.getElementById('customer_type').value = data.customer_type || 'individual';
-    document.getElementById('company_name').value = data.company_name || '';
-    document.getElementById('contact_person').value = data.contact_person || '';
-    document.getElementById('phone').value = data.phone || '';
-    document.getElementById('email').value = data.email || '';
-    document.getElementById('address').value = data.address || '';
-    document.getElementById('city').value = data.city || '';
-    document.getElementById('province').value = data.province || '';
-    document.getElementById('postal_code').value = data.postal_code || '';
-    document.getElementById('npwp').value = data.npwp || '';
-    document.getElementById('notes').value = data.notes || '';
-    document.getElementById('is_active').checked = data.is_active == 1;
-    
-    showModal('addModal');
-}
+    function editCustomer(data) {
+        document.getElementById('formAction').value = 'edit';
+        document.getElementById('customerId').value = data.id;
+        document.getElementById('modalTitle').textContent = 'Edit Customer';
 
-document.getElementById('addModal').addEventListener('click', function(e) {
-    if (e.target === this) hideModal('addModal');
-});
+        document.getElementById('customer_name').value = data.customer_name || '';
+        document.getElementById('customer_type').value = data.customer_type || 'individual';
+        document.getElementById('company_name').value = data.company_name || '';
+        document.getElementById('contact_person').value = data.contact_person || '';
+        document.getElementById('phone').value = data.phone || '';
+        document.getElementById('email').value = data.email || '';
+        document.getElementById('address').value = data.address || '';
+        document.getElementById('city').value = data.city || '';
+        document.getElementById('province').value = data.province || '';
+        document.getElementById('postal_code').value = data.postal_code || '';
+        document.getElementById('npwp').value = data.npwp || '';
+        document.getElementById('notes').value = data.notes || '';
+        document.getElementById('is_active').checked = data.is_active == 1;
 
-<?php if ($editData): ?>
-editCustomer(<?php echo json_encode($editData); ?>);
-<?php endif; ?>
+        showModal('addModal');
+    }
+
+    document.getElementById('addModal').addEventListener('click', function(e) {
+        if (e.target === this) hideModal('addModal');
+    });
+
+    <?php if ($editData): ?>
+        editCustomer(<?php echo json_encode($editData); ?>);
+    <?php endif; ?>
 </script>
 
 <?php include '../../includes/footer.php'; ?>
