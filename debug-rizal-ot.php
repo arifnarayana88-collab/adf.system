@@ -80,4 +80,3 @@ if (empty($slips)) {
 }
 
 echo "\n=== END DEBUG ===\n";
-?>

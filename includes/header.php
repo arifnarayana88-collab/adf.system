@@ -66,8 +66,35 @@ try {
 
     <!-- Business Theme CSS -->
     <style>
-        <?php echo getBusinessThemeCSS(); ?>
-        @keyframes bellShake{0%{transform:rotate(0)}15%{transform:rotate(14deg)}30%{transform:rotate(-14deg)}45%{transform:rotate(10deg)}60%{transform:rotate(-6deg)}75%{transform:rotate(2deg)}100%{transform:rotate(0)}}
+        <?php echo getBusinessThemeCSS(); ?>@keyframes bellShake {
+            0% {
+                transform: rotate(0)
+            }
+
+            15% {
+                transform: rotate(14deg)
+            }
+
+            30% {
+                transform: rotate(-14deg)
+            }
+
+            45% {
+                transform: rotate(10deg)
+            }
+
+            60% {
+                transform: rotate(-6deg)
+            }
+
+            75% {
+                transform: rotate(2deg)
+            }
+
+            100% {
+                transform: rotate(0)
+            }
+        }
     </style>
 </head>
 <?php
@@ -809,7 +836,12 @@ if (isset($_SESSION['user_id'])) {
                                 </div>`;
                             });
                             leaves.forEach(l => {
-                                const tl = {cuti:'🏖️ Cuti',sakit:'🩺 Sakit',izin:'📋 Izin',cuti_khusus:'⭐ Cuti Khusus'}[l.leave_type] || l.leave_type;
+                                const tl = {
+                                    cuti: '🏖️ Cuti',
+                                    sakit: '🩺 Sakit',
+                                    izin: '📋 Izin',
+                                    cuti_khusus: '⭐ Cuti Khusus'
+                                } [l.leave_type] || l.leave_type;
                                 html += `<div style="padding:12px 18px;border-bottom:1px solid #f8fafc;" id="notif-lv-${l.id}">
                                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
                                         <span style="font-size:14px;">📝</span>
@@ -843,18 +875,26 @@ if (isset($_SESSION['user_id'])) {
                         }
                         fd.append('admin_notes', notes);
                         try {
-                            const res = await fetch(NOTIF_BASE + '/api/get-notifications.php?type=admin_action', { method: 'POST', body: fd });
+                            const res = await fetch(NOTIF_BASE + '/api/get-notifications.php?type=admin_action', {
+                                method: 'POST',
+                                body: fd
+                            });
                             const data = await res.json();
                             if (data.success) {
-                                const el = document.getElementById('notif-' + (type==='overtime'?'ot':'lv') + '-' + id);
+                                const el = document.getElementById('notif-' + (type === 'overtime' ? 'ot' : 'lv') + '-' + id);
                                 if (el) {
-                                    el.innerHTML = '<div style="padding:8px;text-align:center;color:' + (action==='approve'?'#16a34a':'#ef4444') + ';font-size:0.78rem;font-weight:700;">' + (action==='approve'?'✅ Disetujui':'❌ Ditolak') + '</div>';
-                                    setTimeout(() => { el.style.display = 'none'; checkAdminNotifs(); }, 1500);
+                                    el.innerHTML = '<div style="padding:8px;text-align:center;color:' + (action === 'approve' ? '#16a34a' : '#ef4444') + ';font-size:0.78rem;font-weight:700;">' + (action === 'approve' ? '✅ Disetujui' : '❌ Ditolak') + '</div>';
+                                    setTimeout(() => {
+                                        el.style.display = 'none';
+                                        checkAdminNotifs();
+                                    }, 1500);
                                 }
                             } else {
                                 alert(data.message || 'Gagal memproses');
                             }
-                        } catch (e) { alert('Error: ' + e.message); }
+                        } catch (e) {
+                            alert('Error: ' + e.message);
+                        }
                     }
 
                     let _lastAdminCount = 0;
@@ -880,12 +920,18 @@ if (isset($_SESSION['user_id'])) {
                             }
                             const cntEl = document.getElementById('adminNotifCount');
                             if (cntEl) {
-                                if (count > 0) { cntEl.textContent = count; cntEl.style.display = 'inline'; }
-                                else { cntEl.style.display = 'none'; }
+                                if (count > 0) {
+                                    cntEl.textContent = count;
+                                    cntEl.style.display = 'inline';
+                                } else {
+                                    cntEl.style.display = 'none';
+                                }
                             }
                             _lastAdminCount = count;
                             if (adminNotifOpen) loadAdminNotifs();
-                        } catch (e) { console.log('notif check err', e); }
+                        } catch (e) {
+                            console.log('notif check err', e);
+                        }
                     }
                     checkAdminNotifs();
                     setInterval(checkAdminNotifs, 15000);
