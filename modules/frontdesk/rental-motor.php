@@ -120,6 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
         }
 
         // ── CREATE RENTAL (supports multiple motors) ────────────────────────
+        // MODIFIED: Price set to 0 at booking, calculated when returned
         if ($action === 'create_rental') {
             $guestName  = trim($_POST['guest_name'] ?? '');
             $guestPhone = trim($_POST['guest_phone'] ?? '');
@@ -139,11 +140,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
             $start = new DateTime($startDt);
             $end   = new DateTime($endDt);
             if ($end <= $start) throw new Exception('Tanggal selesai harus setelah tanggal mulai');
-            $days  = max(1, (int)ceil($start->diff($end)->days));
-
+            
             // Validate all motors
             $motorRows = [];
-            $grandTotal = 0;
+            $depositTotal = 0;
             foreach ($motors as $mi) {
                 $mid  = (int)($mi['motor_id'] ?? 0);
                 $rate = max(0, (float)($mi['daily_rate'] ?? 0));
@@ -156,9 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
                 if ($motorRow['status'] === 'rented') throw new Exception("Motor {$motorRow['plate_number']} sedang disewa");
                 if ($motorRow['status'] === 'maintenance') throw new Exception("Motor {$motorRow['plate_number']} sedang maintenance");
 
-                $itemTotal = round($days * $rate, 2);
-                $grandTotal += $itemTotal;
-                $motorRows[] = ['row' => $motorRow, 'rate' => $rate, 'total' => $itemTotal];
+                $motorRows[] = ['row' => $motorRow, 'rate' => $rate];
             }
 
             $pdo->beginTransaction();
@@ -170,29 +168,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
                 $seq    = $last ? ((int)substr($last, -4) + 1) : 1;
                 $invNo  = $prefix . str_pad($seq, 4, '0', STR_PAD_LEFT);
 
-                $paidAmt   = min($deposit, $grandTotal);
-                $payStatus = ($paidAmt <= 0) ? 'unpaid' : ($paidAmt >= $grandTotal ? 'paid' : 'partial');
-
                 $motorLabels = array_map(fn($m) => $m['row']['motor_name'] . ' (' . $m['row']['plate_number'] . ')', $motorRows);
                 $invNotes = "Rental Motor: " . implode(', ', $motorLabels) . ($notes ? " - {$notes}" : '');
 
+                // Create invoice with 0 initial total (will be filled when motor is returned)
                 $pdo->prepare("INSERT INTO hotel_invoices
                     (business_id, invoice_number, booking_id, guest_name, guest_phone, room_number,
                      total, paid_amount, payment_status, payment_method, status, notes, created_by, created_at)
                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())")
                     ->execute([$businessId, $invNo, $bookingId, $guestName, $guestPhone ?: null,
-                        $roomNumber ?: null, $grandTotal, $paidAmt, $payStatus, 'cash',
+                        $roomNumber ?: null, 0, 0, 'unpaid', 'cash',
                         'confirmed', $invNotes, $currentUser['id'] ?? null]);
                 $invoiceId = (int)$pdo->lastInsertId();
 
-                // Add invoice items — one per motor
+                // Add invoice items for tracking (quantity and price will be updated on return)
                 $iiStmt = $pdo->prepare("INSERT INTO hotel_invoice_items
                     (invoice_id, service_type, description, quantity, unit_price, total_price, start_datetime, end_datetime)
                     VALUES (?,?,?,?,?,?,?,?)");
                 foreach ($motorRows as $mr) {
                     $iiStmt->execute([$invoiceId, 'motor_rental',
                         "{$mr['row']['motor_name']} ({$mr['row']['plate_number']})",
-                        $days, $mr['rate'], $mr['total'], $startDt, $endDt]);
+                        0, $mr['rate'], 0, $startDt, $endDt]);
                 }
             }
 
@@ -206,8 +202,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
             foreach ($motorRows as $idx => $mr) {
                 // Last item gets deposit remainder to avoid rounding loss
                 $dep = ($idx === count($motorRows) - 1) ? round($deposit - ($depositPerMotor * (count($motorRows) - 1)), 2) : $depositPerMotor;
+                // IMPORTANT: Set total_price to 0 initially, will be calculated on return
                 $rbStmt->execute([$businessId, $mr['row']['id'], $invoiceId, $guestName, $guestPhone ?: null,
-                    $roomNumber ?: null, $bookingId, $startDt, $endDt, $mr['rate'], $mr['total'],
+                    $roomNumber ?: null, $bookingId, $startDt, $endDt, $mr['rate'], 0,
                     $dep, 'active', $notes ?: null, $currentUser['id'] ?? null]);
                 $rentalIds[] = (int)$pdo->lastInsertId();
 
@@ -222,6 +219,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
         }
 
         // ── RETURN MOTOR ────────────────────────────────────────────────────
+        // ENHANCED: Calculate actual price when motor is returned
         if ($action === 'return_motor') {
             $rentalId = (int)($_POST['rental_id'] ?? 0);
             if (!$rentalId) throw new Exception('Invalid rental ID');
@@ -237,38 +235,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
 
             $returnTime = date('Y-m-d H:i:s');
 
-            // Calculate actual days and adjust total if overdue additional days
+            // Calculate actual days using 24-hour increments (from start to actual return)
             $start      = new DateTime($rentalRow['start_datetime']);
             $actualEnd  = new DateTime($returnTime);
-            $actualDays = max(1, (int)ceil($start->diff($actualEnd)->days));
-            $origDays   = max(1, (int)ceil($start->diff(new DateTime($rentalRow['end_datetime']))->days));
-
-            $newTotal = $rentalRow['total_price'];
-            if ($actualDays > $origDays) {
-                $extraDays = $actualDays - $origDays;
-                $extraCharge = round($extraDays * (float)$rentalRow['daily_rate'], 2);
-                $newTotal = round((float)$rentalRow['total_price'] + $extraCharge, 2);
-            }
+            $interval   = $start->diff($actualEnd);
+            
+            // Calculate days as 24-hour increments: total hours / 24
+            $totalHours = ($interval->d * 24) + $interval->h + ($interval->i > 0 ? 1 : 0) + ($interval->s > 0 ? 1 : 0);
+            $actualDays = max(1, (int)ceil($totalHours / 24));
+            
+            // Calculate actual price with minimum 100k
+            $dailyRate = (float)$rentalRow['daily_rate'];
+            $calculatedTotal = $actualDays * $dailyRate;
+            $newTotal = max(100000, round($calculatedTotal, 2)); // Minimum 100k
 
             $pdo->beginTransaction();
 
+            // Update rental with calculated total price
             $pdo->prepare("UPDATE rental_motor_bookings SET status='returned', actual_return=?, total_price=?, updated_at=NOW() WHERE id=?")
                 ->execute([$returnTime, $newTotal, $rentalId]);
 
             // Update motor status back to available
             $pdo->prepare("UPDATE rental_motors SET status='available', updated_at=NOW() WHERE id=?")->execute([$rentalRow['motor_id']]);
 
-            // Update invoice total if exists and total changed
-            if ($rentalRow['invoice_id'] && $newTotal != (float)$rentalRow['total_price']) {
-                $pdo->prepare("UPDATE hotel_invoices SET total=?, updated_at=NOW() WHERE id=? AND cashbook_synced=0")
+            // Update invoice if exists
+            if ($rentalRow['invoice_id']) {
+                // Update invoice total (add the calculated rental price)
+                $pdo->prepare("UPDATE hotel_invoices SET total = total + ?, updated_at=NOW() WHERE id=? AND cashbook_synced=0")
                     ->execute([$newTotal, $rentalRow['invoice_id']]);
-                $pdo->prepare("UPDATE hotel_invoice_items SET quantity=?, total_price=? WHERE invoice_id=? AND service_type='motor_rental'")
-                    ->execute([$actualDays, $newTotal, $rentalRow['invoice_id']]);
+                
+                // Update invoice items with calculated quantity and price
+                $pdo->prepare("UPDATE hotel_invoice_items 
+                    SET quantity=?, unit_price=?, total_price=? 
+                    WHERE invoice_id=? AND service_type='motor_rental' AND description LIKE ?")
+                    ->execute([$actualDays, $dailyRate, $newTotal, $rentalRow['invoice_id'], "%{$rentalRow['plate_number']}%"]);
             }
 
             $pdo->commit();
             ob_clean();
-            echo json_encode(['success' => true, 'actual_days' => $actualDays, 'new_total' => $newTotal]);
+            echo json_encode([
+                'success' => true, 
+                'actual_days' => $actualDays, 
+                'daily_rate' => $dailyRate,
+                'new_total' => $newTotal,
+                'calculated' => $actualDays * $dailyRate,
+                'is_min_price' => ($actualDays * $dailyRate) < 100000
+            ]);
             exit;
         }
 
@@ -521,6 +533,9 @@ include '../../includes/header.php';
             </div>
         </div>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+            <a href="rental-motor-dashboard.php" class="btn-rm btn-rm-secondary" style="text-decoration:none;font-size:0.8rem;padding:0.4rem 0.8rem">
+                📊 Dashboard
+            </a>
             <a href="hotel-services.php" class="btn-rm btn-rm-secondary" style="text-decoration:none;font-size:0.8rem;padding:0.4rem 0.8rem">
                 ← Hotel Services
             </a>
@@ -604,7 +619,20 @@ include '../../includes/header.php';
                                 <?php echo $remaining; ?>
                             </span>
                         </td>
-                        <td style="font-weight:600">Rp <?php echo number_format($r['total_price'],0,',','.'); ?></td>
+                        <td style="font-weight:600;font-size:0.82rem">
+                            <?php
+                            // Show estimated price based on daily rate if total_price is 0 (pending)
+                            if ((float)$r['total_price'] == 0) {
+                                $startDt = new DateTime($r['start_datetime']);
+                                $endDt = new DateTime($r['end_datetime']);
+                                $estDays = max(1, (int)ceil($startDt->diff($endDt)->days));
+                                $estPrice = max(100000, round($estDays * (float)$r['daily_rate'], 2));
+                                echo '💰 ~Rp ' . number_format($estPrice, 0, ',', '.') . '<br><span style="font-size:0.7rem;color:var(--text-secondary)">Hitung saat kembali</span>';
+                            } else {
+                                echo 'Rp ' . number_format($r['total_price'], 0, ',', '.');
+                            }
+                            ?>
+                        </td>
                         <td>
                             <?php if ($r['invoice_number']): ?>
                             <a href="hotel-service-invoice.php?id=<?php echo $r['invoice_id']; ?>" target="_blank"
@@ -833,6 +861,12 @@ include '../../includes/header.php';
 <div class="rm-modal-overlay" id="rentalModal" onclick="if(event.target===this)closeRentalModal()">
     <div class="rm-modal" style="max-width:620px">
         <h3>🔑 Sewa Motor Baru</h3>
+        
+        <!-- Pricing Info Box -->
+        <div style="background:linear-gradient(135deg,#f0f4ff,#e8edff);border-radius:8px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.82rem;border-left:4px solid #6366f1">
+            <strong>💡 Sistem Harga Dinamis:</strong><br/>
+            Harga dihitung saat motor dikembalikan berdasarkan lama pinjam sesungguhnya (24-jam increment). Minimum Rp 100.000 per unit.
+        </div>
 
         <!-- Guest Toggle -->
         <div class="guest-toggle">
@@ -1186,7 +1220,7 @@ function calcRentalTotal() {
         }
     });
     document.getElementById('rentalTotalPreview').textContent =
-        'Total: Rp ' + grandTotal.toLocaleString('id-ID') + ' (' + unitCount + ' unit × ' + days + ' hari)';
+        '📊 Estimasi: Rp ' + grandTotal.toLocaleString('id-ID') + ' (' + unitCount + ' unit × ' + days + ' hari, min Rp 100k/unit)';
 }
 
 function createRental() {
@@ -1269,10 +1303,17 @@ function returnMotor(rentalId, motorName) {
         .then(r => r.json())
         .then(d => {
             if (d.success) {
-                let msg = 'Motor berhasil dikembalikan!';
-                if (d.actual_days && d.new_total) {
-                    msg += '\nTotal: Rp ' + parseFloat(d.new_total).toLocaleString('id-ID') + ' (' + d.actual_days + ' hari)';
+                let msg = '✅ Motor ' + motorName + ' berhasil dikembalikan!\n\n';
+                msg += '📊 Detail Perhitungan:\n';
+                msg += '━━━━━━━━━━━━━━━━━━━━━━━━\n';
+                msg += 'Lama Pinjam: ' + d.actual_days + ' hari (24-jam increment)\n';
+                msg += 'Tarif/Hari: Rp ' + parseFloat(d.daily_rate).toLocaleString('id-ID') + '\n';
+                msg += 'Kalkulasi: ' + d.actual_days + ' × Rp ' + parseFloat(d.daily_rate).toLocaleString('id-ID') + ' = Rp ' + parseFloat(d.calculated).toLocaleString('id-ID') + '\n';
+                if (d.is_min_price) {
+                    msg += '➜ Minimum Rp 100.000 diterapkan\n';
                 }
+                msg += '━━━━━━━━━━━━━━━━━━━━━━━━\n';
+                msg += '💰 Total: Rp ' + parseFloat(d.new_total).toLocaleString('id-ID');
                 alert(msg);
                 location.reload();
             } else {
