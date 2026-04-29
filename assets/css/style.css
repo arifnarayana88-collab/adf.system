@@ -104,6 +104,30 @@ body[data-theme="light"] .sidebar .submenu-link {
     color: #475569 !important;
 }
 
+body[data-business="narayana-hotel"] .sidebar,
+body[data-business="narayana-hotel"] .sidebar * {
+    color: #ffffff !important;
+    position: relative;
+    z-index: 2;
+}
+
+body[data-business="narayana-hotel"] .sidebar {
+    background: linear-gradient(180deg, #0f172a 0%, #111827 100%) !important;
+}
+
+body[data-business="narayana-hotel"] .sidebar .nav-link,
+body[data-business="narayana-hotel"] .sidebar .submenu-link,
+body[data-business="narayana-hotel"] .sidebar .menu-section,
+body[data-business="narayana-hotel"] .sidebar .logo,
+body[data-business="narayana-hotel"] .sidebar .sidebar-footer {
+    color: #ffffff !important;
+}
+
+body[data-business="narayana-hotel"] .sidebar .nav-link:hover,
+body[data-business="narayana-hotel"] .sidebar .submenu-link:hover {
+    color: #ffffff !important;
+}
+
 body[data-theme="light"] .sidebar .submenu-link:hover {
     background: #cbd5e1 !important;
     color: #0f172a !important;
