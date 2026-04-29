@@ -190,6 +190,32 @@ body[data-business="narayana-hotel"] .sidebar .sidebar-footer > div:last-child {
     color: rgba(255, 255, 255, 0.72) !important;
 }
 
+body[data-business="narayana-hotel"] .sidebar select[onchange*="switchBusiness"],
+body[data-business="narayana-hotel"] .sidebar select {
+    background: linear-gradient(180deg, #1a2d4d 0%, #0f1f35 100%) !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+body[data-business="narayana-hotel"] .sidebar select[onchange*="switchBusiness"]:hover,
+body[data-business="narayana-hotel"] .sidebar select:hover {
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    background: linear-gradient(180deg, #1e334d 0%, #132440 100%) !important;
+}
+
+body[data-business="narayana-hotel"] .sidebar select[onchange*="switchBusiness"]:focus,
+body[data-business="narayana-hotel"] .sidebar select:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+}
+
+body[data-business="narayana-hotel"] .sidebar select[onchange*="switchBusiness"] option,
+body[data-business="narayana-hotel"] .sidebar select option {
+    background: #0f172a !important;
+    color: #ffffff !important;
+}
+
 body[data-theme="light"] .sidebar .submenu-link:hover {
     background: #cbd5e1 !important;
     color: #0f172a !important;
