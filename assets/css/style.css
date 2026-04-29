@@ -155,6 +155,41 @@ body[data-business="narayana-hotel"] .sidebar .submenu-link:hover {
     color: #ffffff !important;
 }
 
+body[data-business="narayana-hotel"] .sidebar .submenu {
+    background: rgba(15, 23, 42, 0.92) !important;
+    border-radius: 10px;
+}
+
+body[data-business="narayana-hotel"] .sidebar .submenu-link {
+    background: transparent !important;
+    color: #ffffff !important;
+}
+
+body[data-business="narayana-hotel"] .sidebar .submenu-link.active,
+body[data-business="narayana-hotel"] .sidebar .submenu-link:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+}
+
+body[data-business="narayana-hotel"] .sidebar .sidebar-footer {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(17, 24, 39, 1) 100%) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body[data-business="narayana-hotel"] .sidebar .sidebar-footer > div:first-child > div:first-child {
+    background: #0f172a !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+body[data-business="narayana-hotel"] .sidebar .sidebar-footer > div:first-child > div:last-child div:first-child {
+    color: #ffffff !important;
+}
+
+body[data-business="narayana-hotel"] .sidebar .sidebar-footer > div:first-child > div:last-child div:last-child,
+body[data-business="narayana-hotel"] .sidebar .sidebar-footer > div:last-child {
+    color: rgba(255, 255, 255, 0.72) !important;
+}
+
 body[data-theme="light"] .sidebar .submenu-link:hover {
     background: #cbd5e1 !important;
     color: #0f172a !important;
