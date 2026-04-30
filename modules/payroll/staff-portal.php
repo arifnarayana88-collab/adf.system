@@ -1749,10 +1749,26 @@ try {
             font-size: 10px;
         }
 
+        .bf-menu-main {
+            min-width: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
         .bf-menu-name {
             color: #1e293b;
             font-weight: 700;
             line-height: 1.25;
+            word-break: break-word;
+        }
+
+        .bf-menu-note {
+            color: #f59e0b;
+            font-size: 9px;
+            line-height: 1.25;
+            font-style: italic;
             word-break: break-word;
         }
 
@@ -3862,6 +3878,12 @@ try {
                 const orders = d.orders || [];
                 const stats = d.stats || {};
                 const sc = stats.status || {};
+                const esc = (value) => String(value ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
 
                 // Stats bar
                 document.getElementById('bfStats').innerHTML = `
@@ -3914,15 +3936,22 @@ try {
                     if (items.length > 0) {
                         items.forEach(m => {
                             const qty = parseInt(m.quantity || 1, 10) || 1;
-                            menuRows += `<div class="bf-menu-row"><span class="bf-menu-name">${m.menu_name||'Menu'}</span><span class="bf-menu-qty">x${qty}</span></div>`;
+                            menuRows += `
+                                <div class="bf-menu-row">
+                                    <div class="bf-menu-main">
+                                        <span class="bf-menu-name">${esc(m.menu_name || 'Menu')}</span>
+                                        ${m.note ? `<div class="bf-menu-note">Catatan: ${esc(m.note)}</div>` : ''}
+                                    </div>
+                                    <span class="bf-menu-qty">x${qty}</span>
+                                </div>`;
                         });
                     } else {
-                        menuRows = `<div class="bf-menu-row"><span class="bf-menu-name">${o.menu_name || 'Menu belum diisi'}</span><span class="bf-menu-qty">x1</span></div>`;
+                        menuRows = `<div class="bf-menu-row"><div class="bf-menu-main"><span class="bf-menu-name">${esc(o.menu_name || 'Menu belum diisi')}</span></div><span class="bf-menu-qty">x1</span></div>`;
                     }
 
                     const price = parseFloat(o.total_price || 0);
                     const priceStr = price > 0 ? 'Rp ' + price.toLocaleString('id-ID') : 'Free';
-                    const req = o.special_requests ? `<div class="bf-special">💬 ${o.special_requests}</div>` : '';
+                    const req = o.special_requests ? `<div class="bf-special">💬 ${esc(o.special_requests)}</div>` : '';
                     const canComplete = orderId > 0 && o.order_status !== 'completed';
                     const completeBtn = canComplete ?
                         `<button class="bf-complete-btn" onclick="markBreakfastCompleted(${orderId}, this)">✔ Complete</button>` :
