@@ -1244,7 +1244,7 @@ if ($action === 'submit_link') {
                     $serviceType,
                     $breakfastLocation,
                     $menuJson,
-                    $portalNote,
+                    $specialRequests,
                     $totalPrice,
                     (int)$onTheSpot,
                     (int)$existing['id']
@@ -1266,7 +1266,7 @@ if ($action === 'submit_link') {
                     $breakfastLocation,
                     (int)$onTheSpot,
                     $menuJson,
-                    $portalNote,
+                    $specialRequests,
                     $totalPrice,
                     $createdBy
                 ]);
@@ -1318,12 +1318,8 @@ if ($action === 'submit_link') {
             if ($extraMainCount > 0) $extraLabel[] = 'main x' . $extraMainCount;
             if ($extraDrinkCount > 0) $extraLabel[] = 'drink x' . $extraDrinkCount;
             if ($extraChildCount > 0) $extraLabel[] = 'child x' . $extraChildCount;
-            $extraNotes = 'Auto extra from guest portal [' . implode(', ', $extraLabel) . '] token=' . ($link['short_code'] ?? $token) . ' date=' . $breakfastDate;
-
-            // Prevent duplicate extra rows for the same link token: update if exists, else insert.
-            $existingExtra = $db->fetchOne(
-                "SELECT id FROM booking_extras WHERE booking_id = ? AND item_name = 'Extra Breakfast' AND notes LIKE ? LIMIT 1",
-                [$targetBookingId, '%token=' . ($link['short_code'] ?? $token) . '%']
+            $portalMeta = ($portalNote !== '') ? ' [' . $portalNote . ']' : '';
+            $extraNotes = 'Auto extra from guest portal [' . implode(', ', $extraLabel) . ']' . $portalMeta . ' token=' . ($link['short_code'] ?? $token) . ' date=' . $breakfastDate;
             );
 
             if (!empty($existingExtra['id'])) {
