@@ -69,10 +69,9 @@ include __DIR__ . '/../../includes/header.php';
     }
 
     .exp-container {
-        max-width: 100%;
-        width: 100%;
-        margin: 0;
-        padding: 0;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 1rem;
     }
 
     .exp-header {
@@ -480,6 +479,13 @@ include __DIR__ . '/../../includes/header.php';
             <p>Ekspor data karyawan dan gaji dalam berbagai format (Excel, CSV, PDF)</p>
         </div>
 
+        <!-- Debug panel (hidden by default) -->
+        <div id="expDebug" style="display:none;position:fixed;bottom:18px;right:18px;z-index:9999;background:#fff;border:1px solid #e2e8f0;padding:12px;border-radius:8px;box-shadow:0 6px 24px rgba(15,23,42,0.12);max-width:360px;font-size:13px;color:#0f172a;">
+            <div style="font-weight:700;margin-bottom:6px;">Export Debug</div>
+            <pre id="expDebugContent" style="margin:0;white-space:pre-wrap;word-break:break-word;font-family:inherit;font-size:12px;color:#0f172a;">--</pre>
+            <div style="text-align:right;margin-top:8px;"><button onclick="document.getElementById('expDebug').style.display='none'" style="background:#f1f5f9;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;">Close</button></div>
+        </div>
+
         <!-- Quick Export Options -->
         <div class="exp-options">
             <!-- Employee Master Data -->
@@ -614,6 +620,9 @@ include __DIR__ . '/../../includes/header.php';
             return;
         }
 
+        // Show debug info
+        showExpDebug({action: 'quick', export_type: exportType, period: period, format: 'excel'});
+
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = 'export-handler.php';
@@ -639,9 +648,55 @@ include __DIR__ . '/../../includes/header.php';
             form.appendChild(periodInput);
         }
 
+        // append current department filter value if exists
+        const dept = document.getElementById('department_filter');
+        if (dept && dept.value) {
+            const d = document.createElement('input');
+            d.type = 'hidden'; d.name = 'department_filter'; d.value = dept.value;
+            form.appendChild(d);
+        }
+
         document.body.appendChild(form);
         form.submit();
     }
+
+    // Helper to show debug panel with info
+    function showExpDebug(obj) {
+        try {
+            const panel = document.getElementById('expDebug');
+            const content = document.getElementById('expDebugContent');
+            if (!panel || !content) return;
+            content.textContent = JSON.stringify(obj, null, 2);
+            panel.style.display = 'block';
+        } catch (e) {
+            console.log('debug show failed', e);
+        }
+    }
+
+    // Intercept custom form submit to show debug before sending
+    document.addEventListener('DOMContentLoaded', function() {
+        const ef = document.getElementById('exportForm');
+        if (ef) {
+            ef.addEventListener('submit', function(e) {
+                // collect values
+                const data = {};
+                data.action = 'custom';
+                data.period = (document.getElementById('period') || {}).value || '';
+                data.department_filter = (document.getElementById('department_filter') || {}).value || '';
+                data.include_employee_data = !!document.getElementById('inc_emp')?.checked;
+                data.include_salary_details = !!document.getElementById('inc_sal')?.checked;
+                data.include_bank_info = !!document.getElementById('inc_bank')?.checked;
+                data.format = (e.submitter && e.submitter.value) ? e.submitter.value : (ef.querySelector('button[name="format"]')?.value || '');
+
+                showExpDebug(data);
+
+                // allow submission to continue after a short pause so user can see debug
+                // do not prevent default; show for 400ms
+                e.preventDefault();
+                setTimeout(() => ef.submit(), 400);
+            });
+        }
+    });
 </script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
