@@ -2031,6 +2031,10 @@ $token = trim((string)($_GET['t'] ?? ''));
                             removeMenuQty(group, id);
                             var card = cb.closest('.menu-item');
                             if (card) card.classList.remove('selected');
+                            // Trigger change event to update UI properly
+                            var changeEvt = document.createEvent('Event');
+                            changeEvt.initEvent('change', true, true);
+                            cb.dispatchEvent(changeEvt);
                         } else {
                             setMenuQty(group, id, qty);
                         }
@@ -2401,7 +2405,9 @@ $token = trim((string)($_GET['t'] ?? ''));
             if (quotaPopupCloseEl) {
                 quotaPopupCloseEl.addEventListener('click', function() {
                     enforceQuotaLimits();
-                    if (quotaPopupEl) quotaPopupEl.classList.remove('show');
+                    // Don't close modal here - let showQuotaPopup() handle it
+                    // If there are still over-quota items, modal will reopen
+                    // If quotas are met, modal will be hidden automatically
                 });
             }
             loadLink();
