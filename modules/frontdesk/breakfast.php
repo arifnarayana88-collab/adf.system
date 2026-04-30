@@ -555,7 +555,15 @@ include '../../includes/header.php';
         padding: .15rem .35rem;
         background: rgba(139, 92, 246, .15);
         color: #a78bfa;
-        border-radius: 3px
+        border-radius: 3px;
+        display: inline-flex;
+        flex-direction: column;
+        gap: .1rem
+    }
+
+    .bf-order-tag-main {
+        font-weight: 600;
+        line-height: 1.1
     }
 
     .bf-order-foot {
@@ -893,7 +901,8 @@ include '../../includes/header.php';
         font-size: .62rem;
         color: #f59e0b;
         font-style: italic;
-        margin-left: .2rem
+        margin-left: .1rem;
+        line-height: 1.15
     }
 
     .bf-order-special {
@@ -1196,11 +1205,15 @@ include '../../includes/header.php';
                         <div class="bf-order-room"><?php echo ($order['location'] ?? 'restaurant') === 'restaurant' ? '🍽️ Restaurant' : (($order['location'] ?? '') === 'take_away' ? '🥡 Take Away' : '🚪 Room Service'); ?></div>
                         <div class="bf-order-menus">
                             <?php foreach ($order['menu_items'] as $item): ?>
-                                <span class="bf-order-tag">
-                                    <?php echo htmlspecialchars($item['menu_name'] ?? '?'); ?>
-                                    <?php if (($item['quantity'] ?? 1) > 1): ?>×<?php echo $item['quantity']; ?><?php endif; ?>
-                                    <?php if (!empty($item['note'])): ?><span class="bf-order-note">(<?php echo htmlspecialchars($item['note']); ?>)</span><?php endif; ?>
-                                </span>
+                                <div class="bf-order-tag">
+                                    <div class="bf-order-tag-main">
+                                        <?php echo htmlspecialchars($item['menu_name'] ?? '?'); ?>
+                                        <?php if (($item['quantity'] ?? 1) > 1): ?>×<?php echo $item['quantity']; ?><?php endif; ?>
+                                    </div>
+                                    <?php if (!empty($item['note'])): ?>
+                                        <div class="bf-order-note">Catatan: <?php echo htmlspecialchars($item['note']); ?></div>
+                                    <?php endif; ?>
+                                </div>
                             <?php endforeach; ?>
                         </div>
                         <?php if (!empty($order['special_requests'])): ?>
@@ -1638,7 +1651,7 @@ include '../../includes/header.php';
             if (it.is_free) html += ' <span style="color:#10b981;font-size:10px;font-weight:400">(Free)</span>';
             html += '</td>';
             html += '<td style="padding:10px 12px;text-align:center">' + qty + '</td>';
-            html += '<td style="padding:10px 12px;color:#92400e;font-style:italic">' + escHtml(it.note || '-') + '</td>';
+            html += '<td style="padding:10px 12px;color:#92400e;font-style:italic">' + (it.note ? ('Catatan: ' + escHtml(it.note)) : '-') + '</td>';
             html += '<td style="padding:10px 12px;text-align:right">' + (lineTotal > 0 ? 'Rp ' + numberFmt(lineTotal) : '-') + '</td>';
             html += '</tr>';
         }
