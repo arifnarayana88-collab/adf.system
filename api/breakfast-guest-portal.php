@@ -1320,7 +1320,6 @@ if ($action === 'submit_link') {
             if ($extraChildCount > 0) $extraLabel[] = 'child x' . $extraChildCount;
             $portalMeta = ($portalNote !== '') ? ' [' . $portalNote . ']' : '';
             $extraNotes = 'Auto extra from guest portal [' . implode(', ', $extraLabel) . ']' . $portalMeta . ' token=' . ($link['short_code'] ?? $token) . ' date=' . $breakfastDate;
-            );
 
             if (!empty($existingExtra['id'])) {
                 $pdo->prepare("UPDATE booking_extras SET quantity = 1, unit_price = ?, total_price = ?, notes = ? WHERE id = ?")

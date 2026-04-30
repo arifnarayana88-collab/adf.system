@@ -2264,7 +2264,7 @@ $token = trim((string)($_GET['t'] ?? ''));
                 var breakfastTime = (breakfastTimeEl && breakfastTimeEl.value) ? String(breakfastTimeEl.value).trim() : '';
                 var serviceType = (serviceTypeEl && serviceTypeEl.value) ? String(serviceTypeEl.value).trim() : '';
                 var breakfastLocation = (breakfastLocationEl && breakfastLocationEl.value) ? String(breakfastLocationEl.value).trim() : '';
-                
+
                 // Debug: log collected notes
                 console.log('DEBUG - Menu notes collected:', {
                     mainNotes: mainPicked.notes,
