@@ -2886,6 +2886,8 @@ if ($trialStatus) {
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
+                            ensureBaseChartDatasets();
+
                             // Calculate daily net series
                             const netSeries = buildNetSeries(data.income, data.expense);
 
@@ -3038,6 +3040,8 @@ if ($trialStatus) {
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
+                            ensureBaseChartDatasets();
+
                             // Calculate daily net series
                             const netSeries = buildNetSeries(data.income, data.expense);
 
@@ -3073,6 +3077,8 @@ if ($trialStatus) {
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
+                            ensureBaseChartDatasets();
+
                             // Calculate daily net series
                             const netSeries = buildNetSeries(data.income, data.expense);
 
@@ -3103,19 +3109,68 @@ if ($trialStatus) {
                     .catch(error => console.error('Error updating chart:', error));
             }
 
+            function ensureBaseChartDatasets() {
+                if (!tradingChart || !Array.isArray(tradingChart.data.datasets)) return;
+                tradingChart.data.datasets = tradingChart.data.datasets.slice(0, 3);
+                tradingChart.data.datasets[0].label = 'Pemasukan';
+                tradingChart.data.datasets[1].label = 'Pengeluaran';
+                tradingChart.data.datasets[2].label = 'Net';
+                tradingChart.data.datasets[2].type = 'line';
+                tradingChart.data.datasets[2].borderDash = [];
+            }
+
             function updateChartYear(year) {
                 fetch(`api/yearly-chart-data.php?year=${year}`)
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            // Calculate daily net series
+                            ensureBaseChartDatasets();
+
+                            // Calculate yearly net series
                             const netSeries = buildNetSeries(data.income, data.expense);
 
                             // Update chart with animation
                             tradingChart.data.labels = data.labels;
                             tradingChart.data.datasets[0].data = data.income;
+                            tradingChart.data.datasets[0].label = `Pemasukan ${year}`;
                             tradingChart.data.datasets[1].data = data.expense;
+                            tradingChart.data.datasets[1].label = `Pengeluaran ${year}`;
                             tradingChart.data.datasets[2].data = netSeries;
+                            tradingChart.data.datasets[2].label = `Net ${year}`;
+
+                            // Add comparison lines for previous year (monthly compare)
+                            if (Array.isArray(data.compare_income) && Array.isArray(data.compare_expense)) {
+                                tradingChart.data.datasets.push({
+                                    type: 'line',
+                                    label: `Pemasukan ${data.compare_year}`,
+                                    data: data.compare_income,
+                                    borderColor: 'rgba(16, 185, 129, 0.6)',
+                                    backgroundColor: 'transparent',
+                                    borderWidth: 2,
+                                    borderDash: [6, 4],
+                                    fill: false,
+                                    tension: 0.25,
+                                    pointRadius: 2,
+                                    pointHoverRadius: 4,
+                                    order: 4
+                                });
+
+                                tradingChart.data.datasets.push({
+                                    type: 'line',
+                                    label: `Pengeluaran ${data.compare_year}`,
+                                    data: data.compare_expense,
+                                    borderColor: 'rgba(249, 115, 22, 0.65)',
+                                    backgroundColor: 'transparent',
+                                    borderWidth: 2,
+                                    borderDash: [6, 4],
+                                    fill: false,
+                                    tension: 0.25,
+                                    pointRadius: 2,
+                                    pointHoverRadius: 4,
+                                    order: 5
+                                });
+                            }
+
                             tradingChart.update();
 
                             // Update summary cards
@@ -3126,7 +3181,7 @@ if ($trialStatus) {
                             updateSummaryCards(totalIncome, totalExpense, netBalance);
 
                             // Update period display
-                            document.getElementById('periodDisplay').textContent = 'Jan - Des ' + year + ' (12 bulan)';
+                            document.getElementById('periodDisplay').textContent = 'Jan - Des ' + year + ' (12 bulan, banding ' + data.compare_year + ')';
                         }
                     })
                     .catch(error => console.error('Error updating chart:', error));
