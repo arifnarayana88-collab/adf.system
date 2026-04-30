@@ -3033,9 +3033,9 @@ if ($trialStatus) {
                             document.getElementById('periodDisplay').textContent = dateStr + ' (24 jam)';
                         }
 
-                            if (!silent) {
-                                currentView = 'daily';
-                            }
+                        if (!silent) {
+                            currentView = 'daily';
+                        }
                     })
                     .catch(error => console.error('Error updating chart:', error));
             }
@@ -3076,9 +3076,9 @@ if ($trialStatus) {
                     })
                     .catch(error => console.error('Error updating chart:', error));
 
-                            if (!silent) {
-                                currentView = 'alltime';
-                            }
+                if (!silent) {
+                    currentView = 'alltime';
+                }
             }
 
             function ensureBaseChartDatasets() {
