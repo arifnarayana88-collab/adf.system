@@ -89,23 +89,23 @@ try {
     $stmt = $pdo->prepare("
         SELECT g.id as guest_id, g.guest_name, COALESCE(g.phone,'') as guest_phone,
                GROUP_CONCAT(DISTINCT COALESCE(r.room_number, b.room_number) ORDER BY COALESCE(r.room_number, b.room_number) SEPARATOR ',') as rooms,
-               GROUP_CONCAT(DISTINCT b.id ORDER BY b.id SEPARATOR ',') as booking_ids
+               GROUP_CONCAT(DISTINCT b.id ORDER BY b.id SEPARATOR ',') as booking_ids,
+               MAX(CASE WHEN bo.id IS NOT NULL THEN 1 ELSE 0 END) as has_order_today
         FROM bookings b
         JOIN guests g ON b.guest_id = g.id
         LEFT JOIN rooms r ON b.room_id = r.id
+        LEFT JOIN breakfast_orders bo
+            ON bo.breakfast_date = ?
+           AND (
+                bo.booking_id = b.id
+                OR FIND_IN_SET(g.guest_name, REPLACE(bo.guest_name, ', ', ',')) > 0
+           )
         WHERE b.status = 'checked_in'
-        AND NOT EXISTS (
-            SELECT 1 FROM breakfast_orders bo 
-            WHERE bo.breakfast_date = ?
-            AND (
-                (bo.booking_id IS NOT NULL AND bo.booking_id = b.id)
-                OR (bo.booking_id IS NULL AND bo.guest_name = g.guest_name AND bo.breakfast_date = ?)
-            )
-        )
         GROUP BY g.id, g.guest_name, g.phone
-        ORDER BY MIN(COALESCE(r.room_number, b.room_number)) ASC
+        ORDER BY MAX(CASE WHEN bo.id IS NOT NULL THEN 1 ELSE 0 END) ASC,
+                 MIN(COALESCE(r.room_number, b.room_number)) ASC
     ");
-    $stmt->execute([$today, $today]);
+    $stmt->execute([$today]);
 } catch (Exception $e) {
 }
 
@@ -704,6 +704,22 @@ include '../../includes/header.php';
         background: rgba(16, 185, 129, .1)
     }
 
+    .bf-guest-item.is-ordered {
+        opacity: .72;
+        background: rgba(245, 158, 11, .07)
+    }
+
+    .bf-guest-item.is-ordered .guest-name::after {
+        content: ' • Sudah order';
+        color: #f59e0b;
+        font-size: .68rem;
+        font-weight: 700
+    }
+
+    .bf-guest-item.is-ordered input[type="checkbox"] {
+        cursor: not-allowed
+    }
+
     .bf-guest-item input[type="checkbox"] {
         width: 16px;
         height: 16px;
@@ -1014,8 +1030,8 @@ include '../../includes/header.php';
                                         if (!is_array($savedChildIds)) $savedChildIds = [];
                                         $savedChildIds = array_values(array_unique(array_map('intval', $savedChildIds)));
                                     ?>
-                                        <label class="bf-guest-item">
-                                            <input type="checkbox" name="guest_checks[]" value="<?php echo $g['guest_id']; ?>"
+                                        <label class="bf-guest-item <?php echo !empty($g['has_order_today']) ? 'is-ordered' : ''; ?>">
+                                            <input type="checkbox" name="guest_checks[]" value="<?php echo $g['guest_id']; ?>" <?php echo !empty($g['has_order_today']) ? 'disabled' : ''; ?>
                                                 data-name="<?php echo htmlspecialchars($g['guest_name']); ?>"
                                                 data-rooms="<?php echo htmlspecialchars($roomList); ?>"
                                                 data-booking="<?php echo $bookingIdFirst; ?>"
@@ -1036,6 +1052,9 @@ include '../../includes/header.php';
                                                 <div class="guest-room">🛏️ Room <?php echo $roomList; ?></div>
                                             </div>
                                             <div class="bf-guest-tools">
+                                                <?php if (!empty($g['has_order_today'])): ?>
+                                                    <span class="bf-wa-phone" style="background:rgba(245,158,11,.15);color:#f59e0b;">Order hari ini</span>
+                                                <?php endif; ?>
                                                 <?php if (!empty($g['guest_phone'])): ?>
                                                     <span class="bf-wa-phone" title="<?php echo htmlspecialchars($g['guest_phone']); ?>"><?php echo htmlspecialchars($g['guest_phone']); ?></span>
                                                 <?php else: ?>
