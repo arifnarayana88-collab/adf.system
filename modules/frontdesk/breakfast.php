@@ -93,18 +93,9 @@ try {
         FROM bookings b
         JOIN guests g ON b.guest_id = g.id
         LEFT JOIN rooms r ON b.room_id = r.id
+        LEFT JOIN breakfast_orders bo ON b.id = bo.booking_id AND bo.breakfast_date = ?
         WHERE b.status = 'checked_in'
-        AND NOT EXISTS (
-            SELECT 1 FROM breakfast_orders bo 
-            WHERE bo.breakfast_date = ? 
-            AND (
-                (
-                    JSON_VALID(bo.room_number)
-                    AND JSON_CONTAINS(bo.room_number, JSON_QUOTE(COALESCE(r.room_number, b.room_number)))
-                )
-                OR FIND_IN_SET(COALESCE(r.room_number, b.room_number), REPLACE(REPLACE(bo.room_number, '[', ''), ']', '')) > 0
-            )
-        )
+        AND bo.id IS NULL
         GROUP BY g.id, g.guest_name, g.phone
         ORDER BY MIN(COALESCE(r.room_number, b.room_number)) ASC
     ");
