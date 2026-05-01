@@ -88,18 +88,24 @@ try {
 
     $stmt = $pdo->prepare("
         SELECT g.id as guest_id, g.guest_name, COALESCE(g.phone,'') as guest_phone,
-               GROUP_CONCAT(DISTINCT r.room_number ORDER BY r.room_number SEPARATOR ',') as rooms,
+               GROUP_CONCAT(DISTINCT COALESCE(r.room_number, b.room_number) ORDER BY COALESCE(r.room_number, b.room_number) SEPARATOR ',') as rooms,
                GROUP_CONCAT(DISTINCT b.id ORDER BY b.id SEPARATOR ',') as booking_ids
         FROM bookings b
         JOIN guests g ON b.guest_id = g.id
-        JOIN rooms r ON b.room_id = r.id
+        LEFT JOIN rooms r ON b.room_id = r.id
         WHERE b.status = 'checked_in'
         AND NOT EXISTS (
             SELECT 1 FROM breakfast_orders bo 
             WHERE bo.breakfast_date = ? 
-            AND FIND_IN_SET(g.guest_name, REPLACE(bo.guest_name, ', ', ',')) > 0
+            AND (
+                (bo.booking_id IS NOT NULL AND bo.booking_id = b.id)
+                OR (
+                    bo.booking_id IS NULL
+                    AND FIND_IN_SET(g.guest_name, REPLACE(bo.guest_name, ', ', ',')) > 0
+                )
+            )
         )
-        GROUP BY g.id, g.guest_name
+        GROUP BY g.id, g.guest_name, g.phone
         ORDER BY MIN(r.room_number) ASC
     ");
     $stmt->execute([$today]);
