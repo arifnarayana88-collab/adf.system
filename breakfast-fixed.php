@@ -1,8 +1,8 @@
-<?php
+﻿<?php
 
 /**
  * BREAKFAST ORDER - Rewritten clean version
- * Flow: Pick guest (not yet ordered today) → Pick menu → Submit → Pick next guest
+ * Flow: Pick guest (not yet ordered today) â†’ Pick menu â†’ Submit â†’ Pick next guest
  */
 define('APP_ACCESS', true);
 require_once '../../config/config.php';
@@ -86,11 +86,8 @@ try {
         $guestQuotaMap[(int)$qr['booking_id']] = $qr;
     }
 
-    $stmt = $pdo->prepare(""
-        SELECT b.id as booking_id,
-               COALESCE(g.id, 0) as guest_id,
-               COALESCE(g.guest_name, b.guest_name) as guest_name,
-               COALESCE(g.phone, '') as guest_phone,
+    $stmt = $pdo->prepare("
+        SELECT b.id as booking_id, g.id as guest_id, g.guest_name, COALESCE(g.phone,'') as guest_phone,
                COALESCE(r.room_number, b.room_number) as room_number,
                EXISTS(
                    SELECT 1
@@ -99,7 +96,7 @@ try {
                      AND bo.booking_id = b.id
                ) as has_order_today
         FROM bookings b
-        LEFT JOIN guests g ON b.guest_id = g.id
+        JOIN guests g ON b.guest_id = g.id
         LEFT JOIN rooms r ON b.room_id = r.id
         WHERE b.status = 'checked_in'
         ORDER BY has_order_today ASC, COALESCE(r.room_number, b.room_number) ASC, b.id ASC
@@ -710,7 +707,7 @@ include '../../includes/header.php';
     }
 
     .bf-guest-item.is-ordered .guest-name::after {
-        content: ' • Sudah order';
+        content: ' â€¢ Sudah order';
         color: #f59e0b;
         font-size: .68rem;
         font-weight: 700
@@ -983,16 +980,16 @@ include '../../includes/header.php';
 
 <div class="bf-wrap">
     <div class="bf-head">
-        <h1>🍳 Breakfast Order</h1>
+        <h1>ðŸ³ Breakfast Order</h1>
         <div class="bf-head-actions">
-            <a href="breakfast.php" class="bf-head-btn">📋 Orders</a>
-            <a href="in-house.php" class="bf-head-btn">👥 In House</a>
-            <a href="dashboard.php" class="bf-head-btn">🏠 Dashboard</a>
+            <a href="breakfast.php" class="bf-head-btn">ðŸ“‹ Orders</a>
+            <a href="in-house.php" class="bf-head-btn">ðŸ‘¥ In House</a>
+            <a href="dashboard.php" class="bf-head-btn">ðŸ  Dashboard</a>
         </div>
     </div>
 
     <?php if (!empty($_GET['success'])): ?>
-        <div class="bf-alert ok">✅ <?php echo htmlspecialchars($_GET['success']); ?></div>
+        <div class="bf-alert ok">âœ… <?php echo htmlspecialchars($_GET['success']); ?></div>
     <?php endif; ?>
 
     <div class="bf-grid">
@@ -1005,7 +1002,7 @@ include '../../includes/header.php';
 
                 <!-- Guest Selection -->
                 <div class="bf-section">
-                    <div class="bf-title">👤 Pilih Tamu In-House <span style="font-size:.68rem;font-weight:400;color:var(--text-muted);margin-left:.5rem">(bisa pilih beberapa)</span></div>
+                    <div class="bf-title">ðŸ‘¤ Pilih Tamu In-House <span style="font-size:.68rem;font-weight:400;color:var(--text-muted);margin-left:.5rem">(bisa pilih beberapa)</span></div>
                     <?php if (count($inHouseGuests) > 0 || $editOrder): ?>
                         <div class="bf-group">
                             <?php if ($editOrder): ?>
@@ -1050,7 +1047,7 @@ include '../../includes/header.php';
                                                 data-child-menu-ids="<?php echo htmlspecialchars(json_encode($savedChildIds)); ?>">
                                             <div class="guest-info">
                                                 <div class="guest-name"><?php echo htmlspecialchars($g['guest_name']); ?></div>
-                                                <div class="guest-room">🛏️ Room <?php echo $roomList; ?></div>
+                                                <div class="guest-room">ðŸ›ï¸ Room <?php echo $roomList; ?></div>
                                             </div>
                                             <div class="bf-guest-tools">
                                                 <?php if (!empty($g['has_order_today'])): ?>
@@ -1069,18 +1066,18 @@ include '../../includes/header.php';
                                 </div>
                                 <div class="bf-guest-count" id="guestCount">0 tamu dipilih</div>
                                 <div class="bf-wa-row" style="margin-top:.55rem">
-                                    <button type="button" class="bf-link-send" onclick="sendSelectedGuestsPortalLinks()">🔗+📲 Buat Link & Kirim WA (terpilih)</button>
+                                    <button type="button" class="bf-link-send" onclick="sendSelectedGuestsPortalLinks()">ðŸ”—+ðŸ“² Buat Link & Kirim WA (terpilih)</button>
                                 </div>
                             <?php endif; ?>
                         </div>
                     <?php else: ?>
-                        <div class="bf-no-guest">🎉 Semua tamu in-house sudah order sarapan hari ini!</div>
+                        <div class="bf-no-guest">ðŸŽ‰ Semua tamu in-house sudah order sarapan hari ini!</div>
                     <?php endif; ?>
                 </div>
 
                 <!-- Time & Details -->
                 <div class="bf-section">
-                    <div class="bf-title">⏰ Waktu & Detail</div>
+                    <div class="bf-title">â° Waktu & Detail</div>
                     <div class="bf-row">
                         <div class="bf-group">
                             <label class="bf-label">Jumlah Pax *</label>
@@ -1099,9 +1096,9 @@ include '../../includes/header.php';
                         <div class="bf-group" style="grid-column:span 2">
                             <label class="bf-label">Lokasi *</label>
                             <div class="bf-radio-group">
-                                <label class="bf-radio-label"><input type="radio" name="location" value="restaurant" <?php echo (!$editOrder || ($editOrder['location'] ?? '') === 'restaurant') ? 'checked' : ''; ?>> 🍽️ Restaurant</label>
-                                <label class="bf-radio-label"><input type="radio" name="location" value="room_service" <?php echo ($editOrder && ($editOrder['location'] ?? '') === 'room_service') ? 'checked' : ''; ?>> 🛏️ Room Service</label>
-                                <label class="bf-radio-label"><input type="radio" name="location" value="take_away" <?php echo ($editOrder && ($editOrder['location'] ?? '') === 'take_away') ? 'checked' : ''; ?>> 🥡 Take Away</label>
+                                <label class="bf-radio-label"><input type="radio" name="location" value="restaurant" <?php echo (!$editOrder || ($editOrder['location'] ?? '') === 'restaurant') ? 'checked' : ''; ?>> ðŸ½ï¸ Restaurant</label>
+                                <label class="bf-radio-label"><input type="radio" name="location" value="room_service" <?php echo ($editOrder && ($editOrder['location'] ?? '') === 'room_service') ? 'checked' : ''; ?>> ðŸ›ï¸ Room Service</label>
+                                <label class="bf-radio-label"><input type="radio" name="location" value="take_away" <?php echo ($editOrder && ($editOrder['location'] ?? '') === 'take_away') ? 'checked' : ''; ?>> ðŸ¥¡ Take Away</label>
                             </div>
                         </div>
                     </div>
@@ -1109,11 +1106,11 @@ include '../../includes/header.php';
 
                 <!-- Menu -->
                 <div class="bf-section">
-                    <div class="bf-title">🍽️ Pilih Menu</div>
+                    <div class="bf-title">ðŸ½ï¸ Pilih Menu</div>
 
                     <?php if (count($freeMenus) > 0): ?>
                         <div style="margin-bottom:1rem">
-                            <div style="font-size:.8rem;font-weight:700;margin-bottom:.5rem">✨ Free Breakfast</div>
+                            <div style="font-size:.8rem;font-weight:700;margin-bottom:.5rem">âœ¨ Free Breakfast</div>
                             <div class="bf-menu-grid">
                                 <?php foreach ($freeMenus as $m): ?>
                                     <div class="bf-menu-item">
@@ -1139,7 +1136,7 @@ include '../../includes/header.php';
 
                     <?php if (count($paidMenus) > 0): ?>
                         <div>
-                            <div style="font-size:.8rem;font-weight:700;margin-bottom:.5rem">💰 Extra (Berbayar)</div>
+                            <div style="font-size:.8rem;font-weight:700;margin-bottom:.5rem">ðŸ’° Extra (Berbayar)</div>
                             <div class="bf-menu-grid">
                                 <?php foreach ($paidMenus as $m): ?>
                                     <div class="bf-menu-item">
@@ -1167,7 +1164,7 @@ include '../../includes/header.php';
                     <!-- Custom Extra Breakfast (Manual) -->
                     <div style="margin-top:1rem">
                         <div style="font-size:.8rem;font-weight:700;margin-bottom:.5rem;display:flex;justify-content:space-between;align-items:center">
-                            <span>🛒 Extra Breakfast (Manual)</span>
+                            <span>ðŸ›’ Extra Breakfast (Manual)</span>
                             <button type="button" onclick="addCustomExtra()" style="padding:.3rem .65rem;background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;border:none;border-radius:6px;font-size:.72rem;font-weight:700;cursor:pointer">+ Tambah</button>
                         </div>
                         <div id="customExtrasContainer">
@@ -1178,7 +1175,7 @@ include '../../includes/header.php';
                                             <input type="text" class="bf-input custom-extra-name" placeholder="Nama item, cth: Extra Nasi" value="<?php echo htmlspecialchars($ce['menu_name']); ?>" style="flex:1;font-size:.8rem;padding:.45rem .55rem" required>
                                             <input type="number" class="bf-input custom-extra-price" placeholder="Harga" value="<?php echo (int)$ce['price']; ?>" min="0" step="1000" style="width:110px;font-size:.8rem;padding:.45rem .55rem" required>
                                             <input type="number" class="bf-input custom-extra-qty" placeholder="Qty" value="<?php echo $ce['quantity'] ?? 1; ?>" min="1" max="20" style="width:55px;font-size:.8rem;padding:.45rem .55rem;text-align:center">
-                                            <button type="button" onclick="this.closest('.bf-custom-extra').remove()" style="padding:.4rem .55rem;background:rgba(239,68,68,.15);color:#ef4444;border:none;border-radius:6px;font-size:.8rem;cursor:pointer;font-weight:700">✕</button>
+                                            <button type="button" onclick="this.closest('.bf-custom-extra').remove()" style="padding:.4rem .55rem;background:rgba(239,68,68,.15);color:#ef4444;border:none;border-radius:6px;font-size:.8rem;cursor:pointer;font-weight:700">âœ•</button>
                                         </div>
                                         <input type="text" class="bf-note-input custom-extra-note" placeholder="Catatan (opsional)" value="<?php echo htmlspecialchars($ce['note'] ?? ''); ?>" style="margin-top:.35rem;width:100%">
                                     </div>
@@ -1191,14 +1188,14 @@ include '../../includes/header.php';
 
                 <!-- Notes -->
                 <div class="bf-section">
-                    <div class="bf-title">📝 Catatan</div>
+                    <div class="bf-title">ðŸ“ Catatan</div>
                     <textarea name="special_requests" class="bf-textarea" placeholder="Alergi, permintaan khusus, dll"><?php echo $editOrder ? htmlspecialchars($editOrder['special_requests'] ?? '') : ''; ?></textarea>
                 </div>
 
                 <div class="bf-actions">
-                    <button type="submit" class="bf-btn-submit" id="btnSubmit"><?php echo $editOrder ? '✓ Update Order' : '✓ Simpan Order'; ?></button>
+                    <button type="submit" class="bf-btn-submit" id="btnSubmit"><?php echo $editOrder ? 'âœ“ Update Order' : 'âœ“ Simpan Order'; ?></button>
                     <?php if ($editOrder): ?>
-                        <a href="breakfast.php" class="bf-btn-reset">✕ Batal</a>
+                        <a href="breakfast.php" class="bf-btn-reset">âœ• Batal</a>
                     <?php endif; ?>
                 </div>
             </form>
@@ -1207,7 +1204,7 @@ include '../../includes/header.php';
         <!-- SIDEBAR: Today's Orders -->
         <div class="bf-side">
             <div class="bf-side-title">
-                📊 Today's Orders
+                ðŸ“Š Today's Orders
                 <span class="bf-side-count"><?php echo count($todayOrders); ?></span>
             </div>
 
@@ -1215,7 +1212,7 @@ include '../../includes/header.php';
                 <?php foreach ($todayOrders as $order): ?>
                     <div class="bf-order">
                         <div class="bf-order-head">
-                            <span class="bf-order-time">🕐 <?php echo $order['breakfast_time'] ? date('H:i', strtotime($order['breakfast_time'])) : '-'; ?></span>
+                            <span class="bf-order-time">ðŸ• <?php echo $order['breakfast_time'] ? date('H:i', strtotime($order['breakfast_time'])) : '-'; ?></span>
                             <span class="bf-order-pax"><?php echo $order['total_pax']; ?> pax</span>
                         </div>
                         <div class="bf-order-guest"><?php echo htmlspecialchars($order['guest_name']); ?></div>
@@ -1223,14 +1220,14 @@ include '../../includes/header.php';
                         $rooms = json_decode($order['room_number'], true);
                         $roomStr = is_array($rooms) ? implode(', ', $rooms) : ($order['room_number'] ?: '-');
                         ?>
-                        <div class="bf-order-room">🛏️ Room <?php echo htmlspecialchars($roomStr); ?></div>
-                        <div class="bf-order-room"><?php echo ($order['location'] ?? 'restaurant') === 'restaurant' ? '🍽️ Restaurant' : (($order['location'] ?? '') === 'take_away' ? '🥡 Take Away' : '🚪 Room Service'); ?></div>
+                        <div class="bf-order-room">ðŸ›ï¸ Room <?php echo htmlspecialchars($roomStr); ?></div>
+                        <div class="bf-order-room"><?php echo ($order['location'] ?? 'restaurant') === 'restaurant' ? 'ðŸ½ï¸ Restaurant' : (($order['location'] ?? '') === 'take_away' ? 'ðŸ¥¡ Take Away' : 'ðŸšª Room Service'); ?></div>
                         <div class="bf-order-menus">
                             <?php foreach ($order['menu_items'] as $item): ?>
                                 <div class="bf-order-tag">
                                     <div class="bf-order-tag-main">
                                         <?php echo htmlspecialchars($item['menu_name'] ?? '?'); ?>
-                                        <?php if (($item['quantity'] ?? 1) > 1): ?>×<?php echo $item['quantity']; ?><?php endif; ?>
+                                        <?php if (($item['quantity'] ?? 1) > 1): ?>Ã—<?php echo $item['quantity']; ?><?php endif; ?>
                                     </div>
                                     <?php if (!empty($item['note'])): ?>
                                         <div class="bf-order-note">Catatan: <?php echo htmlspecialchars($item['note']); ?></div>
@@ -1239,22 +1236,22 @@ include '../../includes/header.php';
                             <?php endforeach; ?>
                         </div>
                         <?php if (!empty($order['special_requests'])): ?>
-                            <div class="bf-order-special">📝 <?php echo htmlspecialchars($order['special_requests']); ?></div>
+                            <div class="bf-order-special">ðŸ“ <?php echo htmlspecialchars($order['special_requests']); ?></div>
                         <?php endif; ?>
                         <div class="bf-order-foot">
                             <span class="bf-order-price"><?php echo $order['total_price'] > 0 ? 'Rp ' . number_format($order['total_price'], 0, ',', '.') : 'Free'; ?></span>
                             <span class="bf-order-status <?php echo $order['order_status']; ?>"><?php echo ucfirst($order['order_status']); ?></span>
                         </div>
                         <div class="bf-order-btns">
-                            <a href="?edit=<?php echo $order['id']; ?>" class="bf-order-btn edit">✏️ Edit</a>
-                            <button class="bf-order-btn print" onclick='cetakOrder(<?php echo json_encode($order, JSON_HEX_APOS | JSON_HEX_TAG); ?>)'>🖨️ PDF</button>
-                            <button class="bf-order-btn del" onclick="hapusOrder(<?php echo $order['id']; ?>,'<?php echo htmlspecialchars(addslashes($order['guest_name'])); ?>')">🗑️ Hapus</button>
+                            <a href="?edit=<?php echo $order['id']; ?>" class="bf-order-btn edit">âœï¸ Edit</a>
+                            <button class="bf-order-btn print" onclick='cetakOrder(<?php echo json_encode($order, JSON_HEX_APOS | JSON_HEX_TAG); ?>)'>ðŸ–¨ï¸ PDF</button>
+                            <button class="bf-order-btn del" onclick="hapusOrder(<?php echo $order['id']; ?>,'<?php echo htmlspecialchars(addslashes($order['guest_name'])); ?>')">ðŸ—‘ï¸ Hapus</button>
                         </div>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
                 <div class="bf-empty">
-                    <div class="bf-empty-icon">📭</div>
+                    <div class="bf-empty-icon">ðŸ“­</div>
                     <p style="font-size:.8rem">Belum ada order hari ini</p>
                 </div>
             <?php endif; ?>
@@ -1266,7 +1263,7 @@ include '../../includes/header.php';
     <div class="bf-modal">
         <div class="bf-modal-head">
             <div class="bf-modal-title" id="guestSetupTitle">Guest Setup</div>
-            <button type="button" class="bf-modal-close" onclick="closeGuestSetup()">✕</button>
+            <button type="button" class="bf-modal-close" onclick="closeGuestSetup()">âœ•</button>
         </div>
         <div class="bf-link-grid">
             <div class="bf-link-group"><label>Adults (>=7)</label><input type="number" id="setupAdult" min="0" max="10" oninput="updateSetupPax()"></div>
@@ -1491,7 +1488,7 @@ include '../../includes/header.php';
             });
             submitting = true;
             btn.disabled = true;
-            btn.textContent = '⏳ Menyimpan...';
+            btn.textContent = 'â³ Menyimpan...';
             fetch('../../api/breakfast-save.php', {
                     method: 'POST',
                     headers: {
@@ -1506,16 +1503,16 @@ include '../../includes/header.php';
                     if (res.success) {
                         window.location.href = 'breakfast.php?success=' + encodeURIComponent(res.message);
                     } else {
-                        alert('❌ ' + (res.message || 'Gagal'));
+                        alert('âŒ ' + (res.message || 'Gagal'));
                         submitting = false;
                         btn.disabled = false;
-                        btn.textContent = '✓ Update Order';
+                        btn.textContent = 'âœ“ Update Order';
                     }
                 }).catch(function(err) {
-                    alert('❌ Error: ' + err.message);
+                    alert('âŒ Error: ' + err.message);
                     submitting = false;
                     btn.disabled = false;
-                    btn.textContent = '✓ Update Order';
+                    btn.textContent = 'âœ“ Update Order';
                 });
             return;
         }
@@ -1541,7 +1538,7 @@ include '../../includes/header.php';
 
         submitting = true;
         btn.disabled = true;
-        btn.textContent = '⏳ Menyimpan order...';
+        btn.textContent = 'â³ Menyimpan order...';
 
         var payload = Object.assign({}, common, {
             action: 'create_bulk',
@@ -1562,17 +1559,17 @@ include '../../includes/header.php';
                 if (res.success) {
                     window.location.href = 'breakfast.php?success=' + encodeURIComponent(res.message);
                 } else {
-                    alert('❌ ' + (res.message || 'Gagal menyimpan'));
+                    alert('âŒ ' + (res.message || 'Gagal menyimpan'));
                     submitting = false;
                     btn.disabled = false;
-                    btn.textContent = '✓ Simpan Order';
+                    btn.textContent = 'âœ“ Simpan Order';
                 }
             })
             .catch(function(err) {
-                alert('❌ Error koneksi: ' + err.message);
+                alert('âŒ Error koneksi: ' + err.message);
                 submitting = false;
                 btn.disabled = false;
-                btn.textContent = '✓ Simpan Order';
+                btn.textContent = 'âœ“ Simpan Order';
             });
     });
 
@@ -1601,7 +1598,7 @@ include '../../includes/header.php';
             });
     }
 
-    // PDF Print — A4 format
+    // PDF Print â€” A4 format
     function cetakOrder(order) {
         var rooms = order.room_number;
         if (typeof rooms === 'string') {
@@ -1694,9 +1691,9 @@ include '../../includes/header.php';
         }
         html += '</div>';
 
-        // Footer — no absolute positioning, just at the end with spacing
+        // Footer â€” no absolute positioning, just at the end with spacing
         html += '<div style="text-align:center;font-size:9px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:12px;margin-top:40px">';
-        html += 'Printed from ADF System — <?php echo htmlspecialchars($_SESSION["business_name"] ?? "Narayana Hotel"); ?> &copy; <?php echo date("Y"); ?>';
+        html += 'Printed from ADF System â€” <?php echo htmlspecialchars($_SESSION["business_name"] ?? "Narayana Hotel"); ?> &copy; <?php echo date("Y"); ?>';
         html += '<br>Printed: ' + new Date().toLocaleString('id-ID');
         html += '</div>';
 
@@ -1746,7 +1743,7 @@ include '../../includes/header.php';
             '<input type="text" class="bf-input custom-extra-name" placeholder="Nama item, cth: Extra Nasi" style="flex:1;font-size:.8rem;padding:.45rem .55rem" required>' +
             '<input type="number" class="bf-input custom-extra-price" placeholder="Harga" min="0" step="1000" style="width:110px;font-size:.8rem;padding:.45rem .55rem" required>' +
             '<input type="number" class="bf-input custom-extra-qty" placeholder="Qty" value="1" min="1" max="20" style="width:55px;font-size:.8rem;padding:.45rem .55rem;text-align:center">' +
-            '<button type="button" onclick="this.closest(\'.bf-custom-extra\').remove()" style="padding:.4rem .55rem;background:rgba(239,68,68,.15);color:#ef4444;border:none;border-radius:6px;font-size:.8rem;cursor:pointer;font-weight:700">✕</button>' +
+            '<button type="button" onclick="this.closest(\'.bf-custom-extra\').remove()" style="padding:.4rem .55rem;background:rgba(239,68,68,.15);color:#ef4444;border:none;border-radius:6px;font-size:.8rem;cursor:pointer;font-weight:700">âœ•</button>' +
             '</div>' +
             '<input type="text" class="bf-note-input custom-extra-note" placeholder="Catatan (opsional)" style="margin-top:.35rem;width:100%">';
         container.appendChild(div);
@@ -1911,7 +1908,7 @@ include '../../includes/header.php';
             var msg = buildPortalLinkWaMessage(cb.dataset.name || 'Tamu', cb.dataset.rooms || '-', portalLink);
             window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
         } catch (err) {
-            alert('❌ ' + err.message);
+            alert('âŒ ' + err.message);
         }
     }
 
