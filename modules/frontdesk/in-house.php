@@ -37,7 +37,8 @@ header("Pragma: no-cache");
 $queryError = null;
 $debugInfo = [];
 try {
-    $today = date('Y-m-d');
+    // Breakfast date uses rollover at 10:00 — keep consistency with breakfast page
+    $today = ((int)date('H') < 10) ? date('Y-m-d', strtotime('-1 day')) : date('Y-m-d');
     
     // Test simple query first
     $testQuery = "SELECT COUNT(*) as total FROM bookings WHERE status = 'checked_in'";
@@ -59,23 +60,23 @@ try {
             b.status,
             b.booking_source,
             COALESCE(bp.total_paid, 0) as paid_amount,
-            g.id as guest_id,
-            g.guest_name,
-            g.phone,
-            g.email,
-            g.id_card_number,
-            g.address,
-            r.id as room_id,
-            r.room_number,
-            r.floor_number,
-            rt.type_name as type_name,
-            rt.base_price,
+            COALESCE(g.id, 0) as guest_id,
+            COALESCE(g.guest_name, b.guest_name) as guest_name,
+            COALESCE(g.phone, '') as phone,
+            COALESCE(g.email, '') as email,
+            COALESCE(g.id_card_number, '') as id_card_number,
+            COALESCE(g.address, '') as address,
+            COALESCE(r.id, 0) as room_id,
+            COALESCE(r.room_number, b.room_number) as room_number,
+            COALESCE(r.floor_number, '') as floor_number,
+            COALESCE(rt.type_name, '') as type_name,
+            COALESCE(rt.base_price, 0) as base_price,
             DATEDIFF(b.check_out_date, b.check_in_date) as total_nights,
-            DATEDIFF(b.check_out_date, CURDATE()) as nights_remaining,
-            DATEDIFF(CURDATE(), b.check_in_date) as nights_stayed
+            DATEDIFF(b.check_out_date, :today) as nights_remaining,
+            DATEDIFF(:today, b.check_in_date) as nights_stayed
         FROM bookings b
-        INNER JOIN guests g ON b.guest_id = g.id
-        INNER JOIN rooms r ON b.room_id = r.id
+        LEFT JOIN guests g ON b.guest_id = g.id
+        LEFT JOIN rooms r ON b.room_id = r.id
         LEFT JOIN room_types rt ON r.room_type_id = rt.id
         LEFT JOIN (
             SELECT booking_id, SUM(amount) as total_paid
@@ -83,10 +84,10 @@ try {
             GROUP BY booking_id
         ) bp ON b.id = bp.booking_id
         WHERE b.status = 'checked_in'
-        ORDER BY r.room_number ASC
+        ORDER BY COALESCE(r.room_number, b.room_number) ASC
     ");
     
-    $stmt->execute();
+    $stmt->execute(['today' => $today]);
     $inHouseGuests = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $debugInfo['query_result'] = count($inHouseGuests);
     
