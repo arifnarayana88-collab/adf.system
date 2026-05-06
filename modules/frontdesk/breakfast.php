@@ -86,24 +86,7 @@ try {
         $guestQuotaMap[(int)$qr['booking_id']] = $qr;
     }
 
-    $stmt = $pdo->prepare(""
-        SELECT b.id as booking_id,
-               COALESCE(g.id, 0) as guest_id,
-               COALESCE(g.guest_name, b.guest_name) as guest_name,
-               COALESCE(g.phone, '') as guest_phone,
-               COALESCE(r.room_number, b.room_number) as room_number,
-               EXISTS(
-                   SELECT 1
-                   FROM breakfast_orders bo
-                   WHERE bo.breakfast_date = ?
-                     AND bo.booking_id = b.id
-               ) as has_order_today
-        FROM bookings b
-        LEFT JOIN guests g ON b.guest_id = g.id
-        LEFT JOIN rooms r ON b.room_id = r.id
-        WHERE b.status = 'checked_in'
-        ORDER BY has_order_today ASC, COALESCE(r.room_number, b.room_number) ASC, b.id ASC
-    ");
+    $stmt = $pdo->prepare("\n        SELECT b.id as booking_id,\n               COALESCE(g.id, 0) as guest_id,\n               COALESCE(g.guest_name, b.guest_name) as guest_name,\n               COALESCE(g.phone, '') as guest_phone,\n               COALESCE(r.room_number, b.room_number) as room_number,\n               EXISTS(\n                   SELECT 1\n                   FROM breakfast_orders bo\n                   WHERE bo.breakfast_date = ?\n                     AND bo.booking_id = b.id\n               ) as has_order_today\n        FROM bookings b\n        LEFT JOIN guests g ON b.guest_id = g.id\n        LEFT JOIN rooms r ON b.room_id = r.id\n        WHERE b.status = 'checked_in'\n        ORDER BY has_order_today ASC, COALESCE(r.room_number, b.room_number) ASC, b.id ASC\n    ");
     $stmt->execute([$today]);
     $inHouseGuests = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
