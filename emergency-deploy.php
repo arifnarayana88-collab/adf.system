@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Emergency Deploy - Downloads specific files from GitHub without exec()
  * Uses GitHub raw content API to overwrite files on hosting
@@ -62,31 +63,31 @@ foreach ($filesToSync as $file) {
     // Sanitize: prevent directory traversal
     $file = str_replace(['..', "\0"], '', $file);
     $file = ltrim($file, '/');
-    
+
     $url = "https://raw.githubusercontent.com/{$repo}/{$branch}/{$file}";
     $localPath = $deployDir . '/' . $file;
-    
+
     $ctx = stream_context_create([
         'http' => [
             'timeout' => 15,
             'user_agent' => 'ADF-Deploy/1.0',
         ]
     ]);
-    
+
     $content = @file_get_contents($url, false, $ctx);
-    
+
     if ($content === false) {
         $results[$file] = ['status' => 'error', 'message' => 'Failed to download from GitHub'];
         $failCount++;
         continue;
     }
-    
+
     // Ensure directory exists
     $dir = dirname($localPath);
     if (!is_dir($dir)) {
         @mkdir($dir, 0755, true);
     }
-    
+
     // Write file
     $written = @file_put_contents($localPath, $content);
     if ($written !== false) {
