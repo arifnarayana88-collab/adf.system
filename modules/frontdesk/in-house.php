@@ -38,12 +38,16 @@ header("Pragma: no-cache");
 $queryError = null;
 $debugInfo = [];
 try {
-    // Breakfast date uses rollover at 10:00 — keep consistency with breakfast page
-    $today = ((int)date('H') < 10) ? date('Y-m-d', strtotime('-1 day')) : date('Y-m-d');
+    // In-house follows real staying date (same base as calendar), no breakfast rollover.
+    $today = date('Y-m-d');
 
     // Test simple query first
-    $testQuery = "SELECT COUNT(*) as total FROM bookings WHERE status = 'checked_in'";
-    $testResult = $db->fetchOne($testQuery);
+        $testQuery = "SELECT COUNT(*) as total
+                                    FROM bookings
+                                    WHERE check_in_date <= ?
+                                        AND check_out_date > ?
+                                        AND status NOT IN ('checked_out', 'cancelled')";
+        $testResult = $db->fetchOne($testQuery, [$today, $today]);
     $debugInfo['simple_count'] = $testResult['total'] ?? 0;
 
     // Test with direct connection
@@ -84,7 +88,13 @@ try {
             FROM booking_payments
             GROUP BY booking_id
         ) bp ON b.id = bp.booking_id
-        WHERE b.status = 'checked_in'
+                WHERE b.check_in_date <= :today
+                    AND b.check_out_date > :today
+                    AND b.status NOT IN ('checked_out', 'cancelled')
+                    AND (
+                                b.status = 'checked_in'
+                                OR (b.status IN ('confirmed', 'pending') AND b.actual_checkin_time IS NOT NULL)
+                            )
         ORDER BY COALESCE(r.room_number, b.room_number) ASC
     ");
 

@@ -99,10 +99,16 @@ try {
         FROM bookings b
         LEFT JOIN guests g ON b.guest_id = g.id
         LEFT JOIN rooms r ON b.room_id = r.id
-        WHERE b.status = 'checked_in'
+                WHERE b.check_in_date <= :stay_date
+                    AND b.check_out_date > :stay_date
+                    AND b.status NOT IN ('checked_out', 'cancelled')
+                    AND (
+                                b.status = 'checked_in'
+                                OR (b.status IN ('confirmed', 'pending') AND b.actual_checkin_time IS NOT NULL)
+                            )
         ORDER BY COALESCE(r.room_number, b.room_number) ASC, b.id ASC
     ");
-    $stmt->execute();
+        $stmt->execute(['stay_date' => $today]);
     $inHouseGuests = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $orderedBookingIds = [];
