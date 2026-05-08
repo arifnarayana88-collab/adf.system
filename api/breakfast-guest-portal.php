@@ -298,10 +298,19 @@ function auto_submit_on_the_spot_after_midnight($db, $pdo, $link)
     ]];
     $menuJson = json_encode($menuItems);
 
-    $existing = $db->fetchOne(
-        "SELECT id FROM breakfast_orders WHERE breakfast_date = ? AND FIND_IN_SET(?, REPLACE(guest_name, ', ', ',')) > 0 LIMIT 1",
-        [$breakfastDate, $guestName]
-    );
+    $existing = null;
+    if (!empty($bookingId)) {
+        $existing = $db->fetchOne(
+            "SELECT id FROM breakfast_orders WHERE breakfast_date = ? AND booking_id = ? LIMIT 1",
+            [$breakfastDate, $bookingId]
+        );
+    }
+    if (!$existing) {
+        $existing = $db->fetchOne(
+            "SELECT id FROM breakfast_orders WHERE breakfast_date = ? AND FIND_IN_SET(?, REPLACE(guest_name, ', ', ',')) > 0 LIMIT 1",
+            [$breakfastDate, $guestName]
+        );
+    }
 
     if ($existing) {
         $pdo->prepare("UPDATE breakfast_orders SET
@@ -560,10 +569,17 @@ if ($action === 'create_link') {
     ]);
 
     try {
-        $pdo->prepare("UPDATE breakfast_guest_links
-            SET link_status = 'expired'
-            WHERE breakfast_date = ? AND LOWER(TRIM(guest_name)) = LOWER(TRIM(?)) AND link_status = 'open'")
-            ->execute([$breakfastDate, $guestName]);
+        if (!empty($bookingId)) {
+            $pdo->prepare("UPDATE breakfast_guest_links
+                SET link_status = 'expired'
+                WHERE breakfast_date = ? AND booking_id = ? AND link_status = 'open'")
+                ->execute([$breakfastDate, $bookingId]);
+        } else {
+            $pdo->prepare("UPDATE breakfast_guest_links
+                SET link_status = 'expired'
+                WHERE breakfast_date = ? AND LOWER(TRIM(guest_name)) = LOWER(TRIM(?)) AND link_status = 'open'")
+                ->execute([$breakfastDate, $guestName]);
+        }
 
         if ($bookingId) {
             $pdo->prepare("INSERT INTO breakfast_guest_quota
@@ -1223,10 +1239,19 @@ if ($action === 'submit_link') {
             $portalNote .= ' ' . $specialRequests;
         }
 
-        $existing = $db->fetchOne(
-            "SELECT id FROM breakfast_orders WHERE breakfast_date = ? AND FIND_IN_SET(?, REPLACE(guest_name, ', ', ',')) > 0 LIMIT 1",
-            [$breakfastDate, $guestName]
-        );
+        $existing = null;
+        if (!empty($bookingId)) {
+            $existing = $db->fetchOne(
+                "SELECT id FROM breakfast_orders WHERE breakfast_date = ? AND booking_id = ? LIMIT 1",
+                [$breakfastDate, $bookingId]
+            );
+        }
+        if (!$existing) {
+            $existing = $db->fetchOne(
+                "SELECT id FROM breakfast_orders WHERE breakfast_date = ? AND FIND_IN_SET(?, REPLACE(guest_name, ', ', ',')) > 0 LIMIT 1",
+                [$breakfastDate, $guestName]
+            );
+        }
 
         if ($existing) {
             $pdo->prepare("UPDATE breakfast_orders SET
